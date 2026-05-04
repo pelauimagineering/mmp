@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MMP Design System — Components</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  body { padding-bottom: var(--space-9); }
+  .ds-nav { position: sticky; top: 0; z-index: var(--z-elevated); display: flex; align-items: center; gap: var(--space-5); padding: var(--space-3) var(--space-6); background: var(--bg-raised); border-bottom: 1px solid var(--rule); backdrop-filter: blur(8px); }
+  .ds-nav .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; text-decoration: none; color: var(--ink); }
+  .ds-nav .brand svg { width: 28px; height: 28px; color: var(--brand-fairway); }
+  .ds-nav .crumb { font-size: var(--text-xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .ds-nav .nav-links { margin-left: auto; display: flex; gap: var(--space-5); font-size: var(--text-sm); }
+  .ds-nav .nav-links a { color: var(--ink-2); text-decoration: none; }
+  .ds-nav .nav-links a.active { color: var(--ink); font-weight: 600; }
+
+  .hero { padding: var(--space-8) var(--space-6) var(--space-6); max-width: 1200px; margin: 0 auto; }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-4xl); letter-spacing: var(--tracking-tight); margin: var(--space-3) 0 var(--space-3); }
+  .hero p { font-size: var(--text-lg); color: var(--ink-2); max-width: 60ch; margin: 0; }
+
+  section.ds { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6); border-top: 1px solid var(--rule); }
+  section.ds > header { display: grid; grid-template-columns: 220px 1fr; gap: var(--space-7); margin-bottom: var(--space-6); align-items: start; }
+  section.ds > header .num { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); }
+  section.ds > header h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-3xl); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-2); line-height: 1.05; }
+  section.ds > header p { color: var(--ink-2); max-width: 60ch; margin: 0; }
+
+  .demo { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--rule); border-radius: var(--radius-lg); overflow: hidden; }
+  .demo > div { padding: var(--space-6); }
+  .demo > .theme-links, .demo > .theme-felt { background: var(--bg); color: var(--ink); }
+  .demo h3 { font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--ink-3); margin: 0 0 var(--space-4); }
+  .stack { display: flex; flex-direction: column; gap: var(--space-4); }
+  .row { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+
+  .anatomy { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-top: var(--space-5); }
+  .anatomy .label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); }
+  .anatomy ul { margin: 0; padding-left: 1.1em; font-size: var(--text-sm); color: var(--ink-2); }
+  .anatomy li { margin: var(--space-1) 0; }
+  .anatomy li code { background: var(--bg-tonal); padding: 1px 6px; border-radius: 4px; font-size: 0.85em; }
+
+  @media (max-width: 800px) { section.ds > header, .demo, .anatomy { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body class="theme-links">
+
+<nav class="ds-nav">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+    MMP
+  </a>
+  <span class="crumb">Design System / Components</span>
+  <div class="nav-links">
+    <a href="index.html">Overview</a>
+    <a href="Foundations.html">Foundations</a>
+    <a href="Components.html" class="active">Components</a>
+    <a href="Poker UI Kit.html">Poker</a>
+    <a href="Golf UI Kit.html">Golf</a>
+    <a href="Homepage.html">Homepage</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <span class="t-eyebrow">Components</span>
+  <h1>One kit, two faces</h1>
+  <p>Every component is themed via <code>.theme-links</code> or <code>.theme-felt</code>. Side-by-side previews show both. Markup is identical &mdash; only the wrapper changes.</p>
+</header>
+
+<!-- Buttons -->
+<section class="ds" id="buttons">
+  <header>
+    <div><span class="num">01 / Action</span></div>
+    <div><h2>Buttons</h2><p>Primary action is the theme&rsquo;s green. Secondary is ghost on a tonal surface. Destructive uses the danger token. Plaque buttons are reserved for ceremonial actions on the homepage (&ldquo;Enter the cup&rdquo;).</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>theme-links</h3>
+      <div class="stack">
+        <div class="row"><button class="btn btn-primary">Enter Round 1</button><button class="btn btn-secondary">Skip for now</button><button class="btn btn-ghost">Cancel</button><button class="btn btn-danger">Withdraw</button></div>
+        <div class="row"><button class="btn btn-primary btn-sm">Save</button><button class="btn btn-primary">Save</button><button class="btn btn-primary btn-lg">Save scorecard</button></div>
+        <div class="row"><button class="btn btn-plaque">Enter the cup</button><button class="btn btn-primary" disabled>Disabled</button></div>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>theme-felt</h3>
+      <div class="stack">
+        <div class="row"><button class="btn btn-primary">Deal cards</button><button class="btn btn-secondary">Show my cards</button><button class="btn btn-ghost">Skip</button><button class="btn btn-danger">Fold hand</button></div>
+        <div class="row"><button class="btn btn-primary btn-sm">Save</button><button class="btn btn-primary">Save</button><button class="btn btn-primary btn-lg">Deal cards</button></div>
+        <div class="row"><button class="btn btn-plaque">Enter the cup</button><button class="btn btn-primary" disabled>Disabled</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="anatomy">
+    <div><span class="label">Spec</span>
+      <ul>
+        <li>Default height <code>44px</code> &middot; sm <code>32</code> &middot; lg <code>56</code></li>
+        <li>Padding <code>--space-3 --space-5</code></li>
+        <li>Radius <code>--radius-md</code> &middot; pill for chips only</li>
+        <li>Font <code>Inter Tight 600 / 15</code></li>
+      </ul>
+    </div>
+    <div><span class="label">Behaviour</span>
+      <ul>
+        <li>Hover: shift <code>-1px</code> + shadow-md</li>
+        <li>Active: <code>0px</code> + shadow-xs</li>
+        <li>Disabled: opacity <code>0.4</code>, cursor not-allowed</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Forms -->
+<section class="ds" id="forms">
+  <header>
+    <div><span class="num">02 / Input</span></div>
+    <div><h2>Forms</h2><p>Inputs are 48px tall, 1px rule, focus ring uses the theme&rsquo;s primary. Selects use a custom chevron. Labels are eyebrow-style for legibility on both themes.</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>theme-links</h3>
+      <div class="stack" style="max-width: 320px;">
+        <div class="field"><label>Display name</label><input type="text" value="Harish"></div>
+        <div class="field"><label>Course</label><select><option>Kedron Dells</option><option>Glen Eagle</option></select></div>
+        <div class="field"><label>Score</label><input type="text" value="−4" class="t-num"></div>
+        <div class="field"><label>Notes</label><textarea rows="2">Wind picked up after the turn.</textarea></div>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>theme-felt</h3>
+      <div class="stack" style="max-width: 320px;">
+        <div class="field"><label>Display name</label><input type="text" value="Junior B"></div>
+        <div class="field"><label>Select user</label><select><option>-- Select a user --</option></select></div>
+        <div class="field"><label>Buy-in</label><input type="text" value="$40" class="t-num"></div>
+        <div class="field"><label>Reset phrase</label><input type="password" value="••••••••"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Playing card -->
+<section class="ds" id="playing-card">
+  <header>
+    <div><span class="num">03 / Poker</span></div>
+    <div><h2>Playing card</h2><p>From the live poker app. Three sizes (sm 50&times;70, md 80&times;112, lg 120&times;168) for hole cards, table cards, and the community-display TV view. Backs use a fairway-to-felt gradient that ties the two apps together.</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>theme-links</h3>
+      <div class="row">
+        <div class="card-pc card-pc-md hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div>
+        <div class="card-pc card-pc-md spades"><div class="card-rank">K</div><div class="card-suit">♠</div></div>
+        <div class="card-pc card-pc-md diamonds"><div class="card-rank">10</div><div class="card-suit">♦</div></div>
+        <div class="card-pc card-pc-md card-back"></div>
+      </div>
+      <div class="row" style="margin-top: var(--space-4);">
+        <div class="card-pc card-pc-sm hearts"><div class="card-rank">7</div><div class="card-suit">♥</div></div>
+        <div class="card-pc card-pc-md hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div>
+        <div class="card-pc card-pc-lg hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>theme-felt</h3>
+      <div class="row">
+        <div class="card-pc card-pc-md hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div>
+        <div class="card-pc card-pc-md spades"><div class="card-rank">K</div><div class="card-suit">♠</div></div>
+        <div class="card-pc card-pc-md diamonds"><div class="card-rank">10</div><div class="card-suit">♦</div></div>
+        <div class="card-pc card-pc-md card-back"></div>
+      </div>
+      <div class="row" style="margin-top: var(--space-4);">
+        <div class="card-pc card-pc-sm hearts"><div class="card-rank">7</div><div class="card-suit">♥</div></div>
+        <div class="card-pc card-pc-md hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div>
+        <div class="card-pc card-pc-lg hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Player row -->
+<section class="ds" id="player-row">
+  <header>
+    <div><span class="num">04 / Roster</span></div>
+    <div><h2>Player row</h2><p>Shared between poker (player list with dealer/SB/BB/folded/broke badges) and golf (leaderboard rows with rank, score, thru). Drag-handle on the left for reorder.</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>Golf — leaderboard row</h3>
+      <ul class="player-list">
+        <li class="player-row leader-1"><span class="rank">1</span><span class="name">Harish Dhiman</span><span class="meta t-num">F</span><span class="score t-num">−4</span></li>
+        <li class="player-row leader-2"><span class="rank">2</span><span class="name">Kerwin Matthew</span><span class="meta t-num">F</span><span class="score t-num">−2</span></li>
+        <li class="player-row"><span class="rank">3</span><span class="name">Junior Buckland</span><span class="meta t-num">F</span><span class="score t-num">+1</span></li>
+        <li class="player-row"><span class="rank">4</span><span class="name">Darren Baptiste</span><span class="meta t-num">F</span><span class="score t-num">+3</span></li>
+        <li class="player-row is-withdrawn"><span class="rank">—</span><span class="name">Tony Stewart</span><span class="meta">WD</span><span class="score t-num">—</span></li>
+      </ul>
+    </div>
+    <div class="theme-felt">
+      <h3>Poker — player list</h3>
+      <ul class="player-list">
+        <li class="player-row is-dealer"><span class="drag-handle">⋮⋮</span><span class="name">Harish</span><span class="badge badge-dealer">D</span><span class="badge badge-sb">SB</span></li>
+        <li class="player-row"><span class="drag-handle">⋮⋮</span><span class="name">Kerwin</span><span class="badge badge-bb">BB</span></li>
+        <li class="player-row"><span class="drag-handle">⋮⋮</span><span class="name">Junior</span></li>
+        <li class="player-row is-folded"><span class="drag-handle">⋮⋮</span><span class="name">Darren</span><span class="badge badge-folded">FOLDED</span></li>
+        <li class="player-row is-broke"><span class="drag-handle">⋮⋮</span><span class="name">Tony</span><span class="badge badge-broke">BROKE</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Score chips -->
+<section class="ds" id="score">
+  <header>
+    <div><span class="num">05 / Numbers</span></div>
+    <div><h2>Score chips &amp; cells</h2><p>Score chips colour by value relative to par: under is fairway, level is ink, over is clay. Numbers are tabular and never animate with bounce.</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>Score chip</h3>
+      <div class="row" style="margin-bottom: var(--space-5);">
+        <span class="chip score under">−4</span>
+        <span class="chip score under">−2</span>
+        <span class="chip score level">E</span>
+        <span class="chip score over">+1</span>
+        <span class="chip score over">+8</span>
+      </div>
+      <h3>Scorecard cell</h3>
+      <table class="scorecard">
+        <thead><tr><th>Hole</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>Out</th></tr><tr class="par"><th>Par</th><td>4</td><td>3</td><td>5</td><td>4</td><td>4</td><td>3</td><td>5</td><td>4</td><td>4</td><td>36</td></tr></thead>
+        <tbody>
+          <tr><th>Harish</th><td class="eagle">2</td><td class="par">3</td><td class="birdie">4</td><td class="par">4</td><td class="par">4</td><td class="bogey">4</td><td class="par">5</td><td class="par">4</td><td class="birdie">3</td><td class="t-num">33</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="theme-felt">
+      <h3>Pot &amp; blinds</h3>
+      <div class="row" style="margin-bottom: var(--space-5);">
+        <span class="chip pot">Pot $240</span>
+        <span class="chip blind">SB $1 / BB $2</span>
+        <span class="chip stack">Stack $186</span>
+      </div>
+      <h3>Hand strength</h3>
+      <div class="row">
+        <span class="chip hand">Pair of Aces</span>
+        <span class="chip hand strong">Full House</span>
+        <span class="chip hand best">Royal Flush</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Timer -->
+<section class="ds" id="timer">
+  <header>
+    <div><span class="num">06 / Time</span></div>
+    <div><h2>Timer / countdown</h2><p>Mono-numerals with subtle glow at default. Warning amber under 60s, critical red under 30s, paused amber-blink. Shared between poker blind levels and golf shotgun starts.</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>Tee-off countdown</h3>
+      <div class="timer-card">
+        <div class="timer-label">Tee off in</div>
+        <div class="timer-countdown t-num">01:42:18</div>
+        <div class="timer-meta">Round 1 &middot; Kedron Dells &middot; 10:06</div>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>Blind level</h3>
+      <div class="timer-card">
+        <div class="timer-label">Blinds increase in</div>
+        <div class="timer-countdown t-num">06:42</div>
+        <div class="timer-meta">Level 3 &middot; SB $2 / BB $4</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide-to-confirm -->
+<section class="ds" id="slide">
+  <header>
+    <div><span class="num">07 / Confirm</span></div>
+    <div><h2>Slide-to-confirm</h2><p>For destructive or revealing actions &mdash; folding, peeking at hole cards, posting a final scorecard. Drag the puck right to commit; release short of the end to cancel.</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>Post round</h3>
+      <div class="slide-track slide-track-confirm">
+        <div class="slide-instruction">▶︎ Slide to post Round 1</div>
+        <div class="slide-button"><span class="slide-icon">›</span></div>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>Reveal &amp; fold</h3>
+      <div class="slide-track" style="margin-bottom: var(--space-3);">
+        <div class="slide-instruction">▶︎ Slide to show cards</div>
+        <div class="slide-button"><span class="slide-icon">👀</span></div>
+      </div>
+      <div class="slide-track slide-track-fold">
+        <div class="slide-instruction">▶︎ Slide to fold</div>
+        <div class="slide-button"><span class="slide-icon">✕</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Header / nav -->
+<section class="ds" id="appbar">
+  <header>
+    <div><span class="num">08 / Chrome</span></div>
+    <div><h2>App bar</h2><p>Top of every authenticated screen. Brand at left, contextual switcher in the middle, identity at right. The Switcher links straight to the other app.</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>Golf — app bar</h3>
+      <div class="appbar">
+        <div class="appbar-brand"><svg viewBox="0 0 64 64" style="width:24px;height:24px;" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg><span>MMP <em>Challenge Cup</em></span></div>
+        <div class="appbar-tabs"><a href="#" class="active">Tournament</a><a href="#">All-time</a><a href="#">Roster</a></div>
+        <div class="appbar-meta"><a href="#" class="appbar-switch">Switch to Poker →</a></div>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>Poker — app bar</h3>
+      <div class="appbar">
+        <div class="appbar-brand"><svg viewBox="0 0 64 64" style="width:24px;height:24px;" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg><span>MMP <em>Poker</em></span></div>
+        <div class="appbar-tabs"><a href="#" class="active">Table</a><a href="#">Players</a><a href="#">Settings</a></div>
+        <div class="appbar-meta"><span style="color:var(--ink-3); font-size:var(--text-sm);">Junior B</span><a href="#" class="appbar-switch">Switch to Golf →</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Surfaces / cards -->
+<section class="ds" id="surfaces">
+  <header>
+    <div><span class="num">09 / Surface</span></div>
+    <div><h2>Surfaces</h2><p>Three reusable surface treatments: <strong>panel</strong> (default), <strong>plaque</strong> (engraved-gold-on-walnut, ceremonial), and <strong>tee-card</strong> (the front of the homepage and the schedule list).</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>Panel</h3>
+      <div class="panel">
+        <span class="t-eyebrow">Round 1</span>
+        <div class="t-title" style="font-size: var(--text-2xl); margin-top: 6px;">Kedron Dells</div>
+        <p style="color:var(--ink-2); margin: var(--space-2) 0 0;">Tee times 10:06 / 10:16. 18 holes. Stableford scoring.</p>
+      </div>
+      <h3 style="margin-top: var(--space-5);">Plaque</h3>
+      <div class="plaque">
+        <div class="plaque-year">2014–2015</div>
+        <div class="plaque-line">Golf · <strong>Kerwin Matthew</strong></div>
+        <div class="plaque-line">Poker · <strong>Junior Buckland</strong></div>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>Panel</h3>
+      <div class="panel">
+        <span class="t-eyebrow">Hand 14</span>
+        <div class="t-title" style="font-size: var(--text-2xl); margin-top: 6px;">Pre-flop</div>
+        <p style="color:var(--ink-2); margin: var(--space-2) 0 0;">SB $2 / BB $4. Pot $24.</p>
+      </div>
+      <h3 style="margin-top: var(--space-5);">Plaque</h3>
+      <div class="plaque">
+        <div class="plaque-year">2014–2015</div>
+        <div class="plaque-line">Golf · <strong>Kerwin Matthew</strong></div>
+        <div class="plaque-line">Poker · <strong>Junior Buckland</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Overlay -->
+<section class="ds" id="overlays">
+  <header>
+    <div><span class="num">10 / Feedback</span></div>
+    <div><h2>Overlay notifications</h2><p>Full-bleed translucent banners, 4-second auto-dismiss, color-coded by category. Lifted from the live poker app and extended.</p></div>
+  </header>
+  <div class="demo">
+    <div class="theme-links">
+      <h3>Categories</h3>
+      <div class="stack">
+        <div class="overlay-mini overlay-deal"><span class="oi">🟢</span><span>Round posted &middot; +2 over</span></div>
+        <div class="overlay-mini overlay-dealer"><span class="oi">⛳️</span><span>You&rsquo;re up &middot; tee in 4&prime;</span></div>
+        <div class="overlay-mini overlay-fold"><span class="oi">🔴</span><span>Withdrawn from Round 1</span></div>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>Categories</h3>
+      <div class="stack">
+        <div class="overlay-mini overlay-deal"><span class="oi">🃏</span><span>Cards dealt</span></div>
+        <div class="overlay-mini overlay-reveal"><span class="oi">🔵</span><span>Flop revealed</span></div>
+        <div class="overlay-mini overlay-fold"><span class="oi">✕</span><span>Darren folded</span></div>
+        <div class="overlay-mini overlay-dealer"><span class="oi">🎯</span><span>Dealer is Harish</span></div>
+        <div class="overlay-mini overlay-broke"><span class="oi">💸</span><span>Tony is broke</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="max-width:1200px; margin:var(--space-7) auto 0; padding:var(--space-6) var(--space-6) var(--space-9); border-top:1px solid var(--rule); color:var(--ink-3); font-size:var(--text-sm); display:flex; justify-content:space-between;">
+  <span>MMP Design System &middot; Components</span>
+  <span>Made with 💕 in the 6ix</span>
+</footer>
+
+</body></html>

@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /score-entry.html
+Disallow: /admin.html
+Disallow: /mockup.html

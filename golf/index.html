@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MMP Challenge Cup</title>
+<meta name="description" content="MMP Challenge Cup — friend-group golf and poker, kept honest." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/components.css">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body class="theme-links" data-sport="poker">
+
+<header class="top">
+  <div class="shell top-row">
+    <a href="/" class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        MMP Challenge Cup
+        <span class="brand-sub">Bound by Brotherhood</span>
+      </div>
+    </a>
+    <nav class="tabs" id="sport-tabs" role="tablist" aria-label="Sport"></nav>
+    <div class="season-picker" id="season-picker" role="tablist" aria-label="Season"></div>
+    <div class="right-rail">
+      <a class="enter-scores golf-only" id="header-enter-scores" href="score-entry.html">Enter scores</a>
+      <a class="all-time-link" id="all-time-link" href="#/poker/all-time">All-time →</a>
+      <a class="all-time-link" id="switch-poker-link" href="https://poker.pelau.com/" target="_blank" rel="noopener">Switch to dealer →</a>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <div id="view-root"><div class="skel" style="margin-top: 32px;"></div></div>
+</main>
+
+<footer class="foot shell">
+  <div class="row" style="justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div>MMP Challenge Cup · Updated <span id="footer-date"></span></div>
+    <div><a href="/">Home</a> · <a id="footer-other-sport" href="#/">Other sport</a></div>
+  </div>
+</footer>
+
+<script>
+/* ====================================================================
+   MMP Challenge Cup — single-page, hash-routed, JSON-driven.
+   Routes:
+     #/                                  → in-season sport, latest season
+     #/<sport>                           → latest season for sport
+     #/<sport>/<seasonId>                → that season's leaderboard
+     #/<sport>/event/<eventOrRoundId>    → event/round detail
+     #/<sport>/player/<playerId>         → player profile (sport-scoped)
+     #/<sport>/all-time                  → all-time leaderboard
+   ==================================================================== */
+
+const DATA = { poker: null, golf: null, players: [], loaded: false };
+const SPORTS = ["poker", "golf"];
+
+// ---------- Sport configs (so views can be parameterized) ----------
+const SPORT_CONFIG = {
+  poker: {
+    label: "Poker",
+    sublabel: "Tournament",
+    pointsLabel: "pts",
+    organizerLabel: "Host",
+    eventLabel: "Event",
+    eventsLabel: "Events",
+    seasonNoun: "Season",
+    higherIsBetter: true,
+    eventListKey: "events",       // key on a season holding the event list
+    eventDateLabel: e => `${e.month} ${e.year}`,
+    columns: [
+      { key: "appearance", label: "App",  num: true },
+      { key: "win",        label: "W",    num: true },
+      { key: "runnerUp",   label: "RU",   num: true },
+      { key: "tie",        label: "Tie",  num: true },
+    ],
+    eventColumns: [
+      { key: "appearance", label: "App", num: true },
+      { key: "win",        label: "Win", num: true },
+      { key: "tie",        label: "Tie", num: true },
+      { key: "runnerUp",   label: "Runner-up", num: true },
+      { key: "eventTotal", label: "Event", num: true, strong: true },
+      { key: "ytdTotal",   label: "YTD",  num: true },
+    ],
+    primaryStat: { key: "ytdTotal", label: "YTD", primary: true },
+  },
+  golf: {
+    label: "Golf",
+    sublabel: "Links Cup",
+    pointsLabel: "pts",
+    organizerLabel: "Organizer",
+    eventLabel: "Round",
+    eventsLabel: "Rounds",
+    seasonNoun: "Season",
+    higherIsBetter: true,
+    eventListKey: "rounds",
+    eventDateLabel: e => formatDateShort(e.date),
+    primaryStat: { key: "totalPoints", label: "Pts", primary: true },
+  },
+};
+
+// Golf scoring constants (mirror the matrix in data/golf.json)
+const GOLF_POINTS = { attendance: 5, par: 1, birdie: 3, eagle: 10, albatross: 20, holeInOne: 25, lowRound: 3 };
+
+// ---------- Helpers ----------
+const $  = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+const initials = (n) => (n || "").split(" ").map(s => s[0]).slice(0,2).join("").toUpperCase();
+const fmt = (v, opts={}) => {
+  if (v == null || v === "") return opts.dash ?? "—";
+  if (typeof v !== "number") return v;
+  if (Number.isInteger(v)) return v.toString();
+  return v.toFixed(1);
+};
+const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+function medal(rank) { return rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "bronze" : ""; }
+function ordinal(n) { const s=["th","st","nd","rd"], v=n%100; return n + (s[(v-20)%10] || s[v] || s[0]); }
+function inSeasonSport() {
+  const m = new Date().getMonth() + 1;       // 1..12
+  return (m >= 5 && m <= 10) ? "golf" : "poker";
+}
+function formatDateShort(iso) {
+  if (!iso) return "TBD";
+  const d = new Date(iso + "T12:00:00");
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+function formatDateLong(iso) {
+  if (!iso) return "TBD";
+  const d = new Date(iso + "T12:00:00");
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+}
+function sparkSvg(values) {
+  if (!values || !values.length) return "";
+  const w = 80, h = 22, pad = 2;
+  const max = Math.max(...values, 1);
+  const stepX = (w - pad*2) / Math.max(values.length - 1, 1);
+  const pts = values.map((v, i) => [pad + i * stepX, h - pad - (v / max) * (h - pad*2)]);
+  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L${pts[pts.length-1][0].toFixed(1)},${h-pad} L${pts[0][0].toFixed(1)},${h-pad} Z`;
+  const last = pts[pts.length - 1];
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <path class="area" d="${areaPath}"/>
+    <path class="line" d="${linePath}"/>
+    <circle class="dot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2"/>
+  </svg>`;
+}
+function setBodyAccent(sport) { document.body.dataset.sport = sport; }
+
+// ---------- Data loading ----------
+async function fetchJson(path) {
+  try {
+    const r = await fetch(path, { cache: "no-store" });
+    if (!r.ok) throw new Error(`${path}: ${r.status}`);
+    return await r.json();
+  } catch (e) {
+    console.warn("fetch failed", path, e);
+    return null;
+  }
+}
+
+async function loadAll() {
+  const [poker, golf, players] = await Promise.all([
+    fetchJson("data/poker.json"),
+    fetchJson("data/golf.json"),
+    fetchJson("data/players.json"),
+  ]);
+  DATA.poker = poker;
+  DATA.golf = golf;
+  DATA.players = (players && players.players) || [];
+  DATA.loaded = true;
+}
+
+// ---------- Aggregations ----------
+
+// For a poker season, derive per-player totals from finalStandings + last played event's results so we have full breakdown.
+function buildPokerSeasonStandings(season) {
+  const lastPlayed = [...(season.events || [])].reverse().find(e => e.played);
+  if (!lastPlayed) return [];
+  const playedEvents = season.events.filter(e => e.played);
+  const map = new Map();
+  for (const ev of playedEvents) {
+    for (const r of ev.results || []) {
+      const cur = map.get(r.name) || { name: r.name, appearance: 0, win: 0, runnerUp: 0, tie: 0, ytd: 0, spark: [] };
+      cur.appearance += (r.appearance || 0) ? 1 : 0;
+      cur.win        += (r.win || 0) ? Math.round(r.win / 10) : 0;
+      cur.runnerUp   += (r.runnerUp || 0) ? Math.round(r.runnerUp / 5) : 0;
+      cur.tie        += (r.tie || 0) ? 1 : 0;
+      cur.ytd         = r.ytdTotal;        // ytdTotal is cumulative
+      cur.spark.push(r.ytdTotal);
+      map.set(r.name, cur);
+    }
+  }
+  // ranking: from finalStandings (uses ytd; ties handled with same rank)
+  const standings = [...map.values()].sort((a,b) => b.ytd - a.ytd);
+  let rank = 0, prev = null;
+  standings.forEach((p, i) => {
+    if (p.ytd !== prev) { rank = i + 1; prev = p.ytd; }
+    p.rank = rank;
+  });
+  return standings;
+}
+
+// For a single round, compute per-player points + net + tag the low-round winner(s).
+// Returns a list of result objects each augmented with { net, points, lowRound: bool }.
+function annotateGolfRound(round) {
+  const results = (round.results || []).map(r => {
+    const out = { ...r };
+    out.net = (Number.isFinite(r.gross) && Number.isFinite(r.handicap))
+      ? r.gross - r.handicap
+      : null;
+    return out;
+  });
+  // Low round = lowest NET among players who played 18 holes and have a handicap set.
+  // (If handicap is missing, the player can still play but isn't eligible for low round.)
+  const eligible = results.filter(r => r.attended && r.holesPlayed === 18 && Number.isFinite(r.net));
+  let lowRoundIds = new Set();
+  if (eligible.length) {
+    const min = Math.min(...eligible.map(r => r.net));
+    lowRoundIds = new Set(eligible.filter(r => r.net === min).map(r => r.playerId || slug(r.name)));
+  }
+  for (const r of results) {
+    const id = r.playerId || slug(r.name);
+    r.lowRound = lowRoundIds.has(id);
+    if (!r.attended) { r.points = 0; continue; }
+    r.points =
+      GOLF_POINTS.attendance
+      + (r.pars || 0) * GOLF_POINTS.par
+      + (r.birdies || 0) * GOLF_POINTS.birdie
+      + (r.eagles || 0) * GOLF_POINTS.eagle
+      + (r.albatrosses || 0) * GOLF_POINTS.albatross
+      + (r.holeInOnes || 0) * GOLF_POINTS.holeInOne
+      + (r.lowRound ? GOLF_POINTS.lowRound : 0);
+  }
+  return results;
+}
+
+function buildGolfSeasonStandings(season) {
+  const playedRounds = (season.rounds || []).filter(r => r.played);
+  if (!playedRounds.length) return [];
+  const map = new Map();
+  for (const round of playedRounds) {
+    const annotated = annotateGolfRound(round);
+    for (const r of annotated) {
+      const key = r.playerId || slug(r.name);
+      const cur = map.get(key) || {
+        playerId: r.playerId || key, name: r.name,
+        rounds: 0, attended: 0,
+        pars: 0, birdies: 0, eagles: 0, albatrosses: 0, holeInOnes: 0,
+        lowRounds: 0,
+        totalGross: 0,
+        totalPoints: 0,
+        sparkPoints: [],
+      };
+      cur.rounds++;
+      if (r.attended) {
+        cur.attended++;
+        cur.totalGross += (r.gross || 0);
+      }
+      cur.pars        += (r.pars || 0);
+      cur.birdies     += (r.birdies || 0);
+      cur.eagles      += (r.eagles || 0);
+      cur.albatrosses += (r.albatrosses || 0);
+      cur.holeInOnes  += (r.holeInOnes || 0);
+      if (r.lowRound) cur.lowRounds++;
+      cur.totalPoints += r.points;
+      cur.sparkPoints.push(cur.totalPoints);
+      map.set(key, cur);
+    }
+  }
+  const list = [...map.values()];
+  // Highest total points wins. Tiebreaker: more rounds attended, then alphabetical.
+  list.sort((a,b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    if (b.attended !== a.attended) return b.attended - a.attended;
+    return a.name.localeCompare(b.name);
+  });
+  let rank = 0, prev = null;
+  list.forEach((p, i) => {
+    if (p.totalPoints !== prev) { rank = i + 1; prev = p.totalPoints; }
+    p.rank = rank;
+  });
+  return list;
+}
+
+function buildAllTime(sport) {
+  const data = DATA[sport];
+  if (!data || !data.seasons) return [];
+  const map = new Map();
+  if (sport === "poker") {
+    for (const season of data.seasons) {
+      const standings = buildPokerSeasonStandings(season);
+      for (const p of standings) {
+        const cur = map.get(p.name) || { name: p.name, seasons: 0, total: 0, wins: 0, runnerUps: 0, ties: 0, apps: 0, titles: 0 };
+        cur.seasons++;
+        cur.total += p.ytd || 0;
+        cur.wins += p.win || 0;
+        cur.runnerUps += p.runnerUp || 0;
+        cur.ties += p.tie || 0;
+        cur.apps += p.appearance || 0;
+        if (p.rank === 1) cur.titles++;
+        map.set(p.name, cur);
+      }
+    }
+    return [...map.values()].sort((a,b) => b.total - a.total);
+  } else {
+    for (const season of data.seasons) {
+      const standings = buildGolfSeasonStandings(season);
+      for (const p of standings) {
+        const cur = map.get(p.name) || {
+          name: p.name, seasons: 0, rounds: 0, attended: 0,
+          pars: 0, birdies: 0, eagles: 0, albatrosses: 0, holeInOnes: 0,
+          lowRounds: 0, total: 0, titles: 0
+        };
+        cur.seasons++;
+        cur.rounds += p.rounds || 0;
+        cur.attended += p.attended || 0;
+        cur.pars += p.pars || 0;
+        cur.birdies += p.birdies || 0;
+        cur.eagles += p.eagles || 0;
+        cur.albatrosses += p.albatrosses || 0;
+        cur.holeInOnes += p.holeInOnes || 0;
+        cur.lowRounds += p.lowRounds || 0;
+        cur.total += p.totalPoints || 0;
+        if (p.rank === 1) cur.titles++;
+        map.set(p.name, cur);
+      }
+    }
+    return [...map.values()].sort((a,b) => b.total - a.total);
+  }
+}
+
+function buildPlayerProfile(sport, playerId) {
+  const data = DATA[sport];
+  if (!data) return null;
+  const allSeasons = [];
+  for (const season of data.seasons || []) {
+    const events = season[SPORT_CONFIG[sport].eventListKey] || [];
+    const playerEvents = [];
+    for (const e of events) {
+      if (!e.played) continue;
+      const r = (e.results || []).find(x => (sport === "golf" ? (x.playerId || slug(x.name)) === playerId : slug(x.name) === playerId));
+      if (r) playerEvents.push({ event: e, result: r });
+    }
+    if (!playerEvents.length) continue;
+    if (sport === "poker") {
+      const standings = buildPokerSeasonStandings(season);
+      const me = standings.find(p => slug(p.name) === playerId);
+      allSeasons.push({ seasonId: season.id, label: season.label, events: playerEvents, summary: me });
+    } else {
+      const standings = buildGolfSeasonStandings(season);
+      const me = standings.find(p => (p.playerId || slug(p.name)) === playerId);
+      allSeasons.push({ seasonId: season.id, label: season.label, events: playerEvents, summary: me });
+    }
+  }
+  return allSeasons.length ? allSeasons : null;
+}
+
+// ---------- Router ----------
+function parseHash() {
+  const h = (location.hash || "").replace(/^#\/?/, "");
+  if (!h) return { kind: "home" };
+  const parts = h.split("/").filter(Boolean);
+  const sport = parts[0];
+  if (!SPORTS.includes(sport)) return { kind: "home" };
+  if (parts.length === 1) return { kind: "season", sport, seasonId: latestSeasonId(sport) };
+  if (parts[1] === "all-time") return { kind: "alltime", sport };
+  if (parts[1] === "event")  return { kind: "event",  sport, eventId: parts[2] };
+  if (parts[1] === "player") return { kind: "player", sport, playerId: parts[2] };
+  return { kind: "season", sport, seasonId: parts[1] };
+}
+function latestSeasonId(sport) {
+  const seasons = DATA[sport]?.seasons || [];
+  return seasons[0]?.id || null;
+}
+function navigate(hash) { location.hash = hash; }
+
+// ---------- View rendering ----------
+function dispatch() {
+  const route = parseHash();
+  if (route.kind === "home") {
+    const sp = inSeasonSport();
+    location.hash = `#/${sp}`;
+    return; // hashchange will retrigger
+  }
+  setBodyAccent(route.sport);
+  renderHeader(route);
+  const root = $("#view-root");
+  try {
+    if (route.kind === "season")  return renderSeasonView(root, route.sport, route.seasonId);
+    if (route.kind === "event")   return renderEventView(root, route.sport, route.eventId);
+    if (route.kind === "player")  return renderPlayerView(root, route.sport, route.playerId);
+    if (route.kind === "alltime") return renderAllTimeView(root, route.sport);
+  } catch (err) {
+    console.error(err);
+    root.innerHTML = `<div class="empty"><div class="center"><h1>Something broke</h1><p>${escapeHtml(err.message)}</p></div></div>`;
+  }
+}
+
+function renderHeader(route) {
+  // sport tabs
+  const tabs = $("#sport-tabs");
+  const inSeason = inSeasonSport();
+  tabs.innerHTML = SPORTS.map(sp => {
+    const cfg = SPORT_CONFIG[sp];
+    const selected = sp === route.sport;
+    const inSeasonCls = sp === inSeason ? "in-season" : "";
+    return `<a class="tab ${inSeasonCls}" role="tab" aria-selected="${selected}" href="#/${sp}">
+      <span class="tab-dot"></span> ${cfg.label}
+      <span class="muted small" style="margin-left:6px;">${cfg.sublabel}</span>
+    </a>`;
+  }).join("");
+
+  // season picker (for current sport)
+  const picker = $("#season-picker");
+  const seasons = DATA[route.sport]?.seasons || [];
+  const currentSeason = route.seasonId || (route.kind === "alltime" ? null : latestSeasonId(route.sport));
+  picker.innerHTML = seasons.slice().reverse().map(s => `
+    <a class="season-pill" href="#/${route.sport}/${s.id}" aria-selected="${s.id === currentSeason}">${s.label}</a>
+  `).join("");
+  picker.style.display = seasons.length ? "" : "none";
+
+  $("#all-time-link").setAttribute("href", `#/${route.sport}/all-time`);
+  $("#all-time-link").setAttribute("aria-selected", route.kind === "alltime");
+
+  // footer: link to other sport
+  const other = SPORTS.find(s => s !== route.sport);
+  $("#footer-other-sport").setAttribute("href", `#/${other}`);
+  $("#footer-other-sport").textContent = `Switch to ${SPORT_CONFIG[other].label}`;
+}
+
+// ============================ Season view ============================
+
+function renderSeasonView(root, sport, seasonId) {
+  const data = DATA[sport];
+  const season = (data?.seasons || []).find(s => s.id === seasonId);
+  if (!season) {
+    return renderEmptyState(root, sport, null);
+  }
+  const events = season[SPORT_CONFIG[sport].eventListKey] || [];
+  const playedEvents = events.filter(e => e.played);
+  if (!playedEvents.length) {
+    return renderEmptyState(root, sport, season);
+  }
+
+  if (sport === "poker") return renderPokerSeasonView(root, season);
+  if (sport === "golf")  return renderGolfSeasonView(root, season);
+}
+
+function renderPokerSeasonView(root, season) {
+  const standings = buildPokerSeasonStandings(season);
+  const playedEvents = season.events.filter(e => e.played);
+  const lastEvent = playedEvents[playedEvents.length - 1];
+  const finalEvent = season.events.find(e => !e.played);
+  const champion = standings[0];
+
+  const lastEventWinner = (lastEvent.results || []).slice().sort((a,b) => (b.eventTotal || 0) - (a.eventTotal || 0))[0];
+  const seasonComplete = !finalEvent && lastEvent;
+
+  root.innerHTML = `
+    <section>
+      <div class="hero-title">
+        <h1>${escapeHtml(season.label)} MMP Poker Season</h1>
+        <span class="league-tag">${seasonComplete ? "Season Final" : "In Progress"}</span>
+        <span class="meta"><span class="live-dot"></span>${playedEvents.length} of ${playedEvents.length + (finalEvent ? 1 : 0)} events played</span>
+      </div>
+      <div class="kpis" style="margin-top:18px;">
+        <div class="kpi">
+          <div class="kpi-label">${seasonComplete ? "Season Champion" : "Current Leader"}</div>
+          <div class="kpi-value">${escapeHtml(champion.name)} <span class="units">${fmt(champion.ytd)} pts</span></div>
+          <div class="kpi-foot">${champion.win} W · ${champion.runnerUp} RU · ${champion.appearance} appearances</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Last Event Winner</div>
+          <div class="kpi-value">${escapeHtml(lastEventWinner?.name || "—")} <span class="units">${fmt(lastEventWinner?.eventTotal)} pts</span></div>
+          <div class="kpi-foot">${lastEvent.month} ${lastEvent.year} · Host: ${escapeHtml(lastEvent.host || "—")}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">${finalEvent ? "Next Event" : "Next Season"}</div>
+          <div class="kpi-value">${finalEvent ? `${escapeHtml(finalEvent.month)} ${finalEvent.year}` : "Nov 2026"} <span class="units">${finalEvent ? "upcoming" : ""}</span></div>
+          <div class="kpi-foot">${finalEvent ? `Host: ${escapeHtml(finalEvent.host || "TBD")}` : "Host rotation continues"}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-main" style="margin-top: 24px;">
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-head"><h2>Standings · ${escapeHtml(season.label)}</h2><div class="spacer"></div><span class="hint">Tap a row for player profile</span></div>
+          <table class="t" aria-label="Season standings">
+            <thead><tr><th>#</th><th>Player</th><th class="num">Apps</th><th class="num">W</th><th class="num">RU</th><th class="num">Tie</th><th class="num">YTD</th><th>Trend</th></tr></thead>
+            <tbody>${renderPokerStandingsRows(standings)}</tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Schedule</h2><div class="spacer"></div><span class="hint">${season.skippedMonths?.length ? `${season.skippedMonths.length} skipped` : ""}</span></div>
+          <div class="events-strip">${renderPokerScheduleStrip(season)}</div>
+        </div>
+      </div>
+      <aside>
+        ${renderSeasonStorylines("poker", season, standings)}
+      </aside>
+    </section>
+  `;
+  bindStandingsRowClicks("poker");
+}
+
+function renderPokerStandingsRows(standings) {
+  const rankCounts = standings.reduce((m, s) => (m[s.rank] = (m[s.rank]||0)+1, m), {});
+  return standings.map(s => {
+    const isLeader = s.rank === 1;
+    const isZero = (s.ytd || 0) === 0;
+    const tieMark = rankCounts[s.rank] > 1 ? `<span class="rank-tie">T</span>` : "";
+    const playerId = slug(s.name);
+    return `
+      <tr class="is-clickable ${isLeader ? 'is-leader' : ''} ${isZero ? 'is-zero' : ''}" data-player-id="${playerId}">
+        <td><span class="rank-cell"><span class="rank-badge ${medal(s.rank)}">${s.rank}</span>${tieMark}</span></td>
+        <td>
+          <div class="player-cell">
+            <div class="avatar">${initials(s.name)}</div>
+            <div><div class="player-name">${escapeHtml(s.name)}</div></div>
+          </div>
+        </td>
+        <td class="num">${fmt(s.appearance)}</td>
+        <td class="num">${fmt(s.win, {dash:"–"})}</td>
+        <td class="num">${fmt(s.runnerUp, {dash:"–"})}</td>
+        <td class="num">${fmt(s.tie, {dash:"–"})}</td>
+        <td class="num"><strong>${fmt(s.ytd)}</strong></td>
+        <td>${sparkSvg(s.spark)}</td>
+      </tr>`;
+  }).join("");
+}
+
+function renderPokerScheduleStrip(season) {
+  const playedEvents = season.events.filter(e => e.played);
+  const lastIdx = playedEvents.length - 1;
+  return season.events.map((e, i) => {
+    if (e.skipped) return `<div class="event-card is-skipped"><div class="event-month">${e.month} ${e.year}</div><div class="muted small">No game</div></div>`;
+    if (!e.played) return `<a class="event-card is-upcoming" href="#/poker/event/${escapeHtml(e.id)}">
+      <div class="event-month">${e.month} ${e.year}</div>
+      <div class="event-winner">Upcoming</div>
+      <div class="event-host">Host: ${escapeHtml(e.host || "TBD")}</div>
+    </a>`;
+    const winner = (e.results || []).slice().sort((a,b)=> (b.eventTotal||0) - (a.eventTotal||0))[0];
+    const isActive = (i === playedEvents.length - 1) || (i === season.events.indexOf(playedEvents[lastIdx]));
+    return `<a class="event-card ${isActive ? 'is-active' : ''}" href="#/poker/event/${escapeHtml(e.id)}">
+      <div class="event-month">${e.month} ${e.year}</div>
+      <div class="event-winner">${escapeHtml(winner?.name || "—")}</div>
+      <div class="muted small">${fmt(winner?.eventTotal)} pts</div>
+      <div class="event-host">Host: ${escapeHtml(e.host || "—")}</div>
+    </a>`;
+  }).join("");
+}
+
+// ============================ Golf season view ============================
+
+function renderGolfSeasonView(root, season) {
+  const standings = buildGolfSeasonStandings(season);
+  const playedRounds = (season.rounds || []).filter(r => r.played);
+  const lastRound = playedRounds[playedRounds.length - 1];
+  const upcoming = (season.rounds || []).find(r => !r.played);
+  const seasonComplete = !upcoming && lastRound;
+
+  // Last round: highest points + low round
+  const lastRoundAnnotated = lastRound ? annotateGolfRound(lastRound) : [];
+  const roundWinner = lastRoundAnnotated.slice().sort((a,b) => b.points - a.points)[0];
+  const lowRoundEntry = lastRoundAnnotated.find(r => r.lowRound);
+  const leader = standings[0];
+
+  root.innerHTML = `
+    <section>
+      <div class="hero-title">
+        <h1>${escapeHtml(season.label)}</h1>
+        <span class="league-tag">${seasonComplete ? "Season Final" : "In Progress"}</span>
+        <span class="meta"><span class="live-dot"></span>${playedRounds.length} round${playedRounds.length===1?'':'s'} played</span>
+      </div>
+      <div class="kpis" style="margin-top:18px;">
+        <div class="kpi">
+          <div class="kpi-label">${seasonComplete ? "Champion" : "Cup Leader"}</div>
+          <div class="kpi-value">${escapeHtml(leader?.name || "—")} <span class="units">${fmt(leader?.totalPoints)} pts</span></div>
+          <div class="kpi-foot">${leader?.attended || 0} round${(leader?.attended||0)===1?'':'s'} · ${leader?.birdies || 0} birdies${leader?.eagles ? ` · ${leader.eagles} eagles` : ''}${leader?.lowRounds ? ` · ${leader.lowRounds}× low round` : ''}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Last Round Winner</div>
+          <div class="kpi-value">${escapeHtml(roundWinner?.name || "—")} <span class="units">${fmt(roundWinner?.points)} pts</span></div>
+          <div class="kpi-foot">${escapeHtml(lastRound?.course || "—")} · ${formatDateShort(lastRound?.date)}${lowRoundEntry ? ` · low net ${lowRoundEntry.net} (${escapeHtml(lowRoundEntry.name)})` : ''}</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">${upcoming ? "Next Round" : "Season Complete"}</div>
+          <div class="kpi-value">${upcoming ? formatDateShort(upcoming.date) : "—"} <span class="units">${upcoming ? escapeHtml(upcoming.course) : ""}</span></div>
+          <div class="kpi-foot">${upcoming ? `Organizer: ${escapeHtml(upcoming.organizer || "TBD")}${(upcoming.teeTimes||[]).length ? ` · ${upcoming.teeTimes.join(' / ')}` : ''}` : "Off-season"}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-main" style="margin-top: 24px;">
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-head"><h2>Cup Standings</h2><div class="spacer"></div><span class="hint">Highest points wins · awarded Oct 2026</span></div>
+          <table class="t" aria-label="Cup standings">
+            <thead><tr><th>#</th><th>Player</th><th class="num">Rds</th><th class="num">Par</th><th class="num">Bird</th><th class="num">Eagle+</th><th class="num">Low</th><th class="num">Pts</th><th>Trend</th></tr></thead>
+            <tbody>${renderGolfStandingsRows(standings)}</tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Schedule</h2><div class="spacer"></div><span class="hint">${(season.rounds||[]).length} round${(season.rounds||[]).length===1?'':'s'}</span></div>
+          <div class="events-strip">${renderGolfScheduleStrip(season)}</div>
+        </div>
+
+        ${renderScoringRulesPanel()}
+      </div>
+      <aside>
+        ${renderSeasonStorylines("golf", season, standings)}
+      </aside>
+    </section>
+  `;
+  bindStandingsRowClicks("golf");
+}
+
+function renderGolfStandingsRows(standings) {
+  return standings.map(s => {
+    const playerId = s.playerId || slug(s.name);
+    const isLeader = s.rank === 1;
+    const isZero = (s.totalPoints || 0) === 0;
+    const eaglePlus = (s.eagles || 0) + (s.albatrosses || 0) + (s.holeInOnes || 0);
+    return `
+      <tr class="is-clickable ${isLeader ? 'is-leader' : ''} ${isZero ? 'is-zero' : ''}" data-player-id="${playerId}">
+        <td><span class="rank-cell"><span class="rank-badge ${medal(s.rank)}">${s.rank}</span></span></td>
+        <td>
+          <div class="player-cell">
+            <div class="avatar">${initials(s.name)}</div>
+            <div><div class="player-name">${escapeHtml(s.name)}</div></div>
+          </div>
+        </td>
+        <td class="num">${s.attended}</td>
+        <td class="num">${fmt(s.pars, {dash:"–"})}</td>
+        <td class="num">${fmt(s.birdies, {dash:"–"})}</td>
+        <td class="num">${fmt(eaglePlus || null, {dash:"–"})}</td>
+        <td class="num">${fmt(s.lowRounds || null, {dash:"–"})}</td>
+        <td class="num"><strong>${fmt(s.totalPoints)}</strong></td>
+        <td>${sparkSvg(s.sparkPoints || [])}</td>
+      </tr>`;
+  }).join("");
+}
+
+function renderScoringRulesPanel() {
+  const m = DATA.golf?.scoringMatrix;
+  if (!m) return "";
+  const order = ["attendance","par","birdie","eagle","albatross","holeInOne","lowRound"];
+  return `
+    <div class="panel">
+      <div class="panel-head"><h2>How scoring works</h2></div>
+      <table class="t" style="font-size: 13px;">
+        <thead><tr><th class="num" style="width: 80px;">Pts</th><th>Achievement</th><th>Description</th></tr></thead>
+        <tbody>
+          ${order.map(k => m[k] ? `<tr>
+            <td class="num"><strong>+${m[k].points}</strong></td>
+            <td>${escapeHtml(m[k].label)}</td>
+            <td class="muted">${escapeHtml(m[k].description)}</td>
+          </tr>` : "").join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderGolfScheduleStrip(season) {
+  return (season.rounds || []).map((r, i) => {
+    if (!r.played) {
+      return `<a class="event-card is-upcoming" href="#/golf/event/${escapeHtml(r.id)}">
+        <div class="event-month">${formatDateShort(r.date)}</div>
+        <div class="event-winner">${escapeHtml(r.course || "TBD")}</div>
+        <div class="event-host">Organizer: ${escapeHtml(r.organizer || "TBD")}</div>
+        <div class="muted small">${(r.teeTimes||[]).join(' / ') || "—"}</div>
+      </a>`;
+    }
+    const annotated = annotateGolfRound(r);
+    const winner = annotated.slice().sort((a,b) => b.points - a.points)[0];
+    const isLast = i === season.rounds.length - 1 || !season.rounds.slice(i+1).some(x => x.played);
+    return `<a class="event-card ${isLast ? 'is-active' : ''}" href="#/golf/event/${escapeHtml(r.id)}">
+      <div class="event-month">${formatDateShort(r.date)}</div>
+      <div class="event-winner">${escapeHtml(winner?.name || "—")}</div>
+      <div class="muted small">${fmt(winner?.points)} pts</div>
+      <div class="event-host">${escapeHtml(r.course || "—")}</div>
+    </a>`;
+  }).join("");
+}
+
+// ---------- Storylines panel (right rail) ----------
+function renderSeasonStorylines(sport, season, standings) {
+  const items = [];
+  if (sport === "poker") {
+    const champion = standings[0];
+    const t2 = standings.filter(s => s.rank === 2);
+    if (champion) items.push({
+      label: champion.rank === 1 && season.events.every(e => e.played || e.skipped) ? "Champion" : "Leader",
+      headline: `${champion.name} · ${fmt(champion.ytd)} pts`,
+      body: `${champion.win} wins · ${champion.runnerUp} runner-ups · ${champion.appearance} events played`,
+    });
+    if (t2.length > 1) items.push({
+      label: "Tied for 2nd",
+      headline: t2.map(p => p.name).join(" / ") + ` · ${fmt(t2[0].ytd)} pts`,
+      body: `Settled level — ${t2.length}-way tie at second.`,
+    });
+  } else {
+    const leader = standings[0];
+    if (leader) items.push({
+      label: season.rounds?.every(r => r.played) ? "Champion" : "Cup Leader",
+      headline: `${leader.name} · ${fmt(leader.totalPoints)} pts`,
+      body: `${leader.attended} round${leader.attended===1?'':'s'} · ${leader.birdies} birdie${leader.birdies===1?'':'s'}${leader.eagles ? ` · ${leader.eagles} eagle${leader.eagles===1?'':'s'}` : ''}${leader.lowRounds ? ` · ${leader.lowRounds}× low round` : ''}`,
+    });
+    // Big-points round
+    let bestSingle = null;
+    for (const r of (season.rounds || [])) {
+      if (!r.played) continue;
+      const annotated = annotateGolfRound(r);
+      const top = annotated.slice().sort((a,b) => b.points - a.points)[0];
+      if (top && (!bestSingle || top.points > bestSingle.points)) {
+        bestSingle = { ...top, course: r.course, date: r.date };
+      }
+    }
+    if (bestSingle && bestSingle.points > 0) items.push({
+      label: "Round of the Season",
+      headline: `${bestSingle.name} · ${fmt(bestSingle.points)} pts`,
+      body: `${formatDateShort(bestSingle.date)} at ${bestSingle.course}${bestSingle.lowRound ? ' · low round' : ''}.`,
+    });
+  }
+  if (!items.length) return "";
+  return `<div class="panel"><div class="panel-head"><h2>Storylines</h2></div>${
+    items.map(i => `<div class="insight">
+      <div class="insight-label">${escapeHtml(i.label)}</div>
+      <div class="insight-headline">${escapeHtml(i.headline)}</div>
+      <div class="insight-body">${escapeHtml(i.body)}</div>
+    </div>`).join("")
+  }</div>`;
+}
+
+// ============================ Event / Round detail ============================
+function renderEventView(root, sport, eventId) {
+  const data = DATA[sport];
+  if (!data) return root.innerHTML = "<p>No data.</p>";
+  let foundSeason = null, foundEvent = null;
+  for (const season of data.seasons) {
+    const e = (season[SPORT_CONFIG[sport].eventListKey] || []).find(x => x.id === eventId);
+    if (e) { foundSeason = season; foundEvent = e; break; }
+  }
+  if (!foundEvent) return root.innerHTML = `<div class="empty"><div class="center"><h1>Event not found</h1><p>No ${sport} event with id <code>${escapeHtml(eventId)}</code>.</p></div></div>`;
+
+  if (sport === "poker") return renderPokerEventDetail(root, foundSeason, foundEvent);
+  if (sport === "golf")  return renderGolfRoundDetail(root, foundSeason, foundEvent);
+}
+
+function renderPokerEventDetail(root, season, event) {
+  const results = (event.results || []).slice().sort((a,b) => (b.eventTotal||0) - (a.eventTotal||0));
+  const winner = results[0];
+  const totalPts = (event.totals?.eventTotal) ?? results.reduce((s,r) => s + (r.eventTotal||0), 0);
+  const playerCount = results.filter(r => (r.appearance || 0) > 0).length;
+  const tieRow = results.find(r => (r.tie || 0) > 0);
+
+  root.innerHTML = `
+    <div class="breadcrumb"><a href="#/poker/${escapeHtml(season.id)}">${escapeHtml(season.label)}</a> · ${escapeHtml(event.month)} ${event.year}</div>
+    <div class="hero-title">
+      <h1>${escapeHtml(event.month)} ${event.year}</h1>
+      <span class="league-tag">${event.played ? "Played" : "Upcoming"}</span>
+      <span class="meta">Host: ${escapeHtml(event.host || "—")} · ${playerCount} players · ${fmt(totalPts)} pts awarded</span>
+    </div>
+    <div class="kpis" style="margin-top: 18px;">
+      <div class="kpi"><div class="kpi-label">Event Winner</div><div class="kpi-value">${escapeHtml(winner?.name || "—")} <span class="units">${fmt(winner?.eventTotal)} pts</span></div><div class="kpi-foot">YTD after this event: ${fmt(winner?.ytdTotal)}</div></div>
+      <div class="kpi"><div class="kpi-label">Field</div><div class="kpi-value">${playerCount} <span class="units">in</span></div><div class="kpi-foot">${results.length - playerCount} did not play</div></div>
+      <div class="kpi"><div class="kpi-label">Ties</div><div class="kpi-value">${tieRow ? "Yes" : "—"}</div><div class="kpi-foot">${tieRow ? "Decimal points indicate tie split" : "No tie splits"}</div></div>
+    </div>
+    <div class="panel" style="margin-top: 24px;">
+      <div class="panel-head"><h2>Results</h2></div>
+      <table class="t">
+        <thead><tr><th>Player</th><th class="num">App</th><th class="num">Win</th><th class="num">Tie</th><th class="num">RU</th><th class="num">Event</th><th class="num">YTD</th><th class="num">Rank</th></tr></thead>
+        <tbody>${results.map(r => {
+          const dnp = (r.appearance || 0) === 0 && (r.eventTotal || 0) === 0;
+          const cls = dnp ? "is-zero" : "";
+          const playerId = slug(r.name);
+          return `<tr class="is-clickable ${cls}" data-player-id="${playerId}">
+            <td>${escapeHtml(r.name)}</td>
+            <td class="num">${fmt(r.appearance, {dash:"0"})}</td>
+            <td class="num">${fmt(r.win, {dash:"–"})}</td>
+            <td class="num">${fmt(r.tie, {dash:"–"})}</td>
+            <td class="num">${fmt(r.runnerUp, {dash:"–"})}</td>
+            <td class="num"><strong>${fmt(r.eventTotal)}</strong></td>
+            <td class="num">${fmt(r.ytdTotal)}</td>
+            <td class="num">${fmt(r.rank, {dash:"—"})}</td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table>
+    </div>
+  `;
+  bindStandingsRowClicks("poker");
+}
+
+function renderGolfRoundDetail(root, season, round) {
+  if (!round.played) {
+    root.innerHTML = `
+      <div class="breadcrumb"><a href="#/golf/${escapeHtml(season.id)}">${escapeHtml(season.label)}</a> · ${escapeHtml(round.course || "Round")}</div>
+      <div class="empty">
+        <div class="center">
+          <div class="upper">Upcoming round</div>
+          <h1>${escapeHtml(round.course || "Round")} · ${formatDateLong(round.date)}</h1>
+          <p>Organizer: <strong>${escapeHtml(round.organizer || "TBD")}</strong>${(round.teeTimes||[]).length ? ` · Tee times <strong>${round.teeTimes.join(" / ")}</strong>` : ''}.</p>
+          <p>Results will appear here once entered.</p>
+          <p style="margin-top: 24px;"><a class="enter-scores" href="score-entry.html">Enter scores for this round</a></p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const annotated = annotateGolfRound(round).slice().sort((a,b) => b.points - a.points);
+  const winner = annotated[0];
+  const lowRoundEntry = annotated.find(r => r.lowRound);
+  const totalPts = annotated.reduce((s, r) => s + r.points, 0);
+  const attendedCount = annotated.filter(r => r.attended).length;
+
+  root.innerHTML = `
+    <div class="breadcrumb"><a href="#/golf/${escapeHtml(season.id)}">${escapeHtml(season.label)}</a> · ${escapeHtml(round.course || "Round")}</div>
+    <div class="hero-title">
+      <h1>${escapeHtml(round.course || "Round")} · ${formatDateLong(round.date)}</h1>
+      <span class="league-tag">Played</span>
+      <span class="meta">Organizer: ${escapeHtml(round.organizer || "—")} · ${attendedCount} player${attendedCount===1?'':'s'} · ${fmt(totalPts)} pts awarded</span>
+    </div>
+    <div class="kpis" style="margin-top: 18px;">
+      <div class="kpi"><div class="kpi-label">Round Winner</div><div class="kpi-value">${escapeHtml(winner?.name || "—")} <span class="units">${fmt(winner?.points)} pts</span></div><div class="kpi-foot">Gross ${fmt(winner?.gross)} · Net ${fmt(winner?.net)}${winner?.lowRound ? ' · low round' : ''}</div></div>
+      <div class="kpi"><div class="kpi-label">Low Round (Net)</div><div class="kpi-value">${escapeHtml(lowRoundEntry?.name || "—")} <span class="units">${fmt(lowRoundEntry?.net)}</span></div><div class="kpi-foot">${lowRoundEntry ? `+3 pts · gross ${fmt(lowRoundEntry.gross)} − HCP ${fmt(lowRoundEntry.handicap)}` : 'No 18-hole net qualified'}</div></div>
+      <div class="kpi"><div class="kpi-label">Tee Times</div><div class="kpi-value">${(round.teeTimes||[]).join(" / ") || "—"}</div><div class="kpi-foot">${escapeHtml(round.notes || "")}</div></div>
+    </div>
+    <div class="panel" style="margin-top: 24px;">
+      <div class="panel-head"><h2>Scorecard</h2><div class="spacer"></div><span class="hint">Net = Gross − HCP · Low Round = lowest net (18 holes)</span></div>
+      <table class="t">
+        <thead><tr>
+          <th>Player</th>
+          <th class="num">Holes</th>
+          <th class="num">Gross</th>
+          <th class="num">HCP</th>
+          <th class="num">Net</th>
+          <th class="num">Par</th>
+          <th class="num">Bird</th>
+          <th class="num">Eag</th>
+          <th class="num">Alb</th>
+          <th class="num">HIO</th>
+          <th class="num">Low</th>
+          <th class="num">Pts</th>
+        </tr></thead>
+        <tbody>${annotated.map(r => {
+          const playerId = r.playerId || slug(r.name);
+          const cls = r.attended ? "" : "is-zero";
+          return `<tr class="is-clickable ${cls}" data-player-id="${playerId}">
+            <td>${escapeHtml(r.name)}</td>
+            <td class="num">${r.attended ? fmt(r.holesPlayed) : "DNP"}</td>
+            <td class="num">${fmt(r.gross)}</td>
+            <td class="num">${fmt(r.handicap)}</td>
+            <td class="num">${fmt(r.net)}</td>
+            <td class="num">${fmt(r.pars, {dash:"–"})}</td>
+            <td class="num">${fmt(r.birdies, {dash:"–"})}</td>
+            <td class="num">${fmt(r.eagles, {dash:"–"})}</td>
+            <td class="num">${fmt(r.albatrosses, {dash:"–"})}</td>
+            <td class="num">${fmt(r.holeInOnes, {dash:"–"})}</td>
+            <td class="num">${r.lowRound ? "✓" : "–"}</td>
+            <td class="num"><strong>${fmt(r.points)}</strong></td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table>
+    </div>
+    ${renderScoringRulesPanel()}
+  `;
+  bindStandingsRowClicks("golf");
+}
+
+// ============================ Player profile ============================
+function renderPlayerView(root, sport, playerId) {
+  const seasons = buildPlayerProfile(sport, playerId);
+  if (!seasons) {
+    root.innerHTML = `<div class="empty"><div class="center"><h1>No record found</h1><p>No ${sport} appearances on file for that player.</p></div></div>`;
+    return;
+  }
+  const playerName = seasons[0].events[0]?.result?.name || "Player";
+  const cfg = SPORT_CONFIG[sport];
+
+  let careerHtml = "";
+  if (sport === "poker") {
+    const totals = seasons.reduce((acc, s) => {
+      acc.total += s.summary?.ytd || 0;
+      acc.wins += s.summary?.win || 0;
+      acc.runnerUps += s.summary?.runnerUp || 0;
+      acc.events += s.summary?.appearance || 0;
+      if (s.summary?.rank === 1) acc.titles++;
+      return acc;
+    }, { total: 0, wins: 0, runnerUps: 0, events: 0, titles: 0 });
+    careerHtml = `
+      <div class="profile-stats">
+        <div class="kpi"><div class="kpi-label">Career Pts</div><div class="kpi-value">${fmt(totals.total)}</div><div class="kpi-foot">${seasons.length} seasons</div></div>
+        <div class="kpi"><div class="kpi-label">Wins</div><div class="kpi-value">${totals.wins}</div><div class="kpi-foot">${totals.runnerUps} runner-ups</div></div>
+        <div class="kpi"><div class="kpi-label">Events</div><div class="kpi-value">${totals.events}</div><div class="kpi-foot">across all seasons</div></div>
+        <div class="kpi"><div class="kpi-label">Titles</div><div class="kpi-value">${totals.titles}</div><div class="kpi-foot">season wins</div></div>
+      </div>`;
+  } else {
+    const totals = seasons.reduce((acc, s) => {
+      acc.attended += s.summary?.attended || 0;
+      acc.total += s.summary?.totalPoints || 0;
+      acc.birdies += s.summary?.birdies || 0;
+      acc.eagles += (s.summary?.eagles || 0) + (s.summary?.albatrosses || 0) + (s.summary?.holeInOnes || 0);
+      acc.lowRounds += s.summary?.lowRounds || 0;
+      if (s.summary?.rank === 1) acc.titles++;
+      return acc;
+    }, { attended: 0, total: 0, birdies: 0, eagles: 0, lowRounds: 0, titles: 0 });
+    careerHtml = `
+      <div class="profile-stats">
+        <div class="kpi"><div class="kpi-label">Career Pts</div><div class="kpi-value">${fmt(totals.total)}</div><div class="kpi-foot">${totals.attended} round${totals.attended===1?'':'s'} played</div></div>
+        <div class="kpi"><div class="kpi-label">Birdies+</div><div class="kpi-value">${totals.birdies + totals.eagles}</div><div class="kpi-foot">${totals.birdies} bird · ${totals.eagles} eagle+</div></div>
+        <div class="kpi"><div class="kpi-label">Low Rounds</div><div class="kpi-value">${totals.lowRounds}</div><div class="kpi-foot">+3 each</div></div>
+        <div class="kpi"><div class="kpi-label">Titles</div><div class="kpi-value">${totals.titles}</div><div class="kpi-foot">season wins</div></div>
+      </div>`;
+  }
+
+  const seasonRows = seasons.map(s => {
+    if (sport === "poker") {
+      const sm = s.summary || {};
+      return `<tr><td><a href="#/poker/${escapeHtml(s.seasonId)}">${escapeHtml(s.label)}</a></td>
+        <td class="num">${fmt(sm.appearance, {dash:"0"})}</td>
+        <td class="num">${fmt(sm.win, {dash:"0"})}</td>
+        <td class="num">${fmt(sm.runnerUp, {dash:"0"})}</td>
+        <td class="num">${fmt(sm.tie, {dash:"0"})}</td>
+        <td class="num"><strong>${fmt(sm.ytd)}</strong></td>
+        <td class="num">${fmt(sm.rank, {dash:"—"})}</td></tr>`;
+    } else {
+      const sm = s.summary || {};
+      const eaglePlus = (sm.eagles||0) + (sm.albatrosses||0) + (sm.holeInOnes||0);
+      return `<tr><td><a href="#/golf/${escapeHtml(s.seasonId)}">${escapeHtml(s.label)}</a></td>
+        <td class="num">${fmt(sm.attended, {dash:"0"})}</td>
+        <td class="num">${fmt(sm.pars, {dash:"0"})}</td>
+        <td class="num">${fmt(sm.birdies, {dash:"0"})}</td>
+        <td class="num">${fmt(eaglePlus || null, {dash:"0"})}</td>
+        <td class="num">${fmt(sm.lowRounds, {dash:"0"})}</td>
+        <td class="num"><strong>${fmt(sm.totalPoints)}</strong></td>
+        <td class="num">${fmt(sm.rank, {dash:"—"})}</td></tr>`;
+    }
+  }).join("");
+
+  root.innerHTML = `
+    <div class="breadcrumb"><a href="#/${sport}">${escapeHtml(SPORT_CONFIG[sport].label)}</a> · Player</div>
+    <div class="profile-head">
+      <div class="avatar is-large">${initials(playerName)}</div>
+      <div>
+        <h1 style="margin:0; font-size:30px;">${escapeHtml(playerName)}</h1>
+        <div class="muted small">${seasons.length} ${SPORT_CONFIG[sport].label} season${seasons.length===1?'':'s'} on record</div>
+      </div>
+    </div>
+    ${careerHtml}
+    <div class="panel" style="margin-top: 24px;">
+      <div class="panel-head"><h2>Season-by-season</h2></div>
+      <table class="t">
+        <thead>${sport === "poker"
+          ? `<tr><th>Season</th><th class="num">Apps</th><th class="num">W</th><th class="num">RU</th><th class="num">Tie</th><th class="num">YTD</th><th class="num">Finish</th></tr>`
+          : `<tr><th>Season</th><th class="num">Rds</th><th class="num">Par</th><th class="num">Bird</th><th class="num">Eagle+</th><th class="num">Low</th><th class="num">Pts</th><th class="num">Finish</th></tr>`
+        }</thead>
+        <tbody>${seasonRows}</tbody>
+      </table>
+    </div>
+    <div class="panel" style="margin-top: 16px;">
+      <div class="panel-head"><h2>Every ${cfg.eventLabel}</h2><div class="spacer"></div><span class="hint">Tap a row to open the ${cfg.eventLabel.toLowerCase()}</span></div>
+      <table class="t">
+        <thead>${sport === "poker"
+          ? `<tr><th>${cfg.eventLabel}</th><th>Host</th><th class="num">Event</th><th class="num">YTD</th><th class="num">Rank</th></tr>`
+          : `<tr><th>${cfg.eventLabel}</th><th>Course</th><th class="num">Gross</th><th class="num">Par</th><th class="num">Bird+</th><th class="num">Pts</th></tr>`
+        }</thead>
+        <tbody>${seasons.flatMap(s => s.events.map(({event, result}) => {
+          if (sport === "poker") {
+            return `<tr class="is-clickable" data-event-id="${escapeHtml(event.id)}">
+              <td>${escapeHtml(event.month)} ${event.year}</td>
+              <td class="muted">${escapeHtml(event.host || "—")}</td>
+              <td class="num"><strong>${fmt(result.eventTotal)}</strong></td>
+              <td class="num">${fmt(result.ytdTotal)}</td>
+              <td class="num">${fmt(result.rank, {dash:"—"})}</td>
+            </tr>`;
+          } else {
+            // Compute per-round points for display
+            const annotated = annotateGolfRound(event);
+            const me = annotated.find(x => (x.playerId || slug(x.name)) === (result.playerId || slug(result.name)));
+            const birdPlus = (me?.birdies||0) + (me?.eagles||0) + (me?.albatrosses||0) + (me?.holeInOnes||0);
+            return `<tr class="is-clickable" data-event-id="${escapeHtml(event.id)}">
+              <td>${formatDateShort(event.date)}</td>
+              <td class="muted">${escapeHtml(event.course || "—")}</td>
+              <td class="num">${fmt(me?.gross)}</td>
+              <td class="num">${fmt(me?.pars || null, {dash:"–"})}</td>
+              <td class="num">${fmt(birdPlus || null, {dash:"–"})}</td>
+              <td class="num"><strong>${fmt(me?.points)}</strong></td>
+            </tr>`;
+          }
+        })).join("")}</tbody>
+      </table>
+    </div>
+  `;
+  $$("[data-event-id]").forEach(tr => tr.addEventListener("click", () => navigate(`#/${sport}/event/${tr.dataset.eventId}`)));
+}
+
+// ============================ All-time ============================
+function renderAllTimeView(root, sport) {
+  const list = buildAllTime(sport);
+  if (!list.length) {
+    root.innerHTML = `<div class="empty"><div class="center"><h1>No all-time data yet</h1><p>Once a season's results are in, this view fills out automatically.</p></div></div>`;
+    return;
+  }
+  const cfg = SPORT_CONFIG[sport];
+  let rank = 0, prev = null;
+  list.forEach((p, i) => {
+    const k = p.total;
+    if (k !== prev) { rank = i + 1; prev = k; }
+    p.rank = rank;
+  });
+
+  root.innerHTML = `
+    <div class="breadcrumb"><a href="#/${sport}">${escapeHtml(cfg.label)}</a> · All-time</div>
+    <div class="hero-title">
+      <h1>All-Time ${escapeHtml(cfg.label)}</h1>
+      <span class="league-tag">Career</span>
+      <span class="meta">${list.length} players · ${(DATA[sport]?.seasons || []).length} seasons</span>
+    </div>
+    <div class="panel" style="margin-top: 18px;">
+      <div class="panel-head"><h2>All-Time Leaderboard</h2></div>
+      <table class="t">
+        <thead>${sport === "poker"
+          ? `<tr><th>#</th><th>Player</th><th class="num">Seasons</th><th class="num">Wins</th><th class="num">RU</th><th class="num">Ties</th><th class="num">Apps</th><th class="num">Titles</th><th class="num">Career</th></tr>`
+          : `<tr><th>#</th><th>Player</th><th class="num">Seasons</th><th class="num">Rounds</th><th class="num">Bird+</th><th class="num">Low</th><th class="num">Titles</th><th class="num">Career</th></tr>`
+        }</thead>
+        <tbody>${list.map(p => {
+          const playerId = slug(p.name);
+          const isLeader = p.rank === 1;
+          if (sport === "poker") {
+            return `<tr class="is-clickable ${isLeader ? 'is-leader' : ''}" data-player-id="${playerId}">
+              <td><span class="rank-cell"><span class="rank-badge ${medal(p.rank)}">${p.rank}</span></span></td>
+              <td><div class="player-cell"><div class="avatar">${initials(p.name)}</div><div class="player-name">${escapeHtml(p.name)}</div></div></td>
+              <td class="num">${p.seasons}</td>
+              <td class="num">${p.wins}</td>
+              <td class="num">${p.runnerUps}</td>
+              <td class="num">${p.ties}</td>
+              <td class="num">${p.apps}</td>
+              <td class="num">${p.titles || "—"}</td>
+              <td class="num"><strong>${fmt(p.total)}</strong></td>
+            </tr>`;
+          } else {
+            const eaglePlus = (p.eagles||0) + (p.albatrosses||0) + (p.holeInOnes||0);
+            return `<tr class="is-clickable ${isLeader ? 'is-leader' : ''}" data-player-id="${playerId}">
+              <td><span class="rank-cell"><span class="rank-badge ${medal(p.rank)}">${p.rank}</span></span></td>
+              <td><div class="player-cell"><div class="avatar">${initials(p.name)}</div><div class="player-name">${escapeHtml(p.name)}</div></div></td>
+              <td class="num">${p.seasons}</td>
+              <td class="num">${p.attended}</td>
+              <td class="num">${(p.birdies||0) + eaglePlus || "—"}</td>
+              <td class="num">${p.lowRounds || "—"}</td>
+              <td class="num">${p.titles || "—"}</td>
+              <td class="num"><strong>${fmt(p.total)}</strong></td>
+            </tr>`;
+          }
+        }).join("")}</tbody>
+      </table>
+    </div>
+  `;
+  bindStandingsRowClicks(sport);
+}
+
+// ============================ Empty state ============================
+function renderEmptyState(root, sport, season) {
+  if (sport !== "golf") {
+    root.innerHTML = `<div class="empty"><div class="center"><h1>No data yet</h1><p>Once results are entered, this page comes alive.</p></div></div>`;
+    return;
+  }
+  // Golf with no rounds played: show schedule
+  const rounds = (season?.rounds || []);
+  const upcoming = rounds.find(r => !r.played) || rounds[0];
+  const scheduleRows = rounds.length
+    ? rounds.map((r, i) => `
+        <div class="sched-row">
+          <span class="label">Round ${i + 1}</span>
+          <span class="sub">${formatDateShort(r.date)} · ${escapeHtml(r.course || "TBD")}${r.organizer ? ` · ${escapeHtml(r.organizer)}` : ''}${(r.teeTimes||[]).length ? ` · ${r.teeTimes.join(' / ')}` : ''}</span>
+        </div>`).join("")
+    : `<div class="sched-row tbd"><span>No rounds scheduled</span><span>TBD</span></div>`;
+
+  root.innerHTML = `
+    <div class="empty">
+      <div class="center">
+        <div class="upper">${escapeHtml(season?.label || "Links Cup")}</div>
+        <h1>${upcoming ? `Round 1 · ${escapeHtml(upcoming.course || "TBD")} · ${formatDateLong(upcoming.date)}` : "First round TBD"}</h1>
+        <p>${upcoming ? `Organized by <strong>${escapeHtml(upcoming.organizer || "TBD")}</strong>${(upcoming.teeTimes||[]).length ? ` · Tee times <strong>${upcoming.teeTimes.join(" / ")}</strong>` : ''}.` : ''} Leaderboard wakes up the moment the first card is entered.</p>
+        <p style="margin-top: 24px;"><a class="enter-scores" href="score-entry.html">Enter scores</a></p>
+      </div>
+      <div class="schedule">
+        <div class="sched-head">Schedule</div>
+        ${scheduleRows}
+      </div>
+    </div>
+    <div style="margin-top: 24px;">
+      ${renderScoringRulesPanel()}
+    </div>
+  `;
+}
+
+// ---------- Row click bindings ----------
+function bindStandingsRowClicks(sport) {
+  $$("[data-player-id]").forEach(tr => {
+    tr.addEventListener("click", (e) => {
+      // ignore clicks on links inside the row
+      if (e.target.closest("a")) return;
+      navigate(`#/${sport}/player/${tr.dataset.playerId}`);
+    });
+  });
+}
+
+// ============================ Bootstrap ============================
+async function init() {
+  await loadAll();
+  $("#footer-date").textContent = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  window.addEventListener("hashchange", dispatch);
+  if (!location.hash || location.hash === "#" || location.hash === "#/") {
+    location.hash = `#/${inSeasonSport()}`;
+  } else {
+    dispatch();
+  }
+}
+init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "sport": "golf",
+  "_schema": {
+    "round": "id, date (ISO), course, organizer, teeTimes[], played, notes?, results[]",
+    "result": "playerId, name, attended (bool), holesPlayed (9|18|null), gross (int|null), handicap (int|null), pars, birdies, eagles, albatrosses, holeInOnes. Net is derived = gross - handicap.",
+    "scoring": "Points per round = (attended?5:0) + pars*1 + birdies*3 + eagles*10 + albatrosses*20 + holeInOnes*25 + (lowRound?3:0). Pars/birdies/etc. are RAW achievements — handicap does not adjust them. Low Round: lowest NET (gross - handicap) among players with holesPlayed=18 and handicap set. Ties on low round: each tied player gets 3 (not split).",
+    "terminology": "Golf rounds use 'organizer'. Poker events use 'host'.",
+    "standings": "Computed client-side: highest cumulative points wins."
+  },
+  "scoringMatrix": {
+    "attendance":  { "points": 5,  "label": "Attendance",  "description": "Showing up and playing at least 9 holes of an MMP event" },
+    "par":         { "points": 1,  "label": "Par",         "description": "Even strokes with the alotted strokes for the hole" },
+    "birdie":      { "points": 3,  "label": "Birdie",      "description": "1 stroke under the alotted strokes for the hole" },
+    "eagle":       { "points": 10, "label": "Eagle",       "description": "2 strokes under the alotted strokes for the hole" },
+    "albatross":   { "points": 20, "label": "Albatross",   "description": "3 strokes under the alotted strokes for the hole" },
+    "holeInOne":   { "points": 25, "label": "Hole in One", "description": "Self-explanatory" },
+    "lowRound":    { "points": 3,  "label": "Low Round",   "description": "Lowest net score (gross − handicap) for the 18-hole session" }
+  },
+  "seasons": [
+    {
+      "id": "2026",
+      "label": "2026 Links Cup",
+      "rounds": [
+        {
+          "id": "2026-r001",
+          "date": "2026-05-03",
+          "course": "Kedron Dells",
+          "organizer": "Harish",
+          "teeTimes": ["10:06", "10:16"],
+          "played": false,
+          "results": []
+        }
+      ],
+      "finalStandings": []
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+# MMP Challenge Cup — Apache config (optional)
+# Drop this in the same folder as index.html.
+
+AddType application/json .json
+
+# Short cache for data — you'll be updating these often during the season
+<IfModule mod_headers.c>
+  <FilesMatch "\.(json)$">
+    Header set Cache-Control "max-age=300, must-revalidate"
+  </FilesMatch>
+
+  # Even shorter for HTML, since pages get redeployed
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "max-age=60"
+  </FilesMatch>
+
+  # Keep score-entry out of search engines
+  <Files "score-entry.html">
+    Header set X-Robots-Tag "noindex, nofollow"
+  </Files>
+</IfModule>
+
+# Block direct access to source artifacts if they ever leak onto the server
+<FilesMatch "\.(xlsx|md|py)$">
+  Require all denied
+</FilesMatch>
+
+# Friendly default
+DirectoryIndex index.html

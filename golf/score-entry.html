@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<title>MMP Score Entry · Golf Round</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/components.css">
+<link rel="stylesheet" href="./score-entry.css">
+</head>
+<body class="theme-links">
+<main class="shell">
+
+  <header class="top">
+    <a class="back-link" href="index.html">← Back to standings</a>
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        MMP Score Entry
+        <span class="brand-sub">Enter a round. Save. Replace <code>data/golf.json</code>.</span>
+      </div>
+    </div>
+    <h1>New round</h1>
+    <p class="lede">Toggle who played, enter their gross + count of pars / birdies / eagles, etc. Points compute live. Low round (lowest 18-hole gross) is auto-awarded.</p>
+  </header>
+
+  <details class="legend">
+    <summary>Scoring rules</summary>
+    <div class="legend-grid" id="legend-grid"></div>
+    <p class="hint" style="margin-top:10px;">Low-round ties: every player with the lowest 18-hole gross gets the full 3 points (not split).</p>
+  </details>
+
+  <div class="card">
+    <h2>Round details</h2>
+    <div class="field-row">
+      <label class="field"><span>Date</span><input type="date" id="f-date" required></label>
+      <label class="field"><span>Course</span><input type="text" id="f-course" placeholder="e.g. Kedron Dells" required></label>
+    </div>
+    <div class="field-row">
+      <label class="field"><span>Organizer</span><select id="f-organizer"><option value="">—</option></select></label>
+      <label class="field"><span>Tee times <span class="hint" style="margin:0;">(comma-separated)</span></span><input type="text" id="f-tees" placeholder="10:06, 10:16"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Scores</h2>
+    <div id="player-cards"></div>
+    <p class="hint">Tap "Played" / "DNP" to toggle attendance. Empty count fields are treated as 0.</p>
+  </div>
+
+  <div class="card">
+    <h2>Round summary</h2>
+    <div class="summary-grid">
+      <div class="summary-tile"><div class="lbl">Played</div><div class="val" id="sum-attended">0</div><div class="sub">of 11</div></div>
+      <div class="summary-tile"><div class="lbl">Low round</div><div class="val" id="sum-low-round">—</div><div class="sub" id="sum-low-round-name">—</div></div>
+      <div class="summary-tile"><div class="lbl">Total awarded</div><div class="val" id="sum-total-pts">0</div><div class="sub">points this round</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Save</h2>
+    <div class="actions">
+      <button class="btn primary" id="btn-save">Save round &amp; download golf.json</button>
+      <button class="btn" id="btn-copy">Copy JSON to clipboard</button>
+      <button class="btn ghost" id="btn-clear">Clear scores</button>
+    </div>
+    <div class="status" id="status"></div>
+    <details class="preview">
+      <summary>Preview generated JSON</summary>
+      <pre id="preview"></pre>
+    </details>
+    <p class="hint" style="margin-top:14px;">Round details (date, course, organizer, tees) persist in your browser between visits to this page so you don't have to retype them.</p>
+  </div>
+
+</main>
+
+<script>
+  /* ------------------------------------------------------------------
+     MMP Challenge Cup — golf score entry, points-based scoring.
+     Reads data/golf.json + data/players.json on load.
+     Falls back to a built-in roster when opened via file://.
+     ------------------------------------------------------------------ */
+  const FALLBACK_ROSTER = [
+    { id: "jas",     name: "Jas",     currentHandicap: 18, sports: ["golf"] },
+    { id: "junior",  name: "Junior",  currentHandicap: 19, sports: ["golf","poker"] },
+    { id: "harish",  name: "Harish",  currentHandicap: 20, sports: ["golf","poker"] },
+    { id: "kerwin",  name: "Kerwin",  currentHandicap: 22, sports: ["golf","poker"] },
+    { id: "seymour", name: "Seymour", currentHandicap: 23, sports: ["golf","poker"] },
+    { id: "tony",    name: "Tony",    currentHandicap: 26, sports: ["golf","poker"] },
+    { id: "lorenzo", name: "Lorenzo", currentHandicap: 34, sports: ["golf","poker"] },
+    { id: "neave",   name: "Neave",   currentHandicap: 36, sports: ["golf","poker"] },
+    { id: "chris",   name: "Chris",   currentHandicap: 39, sports: ["golf","poker"] },
+    { id: "gary",    name: "Gary",    currentHandicap: 44, sports: ["golf","poker"] },
+    { id: "wayne",   name: "Wayne",   currentHandicap: 56, sports: ["golf","poker"] },
+  ];
+  const FALLBACK_GOLF = {
+    sport: "golf",
+    scoringMatrix: {
+      attendance: { points: 5,  label: "Attendance",  description: "Showing up and playing at least 9 holes of an MMP event" },
+      par:        { points: 1,  label: "Par",         description: "Even strokes with the alotted strokes for the hole" },
+      birdie:     { points: 3,  label: "Birdie",      description: "1 stroke under the alotted strokes for the hole" },
+      eagle:      { points: 10, label: "Eagle",       description: "2 strokes under the alotted strokes for the hole" },
+      albatross:  { points: 20, label: "Albatross",   description: "3 strokes under the alotted strokes for the hole" },
+      holeInOne:  { points: 25, label: "Hole in One", description: "Self-explanatory" },
+      lowRound:   { points: 3,  label: "Low Round",   description: "Lowest net score (gross − handicap) for the 18-hole session" },
+    },
+    seasons: [{
+      id: "2026", label: "2026 Links Cup",
+      rounds: [{ id: "2026-r001", date: "2026-05-03", course: "Kedron Dells", organizer: "Harish", teeTimes: ["10:06", "10:16"], played: false, results: [] }],
+      finalStandings: []
+    }]
+  };
+
+  const POINTS = { attendance: 5, par: 1, birdie: 3, eagle: 10, albatross: 20, holeInOne: 25, lowRound: 3 };
+  const COUNT_FIELDS = [
+    { key: "pars",        label: "Pars",      pts: 1 },
+    { key: "birdies",     label: "Birdies",   pts: 3 },
+    { key: "eagles",      label: "Eagles",    pts: 10 },
+    { key: "albatrosses", label: "Albatross", pts: 20 },
+    { key: "holeInOnes",  label: "HIO",       pts: 25 },
+  ];
+  const $  = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+  const initials = (n) => (n||"").split(" ").map(s => s[0]).slice(0,2).join("").toUpperCase();
+  const ROUND_DETAILS_KEY = "mmp.golf.lastRoundDetails";
+
+  let players = [];
+  let golfData = null;
+  let scoringMatrix = null;
+  let saveCount = 0;
+
+  async function tryFetch(path, fallback) {
+    try {
+      const r = await fetch(path, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      return await r.json();
+    } catch { return fallback; }
+  }
+
+  async function init() {
+    const [pj, gj] = await Promise.all([
+      tryFetch("data/players.json", { players: FALLBACK_ROSTER }),
+      tryFetch("data/golf.json", FALLBACK_GOLF),
+    ]);
+    players = (pj.players || [])
+      .filter(p => !p.sports || p.sports.includes("golf"))
+      .map(p => ({ ...p }));
+    golfData = gj;
+    scoringMatrix = gj.scoringMatrix || FALLBACK_GOLF.scoringMatrix;
+
+    renderLegend();
+
+    // organizer dropdown
+    const orgSel = $("#f-organizer");
+    players.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.name; opt.textContent = p.name;
+      orgSel.appendChild(opt);
+    });
+
+    // Pre-populate from upcoming round, falling back to last entered details
+    const upcoming = golfData.seasons[0]?.rounds?.find(r => !r.played);
+    const lastDetails = JSON.parse(localStorage.getItem(ROUND_DETAILS_KEY) || "null");
+    if (upcoming) {
+      $("#f-date").value = upcoming.date;
+      $("#f-course").value = upcoming.course || "";
+      $("#f-tees").value = (upcoming.teeTimes || []).join(", ");
+      if (upcoming.organizer) orgSel.value = upcoming.organizer;
+    } else if (lastDetails) {
+      $("#f-date").value = lastDetails.date || "";
+      $("#f-course").value = lastDetails.course || "";
+      $("#f-tees").value = lastDetails.tees || "";
+      if (lastDetails.organizer) orgSel.value = lastDetails.organizer;
+    }
+
+    renderPlayerCards();
+    bindEvents();
+    refreshAll();
+  }
+
+  function renderLegend() {
+    const order = ["attendance","par","birdie","eagle","albatross","holeInOne","lowRound"];
+    $("#legend-grid").innerHTML = order.map(k => {
+      const m = scoringMatrix[k]; if (!m) return "";
+      return `<div class="legend-row">
+        <span class="pts">+${m.points}</span>
+        <span class="name">${m.label}</span>
+        <span class="desc">${m.description}</span>
+      </div>`;
+    }).join("");
+  }
+
+  function renderPlayerCards() {
+    const root = $("#player-cards");
+    root.innerHTML = players.map(p => `
+      <div class="player-card is-dnp" data-pid="${p.id}" data-attended="false" data-holes="18">
+        <div class="pc-head">
+          <div class="avatar">${initials(p.name)}</div>
+          <div>
+            <div class="pname">${p.name}</div>
+            <div class="phint">HCP ${p.currentHandicap ?? "—"}</div>
+          </div>
+          <div class="spacer"></div>
+          <button class="pc-toggle" type="button" data-action="toggle-attended">DNP</button>
+          <div class="pts zero" aria-label="round points">
+            <span class="lbl">Pts</span>
+            <span class="val">0</span>
+          </div>
+        </div>
+        <div class="pc-row">
+          <div class="pc-field">
+            <span class="pc-label">Holes</span>
+            <div class="pc-segmented" role="group">
+              <button type="button" data-action="set-holes" data-holes="9">9</button>
+              <button type="button" class="is-on" data-action="set-holes" data-holes="18">18</button>
+            </div>
+          </div>
+          <div class="pc-field">
+            <span class="pc-label">HCP</span>
+            <input type="number" class="hcp" min="0" max="60" step="1" inputmode="numeric" value="${p.currentHandicap ?? ''}" placeholder="—" />
+          </div>
+        </div>
+        <div class="pc-row three">
+          <div class="pc-field">
+            <span class="pc-label">Gross</span>
+            <input type="number" class="gross" min="20" max="200" step="1" inputmode="numeric" placeholder="—" />
+          </div>
+          <div class="pc-field">
+            <span class="pc-label">Net</span>
+            <div class="pc-net">—</div>
+          </div>
+          <div class="pc-field" style="display:flex; align-items:flex-end;">
+            <span class="phint" style="font-size:11px; color:var(--text-mute);">Net = Gross − HCP. Low Round goes to lowest net.</span>
+          </div>
+        </div>
+        <div class="pc-counts">
+          ${COUNT_FIELDS.map(f => `
+            <div class="pc-count" data-field="${f.key}">
+              <div class="lbl">${f.label}</div>
+              <input type="number" min="0" max="18" step="1" inputmode="numeric" data-key="${f.key}" placeholder="0">
+              <div class="pts-hint">×${f.pts}</div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="pc-low-round">+3 Low Round</div>
+      </div>
+    `).join("");
+  }
+
+  function bindEvents() {
+    const root = $("#player-cards");
+    root.addEventListener("click", (e) => {
+      const card = e.target.closest(".player-card");
+      if (!card) return;
+      if (e.target.matches('[data-action="toggle-attended"]')) {
+        const wasOn = card.dataset.attended === "true";
+        card.dataset.attended = (!wasOn).toString();
+        card.classList.toggle("is-dnp", wasOn);
+        e.target.classList.toggle("is-on", !wasOn);
+        e.target.textContent = !wasOn ? "Played" : "DNP";
+        refreshAll();
+      }
+      if (e.target.matches('[data-action="set-holes"]')) {
+        const holes = e.target.dataset.holes;
+        card.dataset.holes = holes;
+        $$('[data-action="set-holes"]', card).forEach(b => b.classList.toggle("is-on", b.dataset.holes === holes));
+        refreshAll();
+      }
+    });
+    root.addEventListener("input", (e) => {
+      if (e.target.matches('input[type="number"]')) {
+        const card = e.target.closest(".player-card");
+        // mark count cells with value
+        if (e.target.dataset.key) {
+          const cell = e.target.closest(".pc-count");
+          const v = parseInt(e.target.value, 10);
+          cell.classList.toggle("has-value", Number.isFinite(v) && v > 0);
+        }
+        // auto-mark attended if user starts typing scores
+        if ((e.target.classList.contains("gross") || e.target.dataset.key) && card.dataset.attended !== "true") {
+          card.dataset.attended = "true";
+          card.classList.remove("is-dnp");
+          const tog = $('[data-action="toggle-attended"]', card);
+          tog.classList.add("is-on"); tog.textContent = "Played";
+        }
+        refreshAll();
+      }
+    });
+    ["#f-date","#f-course","#f-tees","#f-organizer"].forEach(s => {
+      $(s).addEventListener("input", refreshAll);
+      $(s).addEventListener("change", refreshAll);
+    });
+    $("#btn-save").addEventListener("click", onSave);
+    $("#btn-copy").addEventListener("click", onCopy);
+    $("#btn-clear").addEventListener("click", onClear);
+  }
+
+  function readCard(card) {
+    const pid = card.dataset.pid;
+    const player = players.find(p => p.id === pid);
+    const attended = card.dataset.attended === "true";
+    const holesPlayed = parseInt(card.dataset.holes, 10) || null;
+    const gross = parseInt($(".gross", card).value, 10);
+    const hcp = parseInt($(".hcp", card).value, 10);
+    const counts = {};
+    COUNT_FIELDS.forEach(f => {
+      const v = parseInt($(`input[data-key="${f.key}"]`, card).value, 10);
+      counts[f.key] = Number.isFinite(v) && v > 0 ? v : 0;
+    });
+    return {
+      playerId: pid,
+      name: player.name,
+      attended,
+      holesPlayed: attended ? holesPlayed : null,
+      gross: attended && Number.isFinite(gross) ? gross : null,
+      handicap: Number.isFinite(hcp) ? hcp : null,
+      pars: counts.pars,
+      birdies: counts.birdies,
+      eagles: counts.eagles,
+      albatrosses: counts.albatrosses,
+      holeInOnes: counts.holeInOnes,
+    };
+  }
+
+  function netOf(r) {
+    return (Number.isFinite(r.gross) && Number.isFinite(r.handicap)) ? r.gross - r.handicap : null;
+  }
+
+  function pointsFor(result, isLowRound) {
+    if (!result.attended) return 0;
+    return POINTS.attendance
+      + (result.pars || 0) * POINTS.par
+      + (result.birdies || 0) * POINTS.birdie
+      + (result.eagles || 0) * POINTS.eagle
+      + (result.albatrosses || 0) * POINTS.albatross
+      + (result.holeInOnes || 0) * POINTS.holeInOne
+      + (isLowRound ? POINTS.lowRound : 0);
+  }
+
+  function computeLowRound(results) {
+    // Low Round = lowest NET among 18-hole players who have a handicap.
+    const eligible = results
+      .map(r => ({ ...r, net: netOf(r) }))
+      .filter(r => r.attended && r.holesPlayed === 18 && Number.isFinite(r.net));
+    if (!eligible.length) return new Set();
+    const min = Math.min(...eligible.map(r => r.net));
+    return new Set(eligible.filter(r => r.net === min).map(r => r.playerId));
+  }
+
+  function collectAll() {
+    const results = $$(".player-card").map(readCard);
+    const lowRoundIds = computeLowRound(results);
+    return results.map(r => ({
+      ...r,
+      net: netOf(r),
+      lowRound: lowRoundIds.has(r.playerId),
+      points: pointsFor(r, lowRoundIds.has(r.playerId)),
+    }));
+  }
+
+  function buildRound() {
+    const date = $("#f-date").value;
+    const course = $("#f-course").value.trim();
+    const organizer = $("#f-organizer").value || null;
+    const tees = $("#f-tees").value.split(",").map(s => s.trim()).filter(Boolean);
+    const all = collectAll();
+    // Persist to file shape: drop the convenience fields (net, lowRound, points) — they're derived on read.
+    const results = all
+      .filter(r => r.attended || r.gross != null || r.pars || r.birdies || r.eagles || r.albatrosses || r.holeInOnes)
+      .map(({ net, lowRound, points, ...rest }) => rest);
+    return {
+      id: roundId(date, course),
+      date, course, organizer,
+      teeTimes: tees,
+      played: results.some(r => r.attended),
+      results,
+    };
+  }
+
+  function roundId(date, course) {
+    const slug = (course || "round").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return `${date || "undated"}-${slug}`;
+  }
+
+  function refreshAll() {
+    // Update each card's per-card net + points + low-round flag
+    const all = collectAll();
+    all.forEach(r => {
+      const card = document.querySelector(`.player-card[data-pid="${r.playerId}"]`);
+      if (!card) return;
+      const ptsEl = $(".pts", card);
+      const valEl = $(".pts .val", card);
+      valEl.textContent = r.points || 0;
+      ptsEl.classList.toggle("zero", !r.points);
+      card.classList.toggle("is-low-round", r.lowRound);
+      const netEl = $(".pc-net", card);
+      if (netEl) {
+        if (Number.isFinite(r.net)) {
+          netEl.textContent = r.net;
+          netEl.classList.add("is-set");
+        } else {
+          netEl.textContent = Number.isFinite(r.gross) ? "(no HCP)" : "—";
+          netEl.classList.remove("is-set");
+        }
+      }
+    });
+    // summary
+    const attended = all.filter(r => r.attended);
+    const lowRoundPlayers = all.filter(r => r.lowRound);
+    const totalPts = all.reduce((s, r) => s + r.points, 0);
+    $("#sum-attended").textContent = attended.length;
+    $("#sum-total-pts").textContent = totalPts;
+    if (lowRoundPlayers.length) {
+      $("#sum-low-round").textContent = lowRoundPlayers[0].net;
+      $("#sum-low-round-name").textContent = lowRoundPlayers.map(r => r.name).join(", ") + (lowRoundPlayers.length > 1 ? ` (${lowRoundPlayers.length}-way tie)` : "") + " · net";
+    } else {
+      $("#sum-low-round").textContent = "—";
+      $("#sum-low-round-name").textContent = attended.length ? "no 18-hole net yet" : "—";
+    }
+    refreshPreview();
+  }
+
+  function buildUpdatedGolfJson() {
+    const out = JSON.parse(JSON.stringify(golfData));
+    const round = buildRound();
+    let season = out.seasons.find(s => s.id === seasonForDate(round.date));
+    if (!season) {
+      season = { id: seasonForDate(round.date), label: `${seasonForDate(round.date)} Links Cup`, rounds: [], finalStandings: [] };
+      out.seasons.unshift(season);
+    }
+    const idx = season.rounds.findIndex(r => r.id === round.id);
+    if (idx >= 0) season.rounds[idx] = round;
+    else season.rounds.push(round);
+    season.rounds.sort((a,b) => (a.date || "").localeCompare(b.date || ""));
+    return out;
+  }
+
+  function seasonForDate(iso) { return (iso || "").slice(0, 4) || "2026"; }
+
+  function refreshPreview() {
+    $("#preview").textContent = JSON.stringify(buildUpdatedGolfJson(), null, 2);
+  }
+
+  function persistRoundDetails() {
+    localStorage.setItem(ROUND_DETAILS_KEY, JSON.stringify({
+      date: $("#f-date").value,
+      course: $("#f-course").value,
+      organizer: $("#f-organizer").value,
+      tees: $("#f-tees").value,
+    }));
+  }
+
+  function onSave() {
+    const round = buildRound();
+    if (!round.date || !round.course) return showStatus("Date and course are required.", false);
+    if (round.results.length === 0) return showStatus("Mark at least one player as Played, or this isn't a saveable round.", false);
+
+    persistRoundDetails();
+    const data = buildUpdatedGolfJson();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "golf.json"; a.click();
+    URL.revokeObjectURL(url);
+    saveCount++;
+    showStatus(`Saved (${saveCount}). Drop the downloaded golf.json into data/ to replace the current file. Round id: ${round.id}.`, true);
+  }
+
+  async function onCopy() {
+    const data = buildUpdatedGolfJson();
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      showStatus("Copied. Paste over data/golf.json.", true);
+    } catch {
+      showStatus("Clipboard blocked. Use the Save button to download.", false);
+    }
+  }
+
+  function onClear() {
+    $$(".player-card").forEach(card => {
+      card.dataset.attended = "false";
+      card.dataset.holes = "18";
+      card.classList.add("is-dnp"); card.classList.remove("is-low-round");
+      const tog = $('[data-action="toggle-attended"]', card);
+      tog.classList.remove("is-on"); tog.textContent = "DNP";
+      $$('[data-action="set-holes"]', card).forEach(b => b.classList.toggle("is-on", b.dataset.holes === "18"));
+      $(".gross", card).value = "";
+      $$(".pc-count input", card).forEach(i => i.value = "");
+      $$(".pc-count", card).forEach(c => c.classList.remove("has-value"));
+    });
+    refreshAll();
+  }
+
+  function showStatus(msg, ok) {
+    const s = $("#status");
+    s.textContent = msg;
+    s.classList.toggle("is-ok", !!ok);
+    s.classList.toggle("is-err", !ok);
+  }
+
+  init();
+</script>
+
+</body>
+</html>

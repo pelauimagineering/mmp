@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MMP Challenge Cup — Season Mockup</title>
+<style>
+  /* ------------------------------------------------------------------
+     MMP Challenge Cup mockup — single file, no build step.
+     Tokens at the top, components below. Theme switches via [data-sport].
+     ------------------------------------------------------------------ */
+  :root {
+    --bg: #0b0d10;
+    --bg-elev: #14181d;
+    --bg-elev-2: #1b2026;
+    --line: #262d36;
+    --line-strong: #344052;
+    --text: #eef2f7;
+    --text-dim: #93a0b1;
+    --text-mute: #62708a;
+    --good: #34d399;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --accent: #e11d48;       /* poker = crimson */
+    --accent-soft: #4a1320;
+    --accent-ink: #fff5f7;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 0 #ffffff08 inset, 0 12px 30px #0007;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  }
+  [data-sport="golf"] {
+    --accent: #16a34a;
+    --accent-soft: #0f3a23;
+    --accent-ink: #ecfdf5;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+  /* layout */
+  .shell { max-width: 1280px; margin: 0 auto; padding: 0 24px 80px; }
+  .stack > * + * { margin-top: 24px; }
+  .grid-main { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+  @media (max-width: 960px) { .grid-main { grid-template-columns: 1fr; } }
+
+  /* header */
+  header.top {
+    position: sticky; top: 0; z-index: 10;
+    background: linear-gradient(180deg, var(--bg) 60%, transparent);
+    padding: 18px 0 10px;
+    border-bottom: 1px solid transparent;
+  }
+  .top-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 800; letter-spacing: 0.04em; font-size: 18px;
+  }
+  .brand-mark {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center; font-size: 12px; font-weight: 900;
+  }
+  .brand-sub { color: var(--text-dim); font-weight: 500; font-size: 13px; letter-spacing: 0; }
+
+  .tabs { display: flex; gap: 4px; background: var(--bg-elev); padding: 4px; border-radius: 999px; border: 1px solid var(--line); }
+  .tab {
+    padding: 8px 18px; border-radius: 999px;
+    color: var(--text-dim); font-weight: 600; font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 1px var(--accent); }
+  .tab-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-mute); }
+  .tab[aria-selected="true"] .tab-dot { background: var(--accent-ink); }
+  .tab.in-season .tab-dot { background: var(--good); box-shadow: 0 0 0 3px #34d39922; }
+
+  .season-picker { display: flex; gap: 2px; background: var(--bg-elev); padding: 3px; border-radius: 8px; border: 1px solid var(--line); }
+  .season-pill { padding: 6px 12px; border-radius: 6px; font-size: 13px; color: var(--text-dim); font-weight: 600; }
+  .season-pill[aria-selected="true"] { background: var(--bg-elev-2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+  .all-time-link { margin-left: auto; color: var(--text-dim); font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 6px; }
+  .all-time-link:hover { color: var(--text); background: var(--bg-elev); }
+
+  /* hero kpis */
+  .hero-title { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
+  .hero-title h1 { font-size: 30px; line-height: 1.1; margin: 0; letter-spacing: -0.01em; }
+  .hero-title .league-tag {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); font-weight: 800;
+    padding: 4px 8px; border: 1px solid var(--accent); border-radius: 4px;
+    background: var(--accent-soft);
+  }
+  .hero-title .meta { color: var(--text-dim); font-size: 13px; }
+  .hero-title .live-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--good); margin-right: 6px; box-shadow: 0 0 0 4px #34d39922;
+  }
+
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 720px) { .kpis { grid-template-columns: 1fr; } }
+  .kpi {
+    background: var(--bg-elev); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px 18px 16px;
+    position: relative; overflow: hidden;
+  }
+  .kpi::after {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent);
+  }
+  .kpi-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; }
+  .kpi-value { font-size: 28px; font-weight: 800; margin-top: 6px; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 8px; }
+  .kpi-value .units { font-size: 14px; color: var(--text-dim); font-weight: 600; }
+  .kpi-foot { color: var(--text-dim); font-size: 12px; margin-top: 6px; }
+
+  /* standings */
+  .panel {
+    background: var(--bg-elev); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 0; overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-bottom: 1px solid var(--line);
+  }
+  .panel-head h2 { font-size: 14px; margin: 0; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-dim); font-weight: 700; }
+  .panel-head .spacer { flex: 1; }
+  .panel-head .hint { font-size: 12px; color: var(--text-mute); }
+
+  table.standings { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.standings th, table.standings td { padding: 10px 14px; text-align: left; }
+  table.standings th { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; border-bottom: 1px solid var(--line); }
+  table.standings th.num, table.standings td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); }
+  table.standings tbody tr { border-bottom: 1px solid var(--line); transition: background .12s ease; }
+  table.standings tbody tr:last-child { border-bottom: 0; }
+  table.standings tbody tr:hover { background: #ffffff04; cursor: pointer; }
+  table.standings tbody tr.is-leader { background: linear-gradient(90deg, var(--accent-soft) 0%, transparent 60%); }
+  table.standings tbody tr.is-zero { color: var(--text-mute); }
+
+  .rank-cell {
+    display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-variant-numeric: tabular-nums;
+  }
+  .rank-badge {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--bg-elev-2); color: var(--text-dim);
+    display: grid; place-items: center; font-size: 12px; border: 1px solid var(--line);
+  }
+  .rank-badge.gold { background: #facc15; color: #1a1404; border-color: #facc15; }
+  .rank-badge.silver { background: #cbd5e1; color: #0f172a; border-color: #cbd5e1; }
+  .rank-badge.bronze { background: #d97706; color: #1a0f04; border-color: #d97706; }
+  .rank-tie { font-weight: 700; color: var(--text-mute); font-size: 11px; margin-left: 4px; }
+
+  .player-cell { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 800; font-size: 12px;
+    background: var(--bg-elev-2); border: 1px solid var(--line);
+    color: var(--text);
+  }
+  .avatar.is-perfect { box-shadow: 0 0 0 2px var(--good); }
+  .player-name { font-weight: 700; }
+  .player-tags { display: flex; gap: 6px; margin-top: 2px; }
+  .tag {
+    font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px; color: var(--text-dim); background: var(--bg-elev-2); border: 1px solid var(--line);
+  }
+  .tag.hot { color: #fda4af; background: #4a1320; border-color: #7f1d1d; }
+  .tag.host { color: #fde68a; background: #3a2a04; border-color: #92400e; }
+
+  .spark { display: inline-block; vertical-align: middle; }
+  .spark line, .spark polyline, .spark circle { stroke: var(--text-dim); fill: none; }
+  .spark .area { fill: var(--accent); fill-opacity: 0.18; stroke: none; }
+  .spark .line { stroke: var(--accent); stroke-width: 1.5; }
+  .spark .dot { fill: var(--accent); }
+
+  /* events strip */
+  .events-strip { display: flex; gap: 10px; padding: 14px; overflow-x: auto; }
+  .event-card {
+    min-width: 168px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 12px 14px; background: var(--bg-elev-2);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .event-card.is-upcoming { border-style: dashed; color: var(--text-dim); background: transparent; }
+  .event-card.is-skipped { opacity: .55; background: transparent; border-style: dashed; }
+  .event-card.is-active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .event-month { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; }
+  .event-winner { font-weight: 700; }
+  .event-host { font-size: 12px; color: var(--text-dim); }
+  .event-host::before { content: "Host: "; color: var(--text-mute); }
+
+  /* sidebar */
+  aside .panel + .panel { margin-top: 16px; }
+  .insight { padding: 14px 18px; border-bottom: 1px solid var(--line); }
+  .insight:last-child { border-bottom: 0; }
+  .insight-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; }
+  .insight-headline { font-size: 18px; font-weight: 800; margin-top: 4px; letter-spacing: -0.01em; }
+  .insight-body { font-size: 13px; color: var(--text-dim); margin-top: 4px; line-height: 1.45; }
+  .insight-stat { color: var(--accent); font-weight: 800; }
+
+  /* event detail panel */
+  .event-detail { padding: 18px; }
+  .event-detail h3 { margin: 0 0 4px; font-size: 18px; }
+  .event-detail .sub { color: var(--text-dim); font-size: 13px; margin-bottom: 14px; }
+  table.event-results { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.event-results th, table.event-results td { padding: 7px 10px; }
+  table.event-results th { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mute); text-align: right; font-weight: 700; }
+  table.event-results th:first-child, table.event-results td:first-child { text-align: left; }
+  table.event-results td { border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; font-family: var(--mono); text-align: right; }
+  table.event-results td:first-child { font-family: var(--sans); font-weight: 600; }
+  table.event-results td.dim { color: var(--text-mute); }
+  .event-tie-note {
+    margin-top: 10px; padding: 8px 10px; border-radius: 6px;
+    background: #1f1407; border: 1px solid #5a3210; color: #fde68a; font-size: 12px;
+  }
+
+  /* annotations (right margin notes for the design review) */
+  .annotation {
+    background: #16203a; border: 1px solid #2a3d6a; border-radius: 8px;
+    padding: 12px 14px; font-size: 12px; line-height: 1.5; color: #c7d2fe;
+  }
+  .annotation strong { color: #e0e7ff; }
+  .annotation-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #818cf8; font-weight: 800; margin-bottom: 4px; }
+
+  /* utility */
+  .row { display: flex; align-items: center; gap: 8px; }
+  .muted { color: var(--text-dim); }
+  .small { font-size: 12px; }
+
+  /* mockup banner */
+  .mockup-banner {
+    background: #16203a; color: #c7d2fe; border-bottom: 1px solid #2a3d6a;
+    padding: 8px 16px; font-size: 12px; text-align: center;
+  }
+  .mockup-banner strong { color: #e0e7ff; }
+</style>
+</head>
+<body data-sport="poker">
+
+<div class="mockup-banner">
+  <strong>Mockup v2</strong> — Apr 2026 finalized · Harish takes the season. Toggle the Golf tab for the Round 1 (Kedron Dells, May 3) empty state. Open <a href="admin.html" style="color:#fff; text-decoration:underline;">admin.html</a> to enter golf scores after a round.
+</div>
+
+<header class="top">
+  <div class="shell top-row">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        MMP CHALLENGE CUP
+        <div class="brand-sub">Friend-group sport, kept honest</div>
+      </div>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Sport">
+      <button class="tab" role="tab" aria-selected="false" data-target-sport="golf">
+        <span class="tab-dot"></span> Golf
+        <span class="muted small" style="margin-left:6px;">Links Cup</span>
+      </button>
+      <button class="tab in-season" role="tab" aria-selected="true" data-target-sport="poker">
+        <span class="tab-dot"></span> Poker
+        <span class="muted small" style="margin-left:6px;">Tournament</span>
+      </button>
+    </nav>
+
+    <div class="season-picker" role="tablist" aria-label="Season">
+      <button class="season-pill" aria-selected="false">2022–23</button>
+      <button class="season-pill" aria-selected="false">2023–24</button>
+      <button class="season-pill" aria-selected="false">2024–25</button>
+      <button class="season-pill" aria-selected="true">2025–26</button>
+    </div>
+
+    <a href="#/poker/all-time" class="all-time-link">All-time →</a>
+  </div>
+</header>
+
+<main class="shell stack" id="poker-view">
+
+  <!-- HERO -->
+  <section>
+    <div class="hero-title">
+      <h1>2025–26 MMP Poker Season</h1>
+      <span class="league-tag">Season Final</span>
+      <span class="meta"><span class="live-dot"></span>5 of 5 events played · finalized Apr 2026</span>
+    </div>
+
+    <div class="kpis" style="margin-top:18px;">
+      <div class="kpi">
+        <div class="kpi-label">Season Champion</div>
+        <div class="kpi-value">Harish <span class="units">55 pts</span></div>
+        <div class="kpi-foot">Came from T-4 to win — biggest single-event total in dataset (22 pts in April)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Runners-up (T-2)</div>
+        <div class="kpi-value">Neave / Seymour <span class="units">50 pts</span></div>
+        <div class="kpi-foot">Both closed strong but Harish's April denied them the title</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Next Season</div>
+        <div class="kpi-value">2026–27 <span class="units">Nov 2026</span></div>
+        <div class="kpi-foot">Host rotation up next — golf takes over until then</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN GRID -->
+  <section class="grid-main">
+
+    <!-- LEFT: standings + events strip + event detail -->
+    <div class="stack">
+
+      <!-- Standings -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Final Standings · 2025–26</h2>
+          <div class="spacer"></div>
+          <span class="hint">Click a row to open player profile</span>
+        </div>
+        <table class="standings" aria-label="Season standings">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th class="num">Apps</th>
+              <th class="num">W</th>
+              <th class="num">RU</th>
+              <th class="num">Tie</th>
+              <th class="num">YTD</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody id="standings-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Events strip -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Season Schedule</h2>
+          <div class="spacer"></div>
+          <span class="hint">Tap any event for results</span>
+        </div>
+        <div class="events-strip" id="events-strip"></div>
+      </div>
+
+      <!-- Event detail (illustrative — Apr 2026, the season finale) -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Event Detail · Apr 2026</h2>
+          <div class="spacer"></div>
+          <span class="hint">Host: TBD · season finale</span>
+        </div>
+        <div class="event-detail">
+          <h3>Harish steals the season</h3>
+          <div class="sub">Apr 2026 · 7 players · 59 points awarded · 1 win + 2 RU netted 22 pts</div>
+          <table class="event-results">
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>App</th>
+                <th>Win</th>
+                <th>Tie</th>
+                <th>Runner-up</th>
+                <th>Event</th>
+                <th>YTD</th>
+                <th>Final</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Harish</td><td>2</td><td>10</td><td class="dim">–</td><td>10</td><td><strong>22</strong></td><td>55</td><td><strong>1</strong></td></tr>
+              <tr><td>Seymour</td><td>2</td><td>10</td><td class="dim">–</td><td class="dim">–</td><td><strong>12</strong></td><td>50</td><td>T-2</td></tr>
+              <tr><td>Junior</td><td>2</td><td>10</td><td class="dim">–</td><td class="dim">–</td><td><strong>12</strong></td><td>37.5</td><td>5</td></tr>
+              <tr><td>Kerwin</td><td>2</td><td class="dim">–</td><td class="dim">–</td><td>5</td><td>7</td><td>40.5</td><td>4</td></tr>
+              <tr><td>Gary</td><td>2</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td><td>2</td><td>35</td><td>6</td></tr>
+              <tr><td>Neave</td><td>2</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td><td>2</td><td>50</td><td>T-2</td></tr>
+              <tr><td>Darren</td><td>2</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td><td>2</td><td>13</td><td>8</td></tr>
+              <tr><td class="dim">Chris</td><td>0</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td><td>0</td><td>18</td><td>7</td></tr>
+              <tr><td class="dim">Wayne</td><td>0</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td><td>0</td><td>4</td><td>9</td></tr>
+              <tr><td class="dim">Lorenzo</td><td>0</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td><td>0</td><td>0</td><td>T-10</td></tr>
+              <tr><td class="dim">Tony</td><td>0</td><td class="dim">–</td><td class="dim">–</td><td class="dim">–</td><td>0</td><td>0</td><td>T-10</td></tr>
+            </tbody>
+          </table>
+          <div class="event-tie-note">Final-event swing: Harish jumped from T-4 (33 pts) to season champion (55). <span class="muted">Earlier events used tie splits (Jan/Feb '26), shown with .5 decimals — never round.</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: insights + annotation -->
+    <aside class="stack">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Storylines</h2>
+        </div>
+        <div class="insight">
+          <div class="insight-label">Headline</div>
+          <div class="insight-headline">Harish steals it · 22-pt April</div>
+          <div class="insight-body">Sat T-4 going in (33 pts). One night, 1 win + 2 runner-ups = <span class="insight-stat">22</span>. Largest single-event total in the dataset, season title sealed.</div>
+        </div>
+        <div class="insight">
+          <div class="insight-label">All-Time Leader</div>
+          <div class="insight-headline">Neave · 404 pts</div>
+          <div class="insight-body">Still on top across 4 seasons. Seymour now within <span class="insight-stat">+2.5</span> after a strong April; Junior third at 372.</div>
+        </div>
+        <div class="insight">
+          <div class="insight-label">Hot Streak</div>
+          <div class="insight-headline">Kerwin & Harish, biggest YoY jumps</div>
+          <div class="insight-body">Kerwin <span class="insight-stat">+27.5</span> (13 → 40.5) · Harish <span class="insight-stat">+32</span> (23 → 55) season-over-season.</div>
+        </div>
+        <div class="insight">
+          <div class="insight-label">Most Reliable</div>
+          <div class="insight-headline">5 perfect attendees</div>
+          <div class="insight-body">Neave, Seymour, Chris, Harish, Kerwin — 4-of-4 seasons. Green ring on the avatar.</div>
+        </div>
+      </div>
+
+      <div class="annotation">
+        <div class="annotation-label">Design notes</div>
+        <strong>Player profile</strong> (not shown) inherits the panel/insight components — header KPIs (career pts, wins, RU, attendance %), a season-by-season table, and a sparkline. Same components, no new chrome.
+      </div>
+      <div class="annotation">
+        <div class="annotation-label">Golf empty state</div>
+        Switch sports above. Until <strong>Links Cup 2026</strong> data lands, the Golf tab renders the same shell with an empty-state hero ("First round tees off [date]") and a faded schedule strip. Same components, <code>played: false</code> everywhere.
+      </div>
+      <div class="annotation">
+        <div class="annotation-label">Theming</div>
+        Accent color is the <em>only</em> thing that changes between sports — <strong>crimson</strong> for poker, <strong>green</strong> for golf. Driven by <code>[data-sport]</code> on <code>&lt;body&gt;</code>. Layout, type, components are identical.
+      </div>
+    </aside>
+
+  </section>
+</main>
+
+<script>
+  /* ------------------------------------------------------------------
+     Mockup data — hard-coded from data/poker.json (2025-26 season).
+     The real site will fetch poker.json and render the same way.
+     ------------------------------------------------------------------ */
+  const standings = [
+    // rank, name, apps, wins, runnerUps, ties, ytd, sparkline (YTD over events)
+    { rank: 1, name: "Harish",  apps: 5, w: 2, ru: 3, t: 0, ytd: 55,   spark: [7, 19, 31, 33, 55],     tags: ["perfect","hot"] },
+    { rank: 2, name: "Neave",   apps: 5, w: 1, ru: 1, t: 1, ytd: 50,   spark: [12, 21.5, 31, 48, 50],  tags: ["perfect"] },
+    { rank: 2, name: "Seymour", apps: 5, w: 2, ru: 2, t: 0, ytd: 50,   spark: [7, 19, 36, 38, 50],     tags: ["perfect"] },
+    { rank: 4, name: "Kerwin",  apps: 4, w: 2, ru: 1, t: 1, ytd: 40.5, spark: [0, 2, 11.5, 33.5, 40.5],tags: ["perfect","hot"] },
+    { rank: 5, name: "Junior",  apps: 5, w: 1, ru: 1, t: 1, ytd: 37.5, spark: [2, 11.5, 13.5, 25.5, 37.5] },
+    { rank: 6, name: "Gary",    apps: 5, w: 1, ru: 1, t: 0, ytd: 35,   spark: [12, 24, 31, 33, 35] },
+    { rank: 7, name: "Chris",   apps: 4, w: 1, ru: 0, t: 0, ytd: 18,   spark: [12, 14, 16, 18, 18],    tags: ["perfect"] },
+    { rank: 8, name: "Darren",  apps: 4, w: 0, ru: 1, t: 0, ytd: 13,   spark: [7, 9, 11, 11, 13],      tags: ["host"] },
+    { rank: 9, name: "Wayne",   apps: 2, w: 0, ru: 0, t: 0, ytd: 4,    spark: [0, 2, 2, 4, 4] },
+    { rank: 10, name: "Lorenzo",apps: 0, w: 0, ru: 0, t: 0, ytd: 0,    spark: [0, 0, 0, 0, 0] },
+    { rank: 10, name: "Tony",   apps: 0, w: 0, ru: 0, t: 0, ytd: 0,    spark: [0, 0, 0, 0, 0] },
+  ];
+
+  const events = [
+    { month: "Dec 2025", host: "Darren",  winner: "3-way tie",      winnerSub: "Gary / Chris / Neave",       state: "played" },
+    { month: "Jan 2026", host: "Seymour", winner: "Gary",           winnerSub: "+ Seymour W (24 YTD)",       state: "played" },
+    { month: "Feb 2026", host: "Junior",  winner: "Seymour",        winnerSub: "season-high 17 (was)",       state: "played" },
+    { month: "Mar 2026", host: "Neave",   winner: "Kerwin",         winnerSub: "double-win, 22 pts",         state: "played" },
+    { month: "Apr 2026", host: "—",        winner: "Harish",         winnerSub: "22-pt heist · won the season", state: "played", active: true },
+  ];
+
+  /* render standings */
+  const tbody = document.getElementById("standings-body");
+  const initials = (n) => n.split(" ").map(s => s[0]).slice(0,2).join("");
+  const medal = (r) => r === 1 ? "gold" : r === 2 ? "silver" : r === 3 ? "bronze" : "";
+  // Detect ties for displaying T-rank
+  const rankCounts = standings.reduce((m, s) => (m[s.rank] = (m[s.rank]||0)+1, m), {});
+
+  tbody.innerHTML = standings.map(s => {
+    const isLeader = s.rank === 1;
+    const isZero = s.ytd === 0;
+    const tieMark = rankCounts[s.rank] > 1 ? `<span class="rank-tie">T</span>` : "";
+    const tagHtml = (s.tags || []).map(t => {
+      if (t === "perfect") return ""; // shown via avatar ring
+      if (t === "hot")     return `<span class="tag hot">Hot streak</span>`;
+      if (t === "host")    return `<span class="tag host">Hosted Dec</span>`;
+      return "";
+    }).join(" ");
+    const isPerfect = (s.tags || []).includes("perfect");
+    const ytdDisplay = Number.isInteger(s.ytd) ? s.ytd : s.ytd.toFixed(1);
+    return `
+      <tr class="${isLeader ? 'is-leader' : ''} ${isZero ? 'is-zero' : ''}">
+        <td>
+          <span class="rank-cell">
+            <span class="rank-badge ${medal(s.rank)}">${s.rank}</span>${tieMark}
+          </span>
+        </td>
+        <td>
+          <div class="player-cell">
+            <div class="avatar ${isPerfect ? 'is-perfect' : ''}">${initials(s.name)}</div>
+            <div>
+              <div class="player-name">${s.name}</div>
+              ${tagHtml ? `<div class="player-tags">${tagHtml}</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td class="num">${s.apps}</td>
+        <td class="num">${s.w || '–'}</td>
+        <td class="num">${s.ru || '–'}</td>
+        <td class="num">${s.t || '–'}</td>
+        <td class="num"><strong>${ytdDisplay}</strong></td>
+        <td>${sparkSvg(s.spark)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  function sparkSvg(values) {
+    if (!values || !values.length) return "";
+    const w = 80, h = 22, pad = 2;
+    const max = Math.max(...values, 1);
+    const stepX = (w - pad*2) / Math.max(values.length - 1, 1);
+    const pts = values.map((v, i) => [pad + i * stepX, h - pad - (v / max) * (h - pad*2)]);
+    const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+    const areaPath = `${linePath} L${pts[pts.length-1][0].toFixed(1)},${h-pad} L${pts[0][0].toFixed(1)},${h-pad} Z`;
+    const last = pts[pts.length - 1];
+    return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <path class="area" d="${areaPath}"/>
+      <path class="line" d="${linePath}"/>
+      <circle class="dot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2"/>
+    </svg>`;
+  }
+
+  /* render events strip */
+  const strip = document.getElementById("events-strip");
+  strip.innerHTML = events.map(e => {
+    const cls = e.state === "skipped" ? "is-skipped" : (e.active ? "is-active" : "");
+    return `
+      <div class="event-card ${cls}">
+        <div class="event-month">${e.month}</div>
+        <div class="event-winner">${e.winner}</div>
+        <div class="muted small">${e.winnerSub}</div>
+        ${e.state !== "skipped" ? `<div class="event-host">${e.host}</div>` : `<div class="muted small">No game</div>`}
+      </div>
+    `;
+  }).join("");
+
+  /* sport tab toggle (preview the empty state for golf) */
+  document.querySelectorAll(".tabs .tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      const sport = tab.dataset.targetSport;
+      document.body.dataset.sport = sport;
+      document.querySelectorAll(".tabs .tab").forEach(t => t.setAttribute("aria-selected", t === tab ? "true" : "false"));
+      const main = document.getElementById("poker-view");
+      if (sport === "golf") {
+        main.innerHTML = `
+          <section style="margin-top:48px; padding: 48px 24px; border:1px dashed var(--line-strong); border-radius: var(--radius); background: linear-gradient(180deg, var(--bg-elev) 0%, transparent 100%);">
+            <div style="text-align:center;">
+              <div style="font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--accent); font-weight:800;">2026 Links Cup</div>
+              <h1 style="margin:8px 0 6px; font-size:32px;">Round 1 · Kedron Dells · Sun May 3</h1>
+              <p class="muted" style="max-width:520px; margin: 0 auto 20px;">Organized by <strong style="color:var(--text);">Harish</strong> · Tee times <strong style="color:var(--text);">10:06 AM</strong> &amp; <strong style="color:var(--text);">10:16 AM</strong>. No scores yet — leaderboard wakes up the moment the first card is entered via the admin page.</p>
+              <div style="display:inline-flex; gap:8px;">
+                <a href="admin.html" class="tab" style="background:var(--accent); color:var(--accent-ink); border-radius:6px; padding:10px 16px; font-weight:700;">Open Admin</a>
+                <button class="tab" style="border-radius:6px; padding:10px 16px; font-weight:700; background:var(--bg-elev); border:1px solid var(--line);">Player Roster</button>
+              </div>
+            </div>
+            <div style="margin-top: 32px; max-width:520px; margin-left:auto; margin-right:auto; background: var(--bg-elev); border: 1px solid var(--line); border-radius: 10px; padding: 16px;">
+              <div style="font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-mute); font-weight:800; margin-bottom: 6px;">Schedule (placeholder)</div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--line);"><span style="font-weight:700;">Round 1</span><span style="font-family:var(--mono); font-size:13px; color:var(--text-dim);">Sun May 3 · Kedron Dells · Harish · 10:06 / 10:16</span></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; color:var(--text-dim); font-size:13px;"><span>Round 2</span><span>TBD</span></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; color:var(--text-dim); font-size:13px;"><span>Round 3</span><span>TBD</span></div>
+            </div>
+          </section>
+        `;
+      } else {
+        location.reload(); // simplest way to bring back the full mockup for the demo
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

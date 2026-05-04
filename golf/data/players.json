@@ -1,0 +1,17 @@
+{
+  "_comment": "Shared roster used by both Golf and Poker. currentHandicap is the working number used by the golf admin form as a default; per-round overrides are stored on the round itself. The 'sports' array gates a player into each sport — Darren plays poker only; Jas joined for golf 2026.",
+  "players": [
+    { "id": "jas",     "name": "Jas",     "currentHandicap": 18, "sports": ["golf"] },
+    { "id": "junior",  "name": "Junior",  "currentHandicap": 19, "sports": ["golf", "poker"] },
+    { "id": "harish",  "name": "Harish",  "currentHandicap": 20, "sports": ["golf", "poker"] },
+    { "id": "kerwin",  "name": "Kerwin",  "currentHandicap": 22, "sports": ["golf", "poker"] },
+    { "id": "seymour", "name": "Seymour", "currentHandicap": 23, "sports": ["golf", "poker"] },
+    { "id": "tony",    "name": "Tony",    "currentHandicap": 26, "sports": ["golf", "poker"] },
+    { "id": "lorenzo", "name": "Lorenzo", "currentHandicap": 34, "sports": ["golf", "poker"] },
+    { "id": "neave",   "name": "Neave",   "currentHandicap": 36, "sports": ["golf", "poker"] },
+    { "id": "chris",   "name": "Chris",   "currentHandicap": 39, "sports": ["golf", "poker"] },
+    { "id": "gary",    "name": "Gary",    "currentHandicap": 44, "sports": ["golf", "poker"] },
+    { "id": "wayne",   "name": "Wayne",   "currentHandicap": 56, "sports": ["golf", "poker"] },
+    { "id": "darren",  "name": "Darren",  "currentHandicap": null, "sports": ["poker"] }
+  ]
+}
