@@ -81,8 +81,6 @@
     color: var(--color-text-primary);
 }
 .auth-header h1 .suit { margin: 0 4px; }
-.auth-header h1 .suit-red  { color: var(--color-hearts); }
-.auth-header h1 .suit-dark { color: var(--color-text-primary); }
 
 .auth-header p {
     color: var(--color-text-secondary);

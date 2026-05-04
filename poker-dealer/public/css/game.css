@@ -36,9 +36,6 @@
     letter-spacing: var(--tracking-tight);
     color: var(--color-text-primary);
 }
-.game-title .suit-red  { color: var(--color-hearts); }
-.game-title .suit-dark { color: var(--color-text-primary); }
-
 .game-switch {
     color: var(--color-text-muted);
     text-decoration: none;

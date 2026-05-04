@@ -163,6 +163,10 @@ input[type="password"]:focus {
     display: none !important;
 }
 
+/* Suit-tinted glyphs used in titles ("MMP Poker ♥ ♣"). */
+.suit-red  { color: var(--color-hearts); }
+.suit-dark { color: var(--color-text-primary); }
+
 select {
     width: 100%;
     height: 60px;

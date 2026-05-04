@@ -34,9 +34,6 @@
     margin: 0;
     font-variation-settings: "opsz" 144;
 }
-.display-title .suit-red  { color: var(--color-hearts); }
-.display-title .suit-dark { color: var(--color-text-primary); }
-
 .display-actions {
     margin-left: auto;
     display: inline-flex;

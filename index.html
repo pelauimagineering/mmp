@@ -180,6 +180,10 @@
 </footer>
 
 <script type="module">
+  const MONTHS = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+
+  // Append T00:00:00 so the ISO date is parsed in local time, not UTC —
+  // otherwise May 3 in Toronto becomes May 2 in the rendered string.
   const fmtDate = (iso) => {
     if (!iso) return '';
     const d = new Date(iso + 'T00:00:00');
@@ -196,6 +200,29 @@
     }
   };
 
+  const championsByName = (seasons) => {
+    const cups = new Map();
+    const lastWin = new Map();
+    for (const s of seasons) {
+      const champ = (s.finalStandings || []).find((p) => p.rank === 1);
+      if (!champ) continue;
+      cups.set(champ.name, (cups.get(champ.name) || 0) + 1);
+      lastWin.set(champ.name, s.label);
+    }
+    const ranked = [...cups.entries()].sort((a, b) => b[1] - a[1]);
+    return { ranked, lastWin };
+  };
+
+  const renderLeaderRows = ({ ranked, lastWin }) => ranked.map(([name, count], i) => `
+    <li class="player-row${i === 0 ? ' leader-1' : ''}">
+      <span class="rank">${i + 1}</span>
+      <span class="name">${name}</span>
+      <span class="meta">last ${lastWin.get(name)}</span>
+      <span></span>
+      <span class="score">${count}</span>
+    </li>
+  `).join('');
+
   const [poker, golf] = await Promise.all([
     tryFetch('/golf/data/poker.json'),
     tryFetch('/golf/data/golf.json'),
@@ -205,27 +232,11 @@
   const pokerHead = document.getElementById('poker-standings-head');
   const pokerList = document.getElementById('poker-standings-list');
   if (poker && Array.isArray(poker.seasons) && poker.seasons.length) {
-    const cups = new Map();
-    const lastWin = new Map();
-    for (const s of poker.seasons) {
-      const champ = (s.finalStandings || []).find((p) => p.rank === 1);
-      if (!champ) continue;
-      cups.set(champ.name, (cups.get(champ.name) || 0) + 1);
-      lastWin.set(champ.name, s.label);
-    }
-    const ranked = [...cups.entries()].sort((a, b) => b[1] - a[1]);
-    if (ranked.length) {
-      const [topName, topCups] = ranked[0];
+    const champs = championsByName(poker.seasons);
+    if (champs.ranked.length) {
+      const [topName, topCups] = champs.ranked[0];
       pokerHead.textContent = `${topName} · ${topCups}`;
-      pokerList.innerHTML = ranked.map(([name, count], i) => `
-        <li class="player-row${i === 0 ? ' leader-1' : ''}">
-          <span class="rank">${i + 1}</span>
-          <span class="name">${name}</span>
-          <span class="meta">last ${lastWin.get(name)}</span>
-          <span></span>
-          <span class="score">${count}</span>
-        </li>
-      `).join('');
+      pokerList.innerHTML = renderLeaderRows(champs);
     } else {
       pokerHead.textContent = 'No champions yet';
       pokerList.innerHTML = '';
@@ -234,37 +245,19 @@
     pokerHead.textContent = 'Data unavailable';
   }
 
-  // ── Golf standings: empty state pointing to the next round (no completed seasons yet) ──
+  // ── Golf standings: empty state pointing to the next round when no season is complete ──
   const golfHead = document.getElementById('golf-standings-head');
   const golfList = document.getElementById('golf-standings-list');
   const golfUpcoming = document.getElementById('golf-upcoming');
   if (golf && Array.isArray(golf.seasons) && golf.seasons.length) {
-    const champs = new Map();
-    const lastWin = new Map();
-    for (const s of golf.seasons) {
-      const champ = (s.finalStandings || []).find((p) => p.rank === 1);
-      if (!champ) continue;
-      const key = champ.name;
-      champs.set(key, (champs.get(key) || 0) + 1);
-      lastWin.set(key, s.label);
-    }
-    const ranked = [...champs.entries()].sort((a, b) => b[1] - a[1]);
-    if (ranked.length) {
-      const [topName, topCups] = ranked[0];
+    const champs = championsByName(golf.seasons);
+    if (champs.ranked.length) {
+      const [topName, topCups] = champs.ranked[0];
       golfHead.textContent = `${topName} · ${topCups}`;
-      golfList.innerHTML = ranked.map(([name, count], i) => `
-        <li class="player-row${i === 0 ? ' leader-1' : ''}">
-          <span class="rank">${i + 1}</span>
-          <span class="name">${name}</span>
-          <span class="meta">last ${lastWin.get(name)}</span>
-          <span></span>
-          <span class="score">${count}</span>
-        </li>
-      `).join('');
+      golfList.innerHTML = renderLeaderRows(champs);
     } else {
-      // Empty state — surface the next scheduled round
       const season = golf.seasons[golf.seasons.length - 1];
-      const next = (season.rounds || []).find((r) => !r.played) || season.rounds?.[0];
+      const next = (season.rounds || []).find((r) => !r.played);
       if (next) {
         golfHead.textContent = `${season.label} Links Cup`;
         golfList.innerHTML = `<li class="empty">First round tees off ${fmtDate(next.date)}. Leaderboard wakes when the first card is entered.</li>`;
@@ -284,30 +277,30 @@
   }
 
   // ── Latest: most recently played event from each sport, plus next golf round ──
+  // Poker events store { month: "Mar", year: 2025 } rather than a real date;
+  // synthesize one mid-month so they sort sensibly against ISO golf dates.
+  const POKER_EVENT_DAY = 15;
   const latest = [];
 
-  if (poker?.seasons) {
-    for (const s of poker.seasons) {
-      for (const e of s.events || []) {
-        if (e.played && (e.year || e.month)) {
-          const date = `${e.year}-${String(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(e.month) + 1).padStart(2, '0')}-15`;
-          latest.push({ date, what: `Poker · ${e.month} ${e.year} hosted by ${e.host}` });
-        }
+  for (const s of poker?.seasons || []) {
+    for (const e of s.events || []) {
+      if (!e.played) continue;
+      const monthIdx = MONTHS[e.month];
+      if (!monthIdx || !e.year) continue;
+      const date = `${e.year}-${String(monthIdx).padStart(2, '0')}-${POKER_EVENT_DAY}`;
+      latest.push({ date, what: `Poker · ${e.month} ${e.year} hosted by ${e.host}` });
+    }
+  }
+  for (const s of golf?.seasons || []) {
+    for (const r of s.rounds || []) {
+      if (r.played) {
+        latest.push({ date: r.date, what: `Golf · Round at ${r.course} (${r.organizer})` });
+      } else if (r.date) {
+        latest.push({ date: r.date, what: `Upcoming · Round at ${r.course} on ${fmtDate(r.date)} (${r.organizer})` });
       }
     }
   }
-  if (golf?.seasons) {
-    for (const s of golf.seasons) {
-      for (const r of s.rounds || []) {
-        if (r.played) {
-          latest.push({ date: r.date, what: `Golf · Round at ${r.course} (${r.organizer})` });
-        } else if (r.date) {
-          latest.push({ date: r.date, what: `Upcoming · Round at ${r.course} on ${fmtDate(r.date)} (${r.organizer})` });
-        }
-      }
-    }
-  }
-  latest.sort((a, b) => (b.date > a.date ? 1 : -1));
+  latest.sort((a, b) => b.date.localeCompare(a.date));
   const grid = document.getElementById('latest-grid');
   if (latest.length) {
     grid.innerHTML = latest.slice(0, 3).map((item) => `

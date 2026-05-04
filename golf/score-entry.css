@@ -17,7 +17,8 @@
   padding: var(--space-5) var(--space-4) var(--space-9);
 }
 
-/* form inputs use design tokens */
+/* The form has no class on its inputs — style by element so legacy
+ * markup gets the design-token treatment without per-field changes. */
 input[type="number"], input[type="text"], input[type="date"], select, textarea {
   font-family: var(--font-ui); font-size: var(--text-md);
   color: var(--ink);
