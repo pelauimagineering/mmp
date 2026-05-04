@@ -1,0 +1,12 @@
+# MMP — root vhost (mmp.pelau.com)
+DirectoryIndex index.html
+
+# Default cache for HTML — short, since we redeploy often
+<FilesMatch "\.(html)$">
+  Header set Cache-Control "max-age=60"
+</FilesMatch>
+
+# Long cache for the design-system tokens/components (versioned via redeploy)
+<FilesMatch "\.(css|svg|jpg|png|woff2?)$">
+  Header set Cache-Control "max-age=86400"
+</FilesMatch>

@@ -1,0 +1,36 @@
+{
+  "name": "poker-dealer",
+  "version": "1.0.0",
+  "description": "A digital card dealer for in-person sessions of a Texas Hold'em poker game",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "start:reset": "node server/index.js --reset",
+    "dev": "node --watch server/index.js",
+    "db:init": "node scripts/init-db.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "poker",
+    "texas-holdem",
+    "card-dealer",
+    "websocket",
+    "game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.16.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

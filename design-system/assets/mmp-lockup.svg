@@ -1,0 +1,12 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <g stroke="currentColor" fill="none">
+    <ellipse cx="22" cy="40" rx="14" ry="18" stroke-width="3.5"></ellipse>
+    <ellipse cx="42" cy="40" rx="14" ry="18" stroke-width="3.5"></ellipse>
+    <path d="M28.4 26.6 Q 32 30 32 40 Q 32 50 28.4 53.4" stroke-width="3.5" stroke-linecap="round"></path>
+  </g>
+  <text x="74" y="52" font-family="Fraunces, Georgia, serif" font-weight="700" font-size="44" letter-spacing="-1" fill="currentColor">MMP</text>
+  <text x="180" y="52" font-family="Inter Tight, sans-serif" font-weight="500" font-size="11" letter-spacing="3" fill="currentColor" opacity="0.6">BOUND BY
+        <tspan x="180" dy="14">BROTHERHOOD</tspan>
+  </text>
+</svg>

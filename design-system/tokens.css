@@ -1,0 +1,198 @@
+/* =====================================================================
+ * MMP Design System — Tokens
+ * Bound by Brotherhood. Two themes, one spine.
+ *
+ *   .theme-felt    — Poker. Dark. Built on the live poker-dealer vars.
+ *   .theme-links   — Golf. Light editorial. Fairway + sand + ink.
+ *   :root          — MMP umbrella defaults (light editorial).
+ *
+ * Type: Fraktur is too much; Inter is too little. We use Fraunces
+ * (display, editorial serif w/ optical sizes) + Inter Tight (UI text)
+ * + JetBrains Mono (numerics, scores, timers, card ranks).
+ * ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* ── Type ─────────────────────────────────────────────────────── */
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-ui: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Courier New", monospace;
+
+  /* Type scale (1.200 minor third, 16px base) */
+  --text-2xs: 0.6875rem;   /* 11px — eyebrow, plaque metadata */
+  --text-xs: 0.8125rem;    /* 13px */
+  --text-sm: 0.9375rem;    /* 15px — body small */
+  --text-md: 1rem;         /* 16px — body */
+  --text-lg: 1.1875rem;    /* 19px */
+  --text-xl: 1.5rem;       /* 24px — section title */
+  --text-2xl: 2rem;        /* 32px */
+  --text-3xl: 2.75rem;     /* 44px — page title */
+  --text-4xl: 3.75rem;     /* 60px — hero */
+  --text-5xl: 5.5rem;      /* 88px — trophy hero */
+
+  --leading-tight: 1.05;
+  --leading-snug: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;
+  --tracking-widest: 0.18em;     /* eyebrows, plaque text */
+
+  /* ── Spacing (4px grid) ───────────────────────────────────────── */
+  --space-1: 0.25rem;   /* 4 */
+  --space-2: 0.5rem;    /* 8 */
+  --space-3: 0.75rem;   /* 12 */
+  --space-4: 1rem;      /* 16 */
+  --space-5: 1.5rem;    /* 24 */
+  --space-6: 2rem;      /* 32 */
+  --space-7: 3rem;      /* 48 */
+  --space-8: 4rem;      /* 64 */
+  --space-9: 6rem;      /* 96 */
+
+  /* ── Radius ──────────────────────────────────────────────────── */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* ── Shadows (light theme) ───────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(20, 24, 30, 0.06);
+  --shadow-sm: 0 1px 2px rgba(20, 24, 30, 0.06), 0 2px 8px rgba(20, 24, 30, 0.04);
+  --shadow-md: 0 2px 4px rgba(20, 24, 30, 0.06), 0 8px 24px rgba(20, 24, 30, 0.08);
+  --shadow-lg: 0 4px 8px rgba(20, 24, 30, 0.08), 0 24px 48px rgba(20, 24, 30, 0.12);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+  /* ── Motion ───────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 140ms;
+  --dur: 220ms;
+  --dur-slow: 420ms;
+
+  /* ── Z-index ─────────────────────────────────────────────────── */
+  --z-base: 1;
+  --z-elevated: 10;
+  --z-overlay: 100;
+  --z-modal: 1000;
+
+  /* ── Brand ───────────────────────────────────────────────────── */
+  --brand-ink: #14151a;        /* deep ink — trophy plaque background */
+  --brand-gold: #b08d3a;       /* engraved-plaque gold */
+  --brand-gold-bright: #d4a017;/* trophy highlights */
+  --brand-fairway: #2f5d3a;    /* fairway green */
+  --brand-felt: #0f4a35;       /* poker-felt green */
+  --brand-rust: #b54a2a;       /* poker hearts/diamonds, accent */
+  --brand-cream: #f4eddd;      /* fairway cream / parchment */
+}
+
+/* ── LINKS theme — Golf, light editorial ─────────────────────── */
+.theme-links,
+:root {
+  --bg: #f6f1e7;            /* parchment / clubhouse paper */
+  --bg-raised: #ffffff;
+  --bg-sunken: #ede5d3;
+  --bg-tonal: #e7dec7;      /* muted tonal panel */
+
+  --ink: #14151a;           /* near-black */
+  --ink-2: #3a3d44;         /* secondary text */
+  --ink-3: #6f7280;         /* muted */
+  --ink-4: #a8a698;         /* hint, plaque-aged */
+
+  --rule: #d9d0bb;          /* hairline */
+  --rule-strong: #beb39a;
+
+  --primary: #2f5d3a;       /* fairway */
+  --primary-hover: #244829;
+  --primary-ink: #ffffff;
+
+  --accent: #b54a2a;        /* clay / rust */
+  --accent-hover: #983c20;
+
+  --gold: #b08d3a;
+  --gold-bright: #d4a017;
+
+  --success: #2f5d3a;
+  --warning: #c98a13;
+  --danger: #b3321c;
+
+  --leader-row: #f9f4e8;
+  --leader-row-alt: #f1ead7;
+
+  --shadow-sm: 0 1px 2px rgba(20, 24, 30, 0.06), 0 2px 8px rgba(20, 24, 30, 0.04);
+  --shadow-md: 0 2px 4px rgba(20, 24, 30, 0.06), 0 8px 24px rgba(20, 24, 30, 0.08);
+}
+
+/* ── FELT theme — Poker, dark casino ─────────────────────────── */
+.theme-felt {
+  --bg: #15171b;            /* base felt-room */
+  --bg-raised: #20242b;     /* surface */
+  --bg-sunken: #0f1115;     /* deepest */
+  --bg-tonal: #2a2f37;
+
+  --ink: #f6f1e7;           /* warm white */
+  --ink-2: #c8c2b3;
+  --ink-3: #8a8676;
+  --ink-4: #5b5849;
+
+  --rule: #2e333b;
+  --rule-strong: #3f4651;
+
+  --primary: #2ecc71;       /* keep poker live-app green */
+  --primary-hover: #27ae60;
+  --primary-ink: #0f1115;
+
+  --accent: #d4a017;        /* trophy gold */
+  --accent-hover: #b58614;
+
+  --gold: #d4a017;
+  --gold-bright: #f1c40f;
+
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --danger: #e74c3c;
+
+  --leader-row: #1c1f25;
+  --leader-row-alt: #20242b;
+
+  /* card suits — stays the live poker spec */
+  --suit-red: #e74c3c;
+  --suit-black: #0f1115;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3), 0 12px 24px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4), 0 24px 48px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Globals ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection { background: var(--primary); color: var(--primary-ink); }
+
+a { color: inherit; text-decoration-color: var(--rule-strong); text-underline-offset: 3px; }
+
+/* ── Typography utility classes ──────────────────────────────── */
+.t-display { font-family: var(--font-display); font-weight: 600; line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); font-variation-settings: "opsz" 144; }
+.t-title { font-family: var(--font-display); font-weight: 600; line-height: var(--leading-snug); letter-spacing: var(--tracking-tight); }
+.t-eyebrow { font-family: var(--font-ui); font-weight: 600; font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); }
+.t-mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
+.t-num { font-family: var(--font-mono); font-feature-settings: "tnum"; font-weight: 500; }
+
+/* eyebrow-style "plaque" mark used on the trophy */
+.t-plaque { font-family: var(--font-ui); font-weight: 700; letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--gold); }

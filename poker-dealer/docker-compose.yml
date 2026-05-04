@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  poker-dealer:
+    build: .
+    container_name: poker-dealer
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SESSION_SECRET=${SESSION_SECRET:-change-this-in-production}
+      - DATABASE_PATH=/app/database/poker-dealer.db
+    volumes:
+      - poker-dealer-data:/app/database
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+
+volumes:
+  poker-dealer-data:
+    driver: local

@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MMP — Bound by Brotherhood</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="The Memorial Memorial Pelau Challenge Cup. Two games, one trophy, six guys, since 2008.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="design-system/tokens.css">
+<link rel="stylesheet" href="design-system/components.css">
+<style>
+  body { background: var(--bg); }
+
+  .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: var(--space-5); padding: var(--space-3) var(--space-6); background: var(--bg-raised); border-bottom: 1px solid var(--rule); }
+  .topbar .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; text-decoration: none; color: var(--ink); }
+  .topbar .brand svg { width: 28px; height: 28px; color: var(--primary); }
+  .topbar .nav-links { margin-left: auto; display: flex; gap: var(--space-5); font-size: var(--text-sm); }
+  .topbar .nav-links a { color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+  .topbar .nav-links a:hover { color: var(--ink); }
+
+  .hero { max-width: 1200px; margin: 0 auto; padding: var(--space-9) var(--space-6) var(--space-7); display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-7); align-items: center; }
+  .hero .eyebrow { display: inline-block; padding: 4px 12px; border: 1px solid var(--rule-strong); border-radius: var(--radius-pill); font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-5xl); line-height: 0.92; letter-spacing: var(--tracking-tight); margin: var(--space-4) 0 var(--space-3); font-variation-settings: "opsz" 144; }
+  .hero h1 em { font-style: italic; color: var(--primary); font-weight: 500; }
+  .hero p.lede { font-family: var(--font-display); font-size: var(--text-xl); font-style: italic; color: var(--ink-2); max-width: 32ch; line-height: 1.25; }
+  .hero .ctas { display: flex; gap: var(--space-3); margin-top: var(--space-5); flex-wrap: wrap; }
+  .trophy-stage { position: relative; aspect-ratio: 3/4; max-width: 460px; margin: 0 auto; }
+  .trophy-stage img { width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); }
+  .trophy-stage::after { content: ''; position: absolute; inset: -8px; border: 1px solid var(--rule); border-radius: calc(var(--radius-xl) + 8px); pointer-events: none; }
+
+  .doors { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6); border-top: 1px solid var(--rule); }
+  .doors-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+  @media (max-width: 800px) { .doors-grid, .hero { grid-template-columns: 1fr; } }
+  .door {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    aspect-ratio: 16/10;
+    color: white;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: var(--space-6);
+    transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+    border: 1px solid var(--rule);
+  }
+  .door:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .door .eyebrow { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; opacity: 0.85; }
+  .door h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-3xl); margin: var(--space-2) 0; letter-spacing: var(--tracking-tight); line-height: 1; }
+  .door p { font-family: var(--font-display); font-style: italic; font-size: var(--text-lg); opacity: 0.85; margin: 0; max-width: 28ch; }
+  .door .arrow { position: absolute; top: var(--space-5); right: var(--space-5); width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); transition: background var(--dur) var(--ease-out); }
+  .door:hover .arrow { background: rgba(255,255,255,0.32); }
+
+  .door.poker {
+    background:
+      radial-gradient(ellipse at 70% 40%, color-mix(in srgb, var(--brand-felt) 70%, black) 0%, #0a2418 70%),
+      linear-gradient(135deg, #0f1115, #15171b);
+  }
+  .door.poker::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 18% 70%, rgba(231,76,60,0.18) 0%, transparent 30%), radial-gradient(circle at 78% 30%, rgba(212,160,23,0.18) 0%, transparent 35%); }
+  .door.poker::after { content: '♠ ♥ ♦ ♣'; position: absolute; top: var(--space-5); left: var(--space-6); font-size: 32px; color: var(--gold); letter-spacing: 14px; opacity: 0.7; }
+
+  .door.golf {
+    background:
+      radial-gradient(ellipse at 30% 60%, color-mix(in srgb, var(--brand-fairway) 70%, black) 0%, #0a2418 80%),
+      linear-gradient(180deg, #1d3a26 0%, #0f2418 100%);
+  }
+  .door.golf::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 80% 35%, rgba(244,237,221,0.25) 0%, transparent 25%), radial-gradient(circle at 12% 90%, rgba(212,160,23,0.18) 0%, transparent 30%); }
+  .door.golf::after { content: '⛳'; position: absolute; top: var(--space-5); left: var(--space-6); font-size: 32px; opacity: 0.85; }
+
+  .standings { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6); border-top: 1px solid var(--rule); }
+  .standings-head { display: flex; align-items: end; justify-content: space-between; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3); }
+  .standings-head h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-3xl); letter-spacing: var(--tracking-tight); margin: 0; }
+  .standings-head h2 em { font-style: italic; color: var(--primary); }
+  .standings-head a { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--accent); text-decoration: none; font-weight: 600; }
+
+  .standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+  @media (max-width: 800px) { .standings-grid { grid-template-columns: 1fr; } }
+  .standings-card { background: var(--bg-raised); border: 1px solid var(--rule); border-radius: var(--radius-lg); padding: var(--space-5); }
+  .standings-card .t-eyebrow { color: var(--ink-3); }
+  .standings-card h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-xl); margin: 4px 0 var(--space-3); }
+  .standings-card .empty { font-family: var(--font-display); font-style: italic; color: var(--ink-2); margin: var(--space-3) 0; }
+  .standings-card .upcoming { display: grid; grid-template-columns: auto 1fr; gap: var(--space-3) var(--space-4); margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px dashed var(--rule); }
+  .standings-card .upcoming dt { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); align-self: center; }
+  .standings-card .upcoming dd { font-family: var(--font-display); font-size: var(--text-md); font-weight: 500; margin: 0; }
+
+  .latest { padding: var(--space-7) var(--space-6); max-width: 1200px; margin: 0 auto; border-top: 1px solid var(--rule); }
+  .latest h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-2xl); margin: 0 0 var(--space-4); }
+  .latest-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+  @media (max-width: 800px) { .latest-grid { grid-template-columns: 1fr; } }
+  .latest-item { padding: var(--space-4); border: 1px solid var(--rule); border-radius: var(--radius-md); background: var(--bg-raised); }
+  .latest-item .when { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); }
+  .latest-item .what { font-family: var(--font-display); font-size: var(--text-md); font-weight: 500; margin-top: 4px; }
+
+  footer.site { max-width: 1200px; margin: var(--space-7) auto 0; padding: var(--space-6) var(--space-6) var(--space-9); border-top: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; color: var(--ink-3); font-size: var(--text-sm); flex-wrap: wrap; gap: var(--space-3); }
+  footer.site .mark { display: flex; align-items: center; gap: var(--space-2); }
+</style>
+</head>
+<body class="theme-links">
+
+<nav class="topbar">
+  <a class="brand" href="/">
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+    MMP
+  </a>
+  <div class="nav-links">
+    <a href="/golf/">Golf</a>
+    <a href="https://poker.pelau.com/">Poker</a>
+    <a href="#standings">Standings</a>
+    <a href="#latest">Latest</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div>
+    <span class="eyebrow">Since 2008 · mmp.pelau.com</span>
+    <h1>Friend-group sport,<br><em>kept honest.</em></h1>
+    <p class="lede">One trophy. Two games. The same six guys, every year, since 2008.</p>
+    <div class="ctas">
+      <a class="btn btn-plaque" href="#doors">Enter the cup</a>
+      <a class="btn btn-ghost" href="#standings">All-time standings →</a>
+    </div>
+  </div>
+  <div class="trophy-stage">
+    <img src="design-system/assets/trophy.jpg" alt="The MMP Challenge Cup — engraved walnut plaque, gold cup">
+  </div>
+</section>
+
+<section class="doors" id="doors">
+  <div class="doors-grid">
+    <a class="door poker" href="https://poker.pelau.com/">
+      <span class="arrow">↗</span>
+      <span class="eyebrow">poker.pelau.com</span>
+      <h3>Poker</h3>
+      <p>Texas Hold'em, dealt in your pocket. Tony, where's your buy-in?</p>
+    </a>
+    <a class="door golf" href="/golf/">
+      <span class="arrow">↗</span>
+      <span class="eyebrow">mmp.pelau.com/golf</span>
+      <h3>Golf</h3>
+      <p>Live leaderboard the moment the first card is entered.</p>
+    </a>
+  </div>
+</section>
+
+<section class="standings" id="standings">
+  <div class="standings-head">
+    <h2>All-time, <em>by name.</em></h2>
+    <a href="/golf/#/all-time">View every season →</a>
+  </div>
+  <div class="standings-grid">
+    <div class="standings-card" id="poker-standings">
+      <span class="t-eyebrow">Poker · cups won</span>
+      <h3 id="poker-standings-head">Loading…</h3>
+      <ul class="player-list" id="poker-standings-list"></ul>
+    </div>
+    <div class="standings-card" id="golf-standings">
+      <span class="t-eyebrow">Golf · 2026 Links Cup</span>
+      <h3 id="golf-standings-head">Loading…</h3>
+      <ul class="player-list" id="golf-standings-list"></ul>
+      <dl class="upcoming" id="golf-upcoming" hidden></dl>
+    </div>
+  </div>
+</section>
+
+<section class="latest" id="latest">
+  <h2>Latest</h2>
+  <div class="latest-grid" id="latest-grid">
+    <div class="latest-item"><div class="when">Loading…</div><div class="what"></div></div>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="mark">
+    <svg viewBox="0 0 64 64" style="width:20px;height:20px;color:var(--primary);" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/></svg>
+    MMP · Bound by Brotherhood
+  </div>
+  <span>Memorial Memorial Pelau Challenge Cup · est. 2008</span>
+</footer>
+
+<script type="module">
+  const MONTHS = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+
+  // Append T00:00:00 so the ISO date is parsed in local time, not UTC —
+  // otherwise May 3 in Toronto becomes May 2 in the rendered string.
+  const fmtDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const tryFetch = async (url) => {
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      return await r.json();
+    } catch {
+      return null;
+    }
+  };
+
+  const championsByName = (seasons) => {
+    const cups = new Map();
+    const lastWin = new Map();
+    for (const s of seasons) {
+      const champ = (s.finalStandings || []).find((p) => p.rank === 1);
+      if (!champ) continue;
+      cups.set(champ.name, (cups.get(champ.name) || 0) + 1);
+      lastWin.set(champ.name, s.label);
+    }
+    const ranked = [...cups.entries()].sort((a, b) => b[1] - a[1]);
+    return { ranked, lastWin };
+  };
+
+  const renderLeaderRows = ({ ranked, lastWin }) => ranked.map(([name, count], i) => `
+    <li class="player-row${i === 0 ? ' leader-1' : ''}">
+      <span class="rank">${i + 1}</span>
+      <span class="name">${name}</span>
+      <span class="meta">last ${lastWin.get(name)}</span>
+      <span></span>
+      <span class="score">${count}</span>
+    </li>
+  `).join('');
+
+  const [poker, golf] = await Promise.all([
+    tryFetch('/golf/data/poker.json'),
+    tryFetch('/golf/data/golf.json'),
+  ]);
+
+  // ── Poker standings: count rank-1 finishes per player across all seasons ──
+  const pokerHead = document.getElementById('poker-standings-head');
+  const pokerList = document.getElementById('poker-standings-list');
+  if (poker && Array.isArray(poker.seasons) && poker.seasons.length) {
+    const champs = championsByName(poker.seasons);
+    if (champs.ranked.length) {
+      const [topName, topCups] = champs.ranked[0];
+      pokerHead.textContent = `${topName} · ${topCups}`;
+      pokerList.innerHTML = renderLeaderRows(champs);
+    } else {
+      pokerHead.textContent = 'No champions yet';
+      pokerList.innerHTML = '';
+    }
+  } else {
+    pokerHead.textContent = 'Data unavailable';
+  }
+
+  // ── Golf standings: empty state pointing to the next round when no season is complete ──
+  const golfHead = document.getElementById('golf-standings-head');
+  const golfList = document.getElementById('golf-standings-list');
+  const golfUpcoming = document.getElementById('golf-upcoming');
+  if (golf && Array.isArray(golf.seasons) && golf.seasons.length) {
+    const champs = championsByName(golf.seasons);
+    if (champs.ranked.length) {
+      const [topName, topCups] = champs.ranked[0];
+      golfHead.textContent = `${topName} · ${topCups}`;
+      golfList.innerHTML = renderLeaderRows(champs);
+    } else {
+      const season = golf.seasons[golf.seasons.length - 1];
+      const next = (season.rounds || []).find((r) => !r.played);
+      if (next) {
+        golfHead.textContent = `${season.label} Links Cup`;
+        golfList.innerHTML = `<li class="empty">First round tees off ${fmtDate(next.date)}. Leaderboard wakes when the first card is entered.</li>`;
+        golfUpcoming.hidden = false;
+        golfUpcoming.innerHTML = `
+          <dt>Course</dt><dd>${next.course || 'TBD'}</dd>
+          <dt>Organizer</dt><dd>${next.organizer || 'TBD'}</dd>
+          <dt>Tee times</dt><dd>${(next.teeTimes || []).join(' · ') || 'TBD'}</dd>
+        `;
+      } else {
+        golfHead.textContent = `${season.label} season`;
+        golfList.innerHTML = `<li class="empty">Schedule pending.</li>`;
+      }
+    }
+  } else {
+    golfHead.textContent = 'Data unavailable';
+  }
+
+  // ── Latest: most recently played event from each sport, plus next golf round ──
+  // Poker events store { month: "Mar", year: 2025 } rather than a real date;
+  // synthesize one mid-month so they sort sensibly against ISO golf dates.
+  const POKER_EVENT_DAY = 15;
+  const latest = [];
+
+  for (const s of poker?.seasons || []) {
+    for (const e of s.events || []) {
+      if (!e.played) continue;
+      const monthIdx = MONTHS[e.month];
+      if (!monthIdx || !e.year) continue;
+      const date = `${e.year}-${String(monthIdx).padStart(2, '0')}-${POKER_EVENT_DAY}`;
+      latest.push({ date, what: `Poker · ${e.month} ${e.year} hosted by ${e.host}` });
+    }
+  }
+  for (const s of golf?.seasons || []) {
+    for (const r of s.rounds || []) {
+      if (r.played) {
+        latest.push({ date: r.date, what: `Golf · Round at ${r.course} (${r.organizer})` });
+      } else if (r.date) {
+        latest.push({ date: r.date, what: `Upcoming · Round at ${r.course} on ${fmtDate(r.date)} (${r.organizer})` });
+      }
+    }
+  }
+  latest.sort((a, b) => b.date.localeCompare(a.date));
+  const grid = document.getElementById('latest-grid');
+  if (latest.length) {
+    grid.innerHTML = latest.slice(0, 3).map((item) => `
+      <div class="latest-item"><div class="when">${fmtDate(item.date)}</div><div class="what">${item.what}</div></div>
+    `).join('');
+  } else {
+    grid.innerHTML = `<div class="latest-item"><div class="when">No news yet</div><div class="what">First round May 3, 2026.</div></div>`;
+  }
+</script>
+
+</body></html>
