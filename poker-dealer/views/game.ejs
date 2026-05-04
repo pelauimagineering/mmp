@@ -4,6 +4,10 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>MMP Poker</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="/design-system/tokens.css">
+        <link rel="stylesheet" href="/design-system/components.css">
         <link rel="stylesheet" href="/css/variables.css">
         <link rel="stylesheet" href="/css/common.css">
         <link rel="stylesheet" href="/css/cards.css">
@@ -29,11 +33,15 @@
 		</script>
 
     </head>
-    <body>
+    <body class="theme-felt">
         <div class="game-container">
             <header class="game-header">
-                <h1 class="game-title">MMP Poker ♥️ ♣️ </h1>
-                <span>
+                <a href="https://mmp.pelau.com/" class="game-brand" aria-label="MMP home">
+                    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+                    <span class="game-title">MMP Poker <span class="suit-red">♥</span> <span class="suit-dark">♣</span></span>
+                </a>
+                <a href="https://mmp.pelau.com/golf/" class="game-switch">Switch to Golf →</a>
+                <span class="game-actions">
                     <input type="checkbox" id="toggle-video" class="btn-check">
                     <label class="btn btn-primary" for="toggle-video">Show Video</label>
                     <button id="resetGameBtn" class="btn btn-danger" style="margin-left: 10px;">Reset Game</button>

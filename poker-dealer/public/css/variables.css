@@ -1,73 +1,98 @@
-:root {
-    /* Colors */
-    --color-primary: #2ecc71;
-    --color-primary-dark: #27ae60;
-    --color-secondary: #3498db;
-    --color-secondary-dark: #2980b9;
-    --color-danger: #e74c3c;
-    --color-danger-dark: #c0392b;
-    --color-warning: #f39c12;
-    --color-success: #2ecc71;
+/* MMP poker-dealer — variables.css
+ *
+ * Re-bound to the shared MMP design system. Variable NAMES are unchanged
+ * (every existing rule in game.css / cards.css / common.css / auth.css /
+ * community-display.css continues to reference --color-primary,
+ * --color-bg-primary, --color-hearts, --spacing-md, etc.) but their
+ * values now resolve through the .theme-felt block in
+ * /design-system/tokens.css.
+ *
+ * That gives us a one-file re-skin without touching any existing rules
+ * or any of the WebSocket-driven JS that paints the table.
+ */
 
-    /* Neutral colors */
-    --color-bg-primary: #1a1a1a;
-    --color-bg-secondary: #2d2d2d;
-    --color-bg-tertiary: #3d3d3d;
-    --color-surface: #2d2d2d;
-    --color-surface-elevated: #3d3d3d;
+@import url('/design-system/tokens.css');
 
-    /* Text colors */
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #b0b0b0;
-    --color-text-muted: #808080;
+/* The page itself sets <body class="theme-felt"> so the dark casino
+ * tokens are active. We re-declare the legacy --color-*, --spacing-*,
+ * --radius-*, --shadow-*, --font-* names on :root and on .theme-felt
+ * so they hold even on pages that haven't set the body class yet. */
+:root,
+body,
+body.theme-felt {
+  /* Colors */
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-hover);
+  --color-secondary: #3498db;          /* kept — small-blind chip uses this */
+  --color-secondary-dark: #2980b9;
+  --color-danger: var(--danger);
+  --color-danger-dark: #c0392b;
+  --color-warning: var(--warning);
+  --color-success: var(--success);
 
-    /* Border colors */
-    --color-border: #4d4d4d;
-    --color-border-light: #5d5d5d;
+  /* Neutral colors */
+  --color-bg-primary: var(--bg);
+  --color-bg-secondary: var(--bg-raised);
+  --color-bg-tertiary: var(--bg-tonal);
+  --color-surface: var(--bg-raised);
+  --color-surface-elevated: var(--bg-tonal);
 
-    /* Card suits */
-    --color-hearts: #e74c3c;
-    --color-diamonds: #e74c3c;
-    --color-clubs: #2c3e50;
-    --color-spades: #2c3e50;
+  /* Text colors */
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-muted: var(--ink-3);
 
-    /* Spacing */
-    --spacing-xs: 0.25rem;
-    --spacing-sm: 0.5rem;
-    --spacing-md: 1rem;
-    --spacing-lg: 1.5rem;
-    --spacing-xl: 2rem;
-    --spacing-2xl: 3rem;
+  /* Border colors */
+  --color-border: var(--rule);
+  --color-border-light: var(--rule-strong);
 
-    /* Border radius */
-    --radius-sm: 0.25rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
+  /* Card suits — re-bound to the felt-theme suit tokens so they stay
+   * crisp on the dark surface. JS emits .suit-hearts etc on card divs. */
+  --color-hearts: var(--suit-red);
+  --color-diamonds: var(--suit-red);
+  --color-clubs: var(--suit-black);
+  --color-spades: var(--suit-black);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
-    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+  /* Spacing — alias to the 4px-grid tokens (close, not identical) */
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-5);
+  --spacing-xl: var(--space-6);
+  --spacing-2xl: var(--space-7);
 
-    /* Transitions */
-    --transition-fast: 0.15s ease;
-    --transition-normal: 0.3s ease;
-    --transition-slow: 0.5s ease;
+  /* Border radius */
+  --radius-sm: var(--radius-xs);
+  --radius-md: var(--radius-sm);
+  --radius-lg: var(--radius-md);
+  --radius-xl: var(--radius-lg);
 
-    /* Z-index */
-    --z-base: 1;
-    --z-elevated: 10;
-    --z-overlay: 100;
-    --z-modal: 1000;
+  /* Shadows — keep dark-theme tuned */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
 
-    /* Font sizes */
-    --font-xs: 0.75rem;
-    --font-sm: 0.875rem;
-    --font-md: 1rem;
-    --font-lg: 1.125rem;
-    --font-xl: 1.25rem;
-    --font-2xl: 1.5rem;
-    --font-3xl: 2rem;
+  /* Transitions */
+  --transition-fast: var(--dur-fast);
+  --transition-normal: var(--dur);
+  --transition-slow: var(--dur-slow);
+
+  /* Z-index — pass through */
+  /* Z-index tokens are already declared by tokens.css; nothing to alias. */
+
+  /* Font sizes — bind to MMP type scale */
+  --font-xs: var(--text-xs);
+  --font-sm: var(--text-sm);
+  --font-md: var(--text-md);
+  --font-lg: var(--text-lg);
+  --font-xl: var(--text-xl);
+  --font-2xl: var(--text-2xl);
+  --font-3xl: var(--text-3xl);
+}
+
+/* Make sure the page body uses the MMP UI font even where existing CSS
+ * doesn't set it explicitly. Existing rules can still override. */
+body {
+  font-family: var(--font-ui);
 }
