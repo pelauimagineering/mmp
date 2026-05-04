@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow" />
+<title>MMP Score Entry · Golf Round</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --bg-elev: #14181d;
+    --bg-elev-2: #1b2026;
+    --line: #262d36;
+    --line-strong: #344052;
+    --text: #eef2f7;
+    --text-dim: #93a0b1;
+    --text-mute: #62708a;
+    --good: #34d399;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --accent: #16a34a;
+    --accent-soft: #0f3a23;
+    --accent-ink: #ecfdf5;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  input[type="number"], input[type="text"], input[type="date"], select, textarea {
+    font: inherit; color: var(--text); background: var(--bg-elev-2);
+    border: 1px solid var(--line-strong); border-radius: 8px; padding: 10px 12px; font-size: 16px;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px #16a34a33; }
+
+  .shell { max-width: 760px; margin: 0 auto; padding: 24px 16px 80px; }
+  header.top { border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 24px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: 0.04em; font-size: 16px; }
+  .brand-mark { width: 26px; height: 26px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 12px; font-weight: 900; }
+  .brand-sub { color: var(--text-dim); font-weight: 500; font-size: 12px; letter-spacing: 0; }
+  h1 { font-size: 22px; margin: 12px 0 4px; letter-spacing: -0.01em; }
+  .lede { color: var(--text-dim); font-size: 14px; margin: 0; }
+
+  .card { background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin: 0 0 12px; font-weight: 700; }
+  .field { display: block; margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; font-weight: 600; }
+  .field input, .field select { width: 100%; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .field-row { grid-template-columns: 1fr; } }
+
+  /* Scoring legend */
+  details.legend { background: var(--bg-elev-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+  details.legend summary { font-size: 12px; color: var(--text-dim); cursor: pointer; font-weight: 700; letter-spacing: 0.04em; }
+  details.legend summary::after { content: " — tap to expand"; color: var(--text-mute); font-weight: 400; }
+  details.legend[open] summary::after { content: ""; }
+  .legend-grid { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 12px; }
+  .legend-row { display: flex; gap: 12px; align-items: baseline; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+  .legend-row:last-child { border-bottom: 0; }
+  .legend-row .pts { font-family: var(--mono); font-weight: 800; color: var(--accent); min-width: 48px; }
+  .legend-row .name { font-weight: 700; min-width: 96px; }
+  .legend-row .desc { color: var(--text-dim); font-size: 13px; }
+
+  /* Player cards */
+  .player-card {
+    background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 12px;
+    transition: opacity .15s, border-color .15s;
+  }
+  .player-card.is-dnp { opacity: 0.45; }
+  .player-card.is-low-round { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft); }
+  .pc-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .pc-head .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg-elev-2); border: 1px solid var(--line); color: var(--text);
+    display: grid; place-items: center; font-weight: 800; font-size: 12px; flex: 0 0 auto;
+  }
+  .pc-head .pname { font-weight: 700; font-size: 16px; }
+  .pc-head .phint { color: var(--text-mute); font-size: 12px; margin-top: 2px; }
+  .pc-head .spacer { flex: 1; }
+  .pc-head .pts {
+    font-family: var(--mono); font-weight: 800; font-size: 18px;
+    background: var(--accent-soft); color: var(--accent-ink);
+    padding: 6px 10px; border-radius: 6px; min-width: 56px; text-align: right;
+  }
+  .pc-head .pts.zero { background: var(--bg-elev-2); color: var(--text-mute); }
+  .pc-head .pts .lbl { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); display: block; font-family: var(--sans); font-weight: 700; }
+  .pc-head .pts.zero .lbl { color: var(--text-mute); }
+
+  /* Toggle for "Did Not Play" */
+  .pc-toggle {
+    appearance: none;
+    height: 30px; padding: 0 12px; border-radius: 6px;
+    background: var(--bg-elev-2); border: 1px solid var(--line);
+    color: var(--text-dim); font-size: 12px; font-weight: 700; cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .pc-toggle.is-on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  /* Holes selector + gross/HCP/net */
+  .pc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .pc-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .pc-field { display: block; }
+  .pc-field .pc-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mute); margin-bottom: 4px; font-weight: 700; display: block; }
+  .pc-field input { width: 100%; padding: 10px; text-align: center; font-family: var(--mono); font-size: 16px; -moz-appearance: textfield; }
+  .pc-field input::-webkit-outer-spin-button,
+  .pc-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .pc-net {
+    display: block; padding: 10px; text-align: center; font-family: var(--mono); font-size: 16px;
+    background: var(--bg-elev-2); border: 1px dashed var(--line); border-radius: 8px; color: var(--text-dim);
+    font-weight: 700;
+  }
+  .pc-net.is-set { color: var(--accent); border-color: var(--accent-soft); border-style: solid; background: #0f3a2333; }
+
+  .pc-segmented { display: flex; gap: 4px; background: var(--bg-elev-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px; }
+  .pc-segmented button {
+    flex: 1; padding: 7px 0; border-radius: 4px; font-weight: 700; font-size: 13px; color: var(--text-dim);
+  }
+  .pc-segmented button.is-on { background: var(--accent); color: var(--accent-ink); }
+
+  /* Counts grid */
+  .pc-counts {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    margin-top: 4px;
+  }
+  @media (max-width: 480px) { .pc-counts { grid-template-columns: repeat(3, 1fr); } }
+  .pc-count {
+    background: var(--bg-elev-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px;
+    text-align: center;
+  }
+  .pc-count .lbl { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; }
+  .pc-count .pts-hint { font-size: 9px; color: var(--text-mute); font-family: var(--mono); }
+  .pc-count input {
+    width: 100%; text-align: center; font-family: var(--mono); font-size: 16px;
+    background: transparent; border: 0; padding: 4px 0 0;
+  }
+  .pc-count input:focus { outline: none; box-shadow: none; }
+  .pc-count.has-value { border-color: var(--accent-soft); background: #0f3a2333; }
+  .pc-count.has-value .lbl { color: var(--accent); }
+
+  .pc-low-round {
+    margin-top: 10px; font-size: 12px; color: var(--accent); font-weight: 700;
+    display: none;
+  }
+  .player-card.is-low-round .pc-low-round { display: block; }
+
+  /* Summary */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
+  .summary-tile { background: var(--bg-elev-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .summary-tile .lbl { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; }
+  .summary-tile .val { font-size: 18px; font-weight: 800; margin-top: 2px; }
+  .summary-tile .sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Save buttons */
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .btn { padding: 12px 16px; border-radius: 8px; font-weight: 700; font-size: 14px; border: 1px solid var(--line-strong); background: var(--bg-elev-2); color: var(--text); }
+  .btn:hover { border-color: var(--text-dim); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn.ghost { background: transparent; }
+  .btn[disabled] { opacity: .5; cursor: not-allowed; }
+  .status { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px; display: none; }
+  .status.is-ok { background: #052e1a; border: 1px solid #14532d; color: #bbf7d0; display: block; }
+  .status.is-err { background: #2a0a0a; border: 1px solid #7f1d1d; color: #fecaca; display: block; }
+  details.preview { background: var(--bg-elev-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-top: 10px; }
+  details.preview summary { font-size: 12px; color: var(--text-dim); cursor: pointer; font-weight: 700; letter-spacing: 0.04em; }
+  details.preview pre { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; margin-top: 10px; overflow: auto; max-height: 300px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+  .hint { color: var(--text-mute); font-size: 12px; margin-top: 6px; }
+  .back-link { display: inline-block; margin-bottom: 12px; color: var(--text-dim); font-size: 13px; }
+  .back-link:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<main class="shell">
+
+  <header class="top">
+    <a class="back-link" href="index.html">← Back to standings</a>
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        MMP CHALLENGE CUP — SCORE ENTRY
+        <div class="brand-sub">Enter a round. Save. Replace <code>data/golf.json</code>.</div>
+      </div>
+    </div>
+    <h1>New round</h1>
+    <p class="lede">Toggle who played, enter their gross + count of pars / birdies / eagles, etc. Points compute live. Low round (lowest 18-hole gross) is auto-awarded.</p>
+  </header>
+
+  <details class="legend">
+    <summary>Scoring rules</summary>
+    <div class="legend-grid" id="legend-grid"></div>
+    <p class="hint" style="margin-top:10px;">Low-round ties: every player with the lowest 18-hole gross gets the full 3 points (not split).</p>
+  </details>
+
+  <div class="card">
+    <h2>Round details</h2>
+    <div class="field-row">
+      <label class="field"><span>Date</span><input type="date" id="f-date" required></label>
+      <label class="field"><span>Course</span><input type="text" id="f-course" placeholder="e.g. Kedron Dells" required></label>
+    </div>
+    <div class="field-row">
+      <label class="field"><span>Organizer</span><select id="f-organizer"><option value="">—</option></select></label>
+      <label class="field"><span>Tee times <span class="hint" style="margin:0;">(comma-separated)</span></span><input type="text" id="f-tees" placeholder="10:06, 10:16"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Scores</h2>
+    <div id="player-cards"></div>
+    <p class="hint">Tap "Played" / "DNP" to toggle attendance. Empty count fields are treated as 0.</p>
+  </div>
+
+  <div class="card">
+    <h2>Round summary</h2>
+    <div class="summary-grid">
+      <div class="summary-tile"><div class="lbl">Played</div><div class="val" id="sum-attended">0</div><div class="sub">of 11</div></div>
+      <div class="summary-tile"><div class="lbl">Low round</div><div class="val" id="sum-low-round">—</div><div class="sub" id="sum-low-round-name">—</div></div>
+      <div class="summary-tile"><div class="lbl">Total awarded</div><div class="val" id="sum-total-pts">0</div><div class="sub">points this round</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Save</h2>
+    <div class="actions">
+      <button class="btn primary" id="btn-save">Save round &amp; download golf.json</button>
+      <button class="btn" id="btn-copy">Copy JSON to clipboard</button>
+      <button class="btn ghost" id="btn-clear">Clear scores</button>
+    </div>
+    <div class="status" id="status"></div>
+    <details class="preview">
+      <summary>Preview generated JSON</summary>
+      <pre id="preview"></pre>
+    </details>
+    <p class="hint" style="margin-top:14px;">Round details (date, course, organizer, tees) persist in your browser between visits to this page so you don't have to retype them.</p>
+  </div>
+
+</main>
+
+<script>
+  /* ------------------------------------------------------------------
+     MMP Challenge Cup — golf score entry, points-based scoring.
+     Reads data/golf.json + data/players.json on load.
+     Falls back to a built-in roster when opened via file://.
+     ------------------------------------------------------------------ */
+  const FALLBACK_ROSTER = [
+    { id: "jas",     name: "Jas",     currentHandicap: 18, sports: ["golf"] },
+    { id: "junior",  name: "Junior",  currentHandicap: 19, sports: ["golf","poker"] },
+    { id: "harish",  name: "Harish",  currentHandicap: 20, sports: ["golf","poker"] },
+    { id: "kerwin",  name: "Kerwin",  currentHandicap: 22, sports: ["golf","poker"] },
+    { id: "seymour", name: "Seymour", currentHandicap: 23, sports: ["golf","poker"] },
+    { id: "tony",    name: "Tony",    currentHandicap: 26, sports: ["golf","poker"] },
+    { id: "lorenzo", name: "Lorenzo", currentHandicap: 34, sports: ["golf","poker"] },
+    { id: "neave",   name: "Neave",   currentHandicap: 36, sports: ["golf","poker"] },
+    { id: "chris",   name: "Chris",   currentHandicap: 39, sports: ["golf","poker"] },
+    { id: "gary",    name: "Gary",    currentHandicap: 44, sports: ["golf","poker"] },
+    { id: "wayne",   name: "Wayne",   currentHandicap: 56, sports: ["golf","poker"] },
+  ];
+  const FALLBACK_GOLF = {
+    sport: "golf",
+    scoringMatrix: {
+      attendance: { points: 5,  label: "Attendance",  description: "Showing up and playing at least 9 holes of an MMP event" },
+      par:        { points: 1,  label: "Par",         description: "Even strokes with the alotted strokes for the hole" },
+      birdie:     { points: 3,  label: "Birdie",      description: "1 stroke under the alotted strokes for the hole" },
+      eagle:      { points: 10, label: "Eagle",       description: "2 strokes under the alotted strokes for the hole" },
+      albatross:  { points: 20, label: "Albatross",   description: "3 strokes under the alotted strokes for the hole" },
+      holeInOne:  { points: 25, label: "Hole in One", description: "Self-explanatory" },
+      lowRound:   { points: 3,  label: "Low Round",   description: "Lowest net score (gross − handicap) for the 18-hole session" },
+    },
+    seasons: [{
+      id: "2026", label: "2026 Links Cup",
+      rounds: [{ id: "2026-r001", date: "2026-05-03", course: "Kedron Dells", organizer: "Harish", teeTimes: ["10:06", "10:16"], played: false, results: [] }],
+      finalStandings: []
+    }]
+  };
+
+  const POINTS = { attendance: 5, par: 1, birdie: 3, eagle: 10, albatross: 20, holeInOne: 25, lowRound: 3 };
+  const COUNT_FIELDS = [
+    { key: "pars",        label: "Pars",      pts: 1 },
+    { key: "birdies",     label: "Birdies",   pts: 3 },
+    { key: "eagles",      label: "Eagles",    pts: 10 },
+    { key: "albatrosses", label: "Albatross", pts: 20 },
+    { key: "holeInOnes",  label: "HIO",       pts: 25 },
+  ];
+  const $  = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+  const initials = (n) => (n||"").split(" ").map(s => s[0]).slice(0,2).join("").toUpperCase();
+  const ROUND_DETAILS_KEY = "mmp.golf.lastRoundDetails";
+
+  let players = [];
+  let golfData = null;
+  let scoringMatrix = null;
+  let saveCount = 0;
+
+  async function tryFetch(path, fallback) {
+    try {
+      const r = await fetch(path, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      return await r.json();
+    } catch { return fallback; }
+  }
+
+  async function init() {
+    const [pj, gj] = await Promise.all([
+      tryFetch("data/players.json", { players: FALLBACK_ROSTER }),
+      tryFetch("data/golf.json", FALLBACK_GOLF),
+    ]);
+    players = (pj.players || [])
+      .filter(p => !p.sports || p.sports.includes("golf"))
+      .map(p => ({ ...p }));
+    golfData = gj;
+    scoringMatrix = gj.scoringMatrix || FALLBACK_GOLF.scoringMatrix;
+
+    renderLegend();
+
+    // organizer dropdown
+    const orgSel = $("#f-organizer");
+    players.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.name; opt.textContent = p.name;
+      orgSel.appendChild(opt);
+    });
+
+    // Pre-populate from upcoming round, falling back to last entered details
+    const upcoming = golfData.seasons[0]?.rounds?.find(r => !r.played);
+    const lastDetails = JSON.parse(localStorage.getItem(ROUND_DETAILS_KEY) || "null");
+    if (upcoming) {
+      $("#f-date").value = upcoming.date;
+      $("#f-course").value = upcoming.course || "";
+      $("#f-tees").value = (upcoming.teeTimes || []).join(", ");
+      if (upcoming.organizer) orgSel.value = upcoming.organizer;
+    } else if (lastDetails) {
+      $("#f-date").value = lastDetails.date || "";
+      $("#f-course").value = lastDetails.course || "";
+      $("#f-tees").value = lastDetails.tees || "";
+      if (lastDetails.organizer) orgSel.value = lastDetails.organizer;
+    }
+
+    renderPlayerCards();
+    bindEvents();
+    refreshAll();
+  }
+
+  function renderLegend() {
+    const order = ["attendance","par","birdie","eagle","albatross","holeInOne","lowRound"];
+    $("#legend-grid").innerHTML = order.map(k => {
+      const m = scoringMatrix[k]; if (!m) return "";
+      return `<div class="legend-row">
+        <span class="pts">+${m.points}</span>
+        <span class="name">${m.label}</span>
+        <span class="desc">${m.description}</span>
+      </div>`;
+    }).join("");
+  }
+
+  function renderPlayerCards() {
+    const root = $("#player-cards");
+    root.innerHTML = players.map(p => `
+      <div class="player-card is-dnp" data-pid="${p.id}" data-attended="false" data-holes="18">
+        <div class="pc-head">
+          <div class="avatar">${initials(p.name)}</div>
+          <div>
+            <div class="pname">${p.name}</div>
+            <div class="phint">HCP ${p.currentHandicap ?? "—"}</div>
+          </div>
+          <div class="spacer"></div>
+          <button class="pc-toggle" type="button" data-action="toggle-attended">DNP</button>
+          <div class="pts zero" aria-label="round points">
+            <span class="lbl">Pts</span>
+            <span class="val">0</span>
+          </div>
+        </div>
+        <div class="pc-row">
+          <div class="pc-field">
+            <span class="pc-label">Holes</span>
+            <div class="pc-segmented" role="group">
+              <button type="button" data-action="set-holes" data-holes="9">9</button>
+              <button type="button" class="is-on" data-action="set-holes" data-holes="18">18</button>
+            </div>
+          </div>
+          <div class="pc-field">
+            <span class="pc-label">HCP</span>
+            <input type="number" class="hcp" min="0" max="60" step="1" inputmode="numeric" value="${p.currentHandicap ?? ''}" placeholder="—" />
+          </div>
+        </div>
+        <div class="pc-row three">
+          <div class="pc-field">
+            <span class="pc-label">Gross</span>
+            <input type="number" class="gross" min="20" max="200" step="1" inputmode="numeric" placeholder="—" />
+          </div>
+          <div class="pc-field">
+            <span class="pc-label">Net</span>
+            <div class="pc-net">—</div>
+          </div>
+          <div class="pc-field" style="display:flex; align-items:flex-end;">
+            <span class="phint" style="font-size:11px; color:var(--text-mute);">Net = Gross − HCP. Low Round goes to lowest net.</span>
+          </div>
+        </div>
+        <div class="pc-counts">
+          ${COUNT_FIELDS.map(f => `
+            <div class="pc-count" data-field="${f.key}">
+              <div class="lbl">${f.label}</div>
+              <input type="number" min="0" max="18" step="1" inputmode="numeric" data-key="${f.key}" placeholder="0">
+              <div class="pts-hint">×${f.pts}</div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="pc-low-round">+3 Low Round</div>
+      </div>
+    `).join("");
+  }
+
+  function bindEvents() {
+    const root = $("#player-cards");
+    root.addEventListener("click", (e) => {
+      const card = e.target.closest(".player-card");
+      if (!card) return;
+      if (e.target.matches('[data-action="toggle-attended"]')) {
+        const wasOn = card.dataset.attended === "true";
+        card.dataset.attended = (!wasOn).toString();
+        card.classList.toggle("is-dnp", wasOn);
+        e.target.classList.toggle("is-on", !wasOn);
+        e.target.textContent = !wasOn ? "Played" : "DNP";
+        refreshAll();
+      }
+      if (e.target.matches('[data-action="set-holes"]')) {
+        const holes = e.target.dataset.holes;
+        card.dataset.holes = holes;
+        $$('[data-action="set-holes"]', card).forEach(b => b.classList.toggle("is-on", b.dataset.holes === holes));
+        refreshAll();
+      }
+    });
+    root.addEventListener("input", (e) => {
+      if (e.target.matches('input[type="number"]')) {
+        const card = e.target.closest(".player-card");
+        // mark count cells with value
+        if (e.target.dataset.key) {
+          const cell = e.target.closest(".pc-count");
+          const v = parseInt(e.target.value, 10);
+          cell.classList.toggle("has-value", Number.isFinite(v) && v > 0);
+        }
+        // auto-mark attended if user starts typing scores
+        if ((e.target.classList.contains("gross") || e.target.dataset.key) && card.dataset.attended !== "true") {
+          card.dataset.attended = "true";
+          card.classList.remove("is-dnp");
+          const tog = $('[data-action="toggle-attended"]', card);
+          tog.classList.add("is-on"); tog.textContent = "Played";
+        }
+        refreshAll();
+      }
+    });
+    ["#f-date","#f-course","#f-tees","#f-organizer"].forEach(s => {
+      $(s).addEventListener("input", refreshAll);
+      $(s).addEventListener("change", refreshAll);
+    });
+    $("#btn-save").addEventListener("click", onSave);
+    $("#btn-copy").addEventListener("click", onCopy);
+    $("#btn-clear").addEventListener("click", onClear);
+  }
+
+  function readCard(card) {
+    const pid = card.dataset.pid;
+    const player = players.find(p => p.id === pid);
+    const attended = card.dataset.attended === "true";
+    const holesPlayed = parseInt(card.dataset.holes, 10) || null;
+    const gross = parseInt($(".gross", card).value, 10);
+    const hcp = parseInt($(".hcp", card).value, 10);
+    const counts = {};
+    COUNT_FIELDS.forEach(f => {
+      const v = parseInt($(`input[data-key="${f.key}"]`, card).value, 10);
+      counts[f.key] = Number.isFinite(v) && v > 0 ? v : 0;
+    });
+    return {
+      playerId: pid,
+      name: player.name,
+      attended,
+      holesPlayed: attended ? holesPlayed : null,
+      gross: attended && Number.isFinite(gross) ? gross : null,
+      handicap: Number.isFinite(hcp) ? hcp : null,
+      pars: counts.pars,
+      birdies: counts.birdies,
+      eagles: counts.eagles,
+      albatrosses: counts.albatrosses,
+      holeInOnes: counts.holeInOnes,
+    };
+  }
+
+  function netOf(r) {
+    return (Number.isFinite(r.gross) && Number.isFinite(r.handicap)) ? r.gross - r.handicap : null;
+  }
+
+  function pointsFor(result, isLowRound) {
+    if (!result.attended) return 0;
+    return POINTS.attendance
+      + (result.pars || 0) * POINTS.par
+      + (result.birdies || 0) * POINTS.birdie
+      + (result.eagles || 0) * POINTS.eagle
+      + (result.albatrosses || 0) * POINTS.albatross
+      + (result.holeInOnes || 0) * POINTS.holeInOne
+      + (isLowRound ? POINTS.lowRound : 0);
+  }
+
+  function computeLowRound(results) {
+    // Low Round = lowest NET among 18-hole players who have a handicap.
+    const eligible = results
+      .map(r => ({ ...r, net: netOf(r) }))
+      .filter(r => r.attended && r.holesPlayed === 18 && Number.isFinite(r.net));
+    if (!eligible.length) return new Set();
+    const min = Math.min(...eligible.map(r => r.net));
+    return new Set(eligible.filter(r => r.net === min).map(r => r.playerId));
+  }
+
+  function collectAll() {
+    const results = $$(".player-card").map(readCard);
+    const lowRoundIds = computeLowRound(results);
+    return results.map(r => ({
+      ...r,
+      net: netOf(r),
+      lowRound: lowRoundIds.has(r.playerId),
+      points: pointsFor(r, lowRoundIds.has(r.playerId)),
+    }));
+  }
+
+  function buildRound() {
+    const date = $("#f-date").value;
+    const course = $("#f-course").value.trim();
+    const organizer = $("#f-organizer").value || null;
+    const tees = $("#f-tees").value.split(",").map(s => s.trim()).filter(Boolean);
+    const all = collectAll();
+    // Persist to file shape: drop the convenience fields (net, lowRound, points) — they're derived on read.
+    const results = all
+      .filter(r => r.attended || r.gross != null || r.pars || r.birdies || r.eagles || r.albatrosses || r.holeInOnes)
+      .map(({ net, lowRound, points, ...rest }) => rest);
+    return {
+      id: roundId(date, course),
+      date, course, organizer,
+      teeTimes: tees,
+      played: results.some(r => r.attended),
+      results,
+    };
+  }
+
+  function roundId(date, course) {
+    const slug = (course || "round").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return `${date || "undated"}-${slug}`;
+  }
+
+  function refreshAll() {
+    // Update each card's per-card net + points + low-round flag
+    const all = collectAll();
+    all.forEach(r => {
+      const card = document.querySelector(`.player-card[data-pid="${r.playerId}"]`);
+      if (!card) return;
+      const ptsEl = $(".pts", card);
+      const valEl = $(".pts .val", card);
+      valEl.textContent = r.points || 0;
+      ptsEl.classList.toggle("zero", !r.points);
+      card.classList.toggle("is-low-round", r.lowRound);
+      const netEl = $(".pc-net", card);
+      if (netEl) {
+        if (Number.isFinite(r.net)) {
+          netEl.textContent = r.net;
+          netEl.classList.add("is-set");
+        } else {
+          netEl.textContent = Number.isFinite(r.gross) ? "(no HCP)" : "—";
+          netEl.classList.remove("is-set");
+        }
+      }
+    });
+    // summary
+    const attended = all.filter(r => r.attended);
+    const lowRoundPlayers = all.filter(r => r.lowRound);
+    const totalPts = all.reduce((s, r) => s + r.points, 0);
+    $("#sum-attended").textContent = attended.length;
+    $("#sum-total-pts").textContent = totalPts;
+    if (lowRoundPlayers.length) {
+      $("#sum-low-round").textContent = lowRoundPlayers[0].net;
+      $("#sum-low-round-name").textContent = lowRoundPlayers.map(r => r.name).join(", ") + (lowRoundPlayers.length > 1 ? ` (${lowRoundPlayers.length}-way tie)` : "") + " · net";
+    } else {
+      $("#sum-low-round").textContent = "—";
+      $("#sum-low-round-name").textContent = attended.length ? "no 18-hole net yet" : "—";
+    }
+    refreshPreview();
+  }
+
+  function buildUpdatedGolfJson() {
+    const out = JSON.parse(JSON.stringify(golfData));
+    const round = buildRound();
+    let season = out.seasons.find(s => s.id === seasonForDate(round.date));
+    if (!season) {
+      season = { id: seasonForDate(round.date), label: `${seasonForDate(round.date)} Links Cup`, rounds: [], finalStandings: [] };
+      out.seasons.unshift(season);
+    }
+    const idx = season.rounds.findIndex(r => r.id === round.id);
+    if (idx >= 0) season.rounds[idx] = round;
+    else season.rounds.push(round);
+    season.rounds.sort((a,b) => (a.date || "").localeCompare(b.date || ""));
+    return out;
+  }
+
+  function seasonForDate(iso) { return (iso || "").slice(0, 4) || "2026"; }
+
+  function refreshPreview() {
+    $("#preview").textContent = JSON.stringify(buildUpdatedGolfJson(), null, 2);
+  }
+
+  function persistRoundDetails() {
+    localStorage.setItem(ROUND_DETAILS_KEY, JSON.stringify({
+      date: $("#f-date").value,
+      course: $("#f-course").value,
+      organizer: $("#f-organizer").value,
+      tees: $("#f-tees").value,
+    }));
+  }
+
+  function onSave() {
+    const round = buildRound();
+    if (!round.date || !round.course) return showStatus("Date and course are required.", false);
+    if (round.results.length === 0) return showStatus("Mark at least one player as Played, or this isn't a saveable round.", false);
+
+    persistRoundDetails();
+    const data = buildUpdatedGolfJson();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "golf.json"; a.click();
+    URL.revokeObjectURL(url);
+    saveCount++;
+    showStatus(`Saved (${saveCount}). Drop the downloaded golf.json into data/ to replace the current file. Round id: ${round.id}.`, true);
+  }
+
+  async function onCopy() {
+    const data = buildUpdatedGolfJson();
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      showStatus("Copied. Paste over data/golf.json.", true);
+    } catch {
+      showStatus("Clipboard blocked. Use the Save button to download.", false);
+    }
+  }
+
+  function onClear() {
+    $$(".player-card").forEach(card => {
+      card.dataset.attended = "false";
+      card.dataset.holes = "18";
+      card.classList.add("is-dnp"); card.classList.remove("is-low-round");
+      const tog = $('[data-action="toggle-attended"]', card);
+      tog.classList.remove("is-on"); tog.textContent = "DNP";
+      $$('[data-action="set-holes"]', card).forEach(b => b.classList.toggle("is-on", b.dataset.holes === "18"));
+      $(".gross", card).value = "";
+      $$(".pc-count input", card).forEach(i => i.value = "");
+      $$(".pc-count", card).forEach(c => c.classList.remove("has-value"));
+    });
+    refreshAll();
+  }
+
+  function showStatus(msg, ok) {
+    const s = $("#status");
+    s.textContent = msg;
+    s.classList.toggle("is-ok", !!ok);
+    s.classList.toggle("is-err", !ok);
+  }
+
+  init();
+</script>
+
+</body>
+</html>

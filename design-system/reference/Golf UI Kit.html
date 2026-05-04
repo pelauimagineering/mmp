@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MMP Design System — Golf UI Kit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .ds-nav { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: var(--space-5); padding: var(--space-3) var(--space-6); background: var(--bg-raised); border-bottom: 1px solid var(--rule); }
+  .ds-nav .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; text-decoration: none; color: var(--ink); }
+  .ds-nav .brand svg { width: 28px; height: 28px; color: var(--primary); }
+  .ds-nav .crumb { font-size: var(--text-xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .ds-nav .nav-links { margin-left: auto; display: flex; gap: var(--space-5); font-size: var(--text-sm); }
+  .ds-nav .nav-links a { color: var(--ink-2); text-decoration: none; }
+  .ds-nav .nav-links a.active { color: var(--ink); font-weight: 600; }
+
+  .hero { padding: var(--space-7) var(--space-6) var(--space-5); max-width: 1280px; margin: 0 auto; }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-4xl); letter-spacing: var(--tracking-tight); margin: var(--space-3) 0; }
+  .hero h1 em { font-style: italic; color: var(--primary); }
+  .hero p { color: var(--ink-2); max-width: 65ch; margin: 0; }
+
+  .canvas { max-width: 1280px; margin: 0 auto; padding: var(--space-5) var(--space-6) var(--space-9); }
+  .frames { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-7); }
+  @media (max-width: 1100px) { .frames { grid-template-columns: 1fr; } }
+  .col { display: flex; flex-direction: column; gap: var(--space-7); }
+  .frame { display: flex; flex-direction: column; gap: var(--space-3); }
+  .frame .label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; display: flex; gap: var(--space-3); align-items: center; }
+  .frame .label .title { color: var(--ink); font-family: var(--font-display); font-size: var(--text-md); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .surface { background: var(--bg-raised); border-radius: var(--radius-lg); border: 1px solid var(--rule); overflow: hidden; box-shadow: var(--shadow-sm); }
+
+  /* Tournament home */
+  .tour { padding: 0; }
+  .tour-bar { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-5); background: var(--bg-raised); border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+  .tour-bar .crumbs { font-family: var(--font-ui); font-size: var(--text-sm); color: var(--ink-3); }
+  .tour-bar .crumbs strong { color: var(--ink); }
+  .tour-bar .switch { margin-left: auto; font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--accent); text-decoration: none; font-weight: 600; }
+
+  .tour-tabs { display: flex; gap: var(--space-5); padding: 0 var(--space-5); border-bottom: 1px solid var(--rule); }
+  .tour-tabs a { font-family: var(--font-ui); font-size: var(--text-sm); font-weight: 500; color: var(--ink-2); text-decoration: none; padding: var(--space-3) 0; border-bottom: 2px solid transparent; }
+  .tour-tabs a.active { color: var(--ink); border-bottom-color: var(--primary); font-weight: 600; }
+
+  .tour-hero {
+    padding: var(--space-7) var(--space-6) var(--space-5);
+    background: linear-gradient(180deg, var(--bg-raised) 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--rule);
+  }
+  .tour-hero .eyebrow { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--gold); }
+  .tour-hero h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-4xl); letter-spacing: var(--tracking-tight); line-height: 1.05; margin: var(--space-2) 0 var(--space-3); font-variation-settings: "opsz" 144; }
+  .tour-hero .meta { color: var(--ink-2); font-family: var(--font-display); font-style: italic; font-size: var(--text-lg); }
+
+  .schedule { padding: var(--space-5) var(--space-6); }
+  .schedule h3 { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); margin: 0 0 var(--space-3); }
+  .schedule-row { display: grid; grid-template-columns: 80px 1fr auto; gap: var(--space-4); align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--rule); }
+  .schedule-row:last-child { border-bottom: 0; }
+  .schedule-row .when { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink-3); }
+  .schedule-row .what { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 500; }
+  .schedule-row .what span.sub { display: block; font-family: var(--font-ui); font-size: var(--text-xs); color: var(--ink-3); font-weight: 400; }
+  .schedule-row .who { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); text-align: right; }
+
+  /* Round / leaderboard */
+  .round-hd { padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--rule); display: flex; align-items: end; gap: var(--space-5); flex-wrap: wrap; }
+  .round-hd .title { font-family: var(--font-display); font-weight: 600; font-size: var(--text-2xl); margin: 0; }
+  .round-hd .meta { font-family: var(--font-display); font-style: italic; color: var(--ink-2); }
+  .round-hd .live { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); padding: 4px 10px; border: 1px solid var(--accent); border-radius: var(--radius-pill); }
+  .round-hd .live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: blink 1.6s infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .leaderboard { padding: var(--space-4) var(--space-6) var(--space-5); }
+  .leaderboard-head { display: grid; grid-template-columns: 40px 1fr 60px 60px; gap: var(--space-3); padding: 0 var(--space-3) var(--space-2); font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--ink-3); }
+  .leader-row { display: grid; grid-template-columns: 40px 1fr 60px 60px; gap: var(--space-3); align-items: center; padding: var(--space-3); border-radius: var(--radius-md); margin-bottom: 4px; background: var(--leader-row); }
+  .leader-row.alt { background: var(--leader-row-alt); }
+  .leader-row.gold { background: color-mix(in srgb, var(--gold) 14%, var(--bg-raised)); border: 1px solid var(--gold); }
+  .leader-row .pos { font-family: var(--font-mono); font-weight: 700; color: var(--ink-3); text-align: center; }
+  .leader-row.gold .pos { color: var(--gold); }
+  .leader-row .name { font-family: var(--font-display); font-size: var(--text-md); font-weight: 500; }
+  .leader-row .thru { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink-3); text-align: right; }
+  .leader-row .total { font-family: var(--font-mono); font-size: var(--text-md); font-weight: 700; text-align: right; }
+  .leader-row .total.under { color: var(--brand-fairway); }
+  .leader-row .total.level { color: var(--ink); }
+  .leader-row .total.over { color: var(--accent); }
+
+  /* Score entry */
+  .score-entry { padding: var(--space-5); }
+  .score-entry h3 { font-family: var(--font-display); font-size: var(--text-xl); margin: 0 0 var(--space-3); }
+  .score-entry .hole { display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-4); align-items: center; padding: var(--space-3) 0; border-bottom: 1px dashed var(--rule); }
+  .score-entry .hole-num { font-family: var(--font-mono); font-size: var(--text-2xl); font-weight: 700; color: var(--ink); width: 48px; text-align: center; }
+  .score-entry .hole-info { font-family: var(--font-ui); font-size: var(--text-xs); color: var(--ink-3); }
+  .score-entry .hole-info strong { display: block; font-family: var(--font-display); font-size: var(--text-md); color: var(--ink); font-weight: 500; }
+  .stepper { display: inline-flex; border: 1px solid var(--rule); border-radius: var(--radius-md); overflow: hidden; }
+  .stepper button { width: 44px; height: 44px; border: 0; background: var(--bg-raised); font-size: var(--text-lg); cursor: pointer; color: var(--ink); }
+  .stepper .val { width: 56px; height: 44px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: var(--text-xl); border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+
+  /* Trophy plaque list */
+  .all-time { padding: var(--space-5); }
+  .all-time h3 { font-family: var(--font-display); font-size: var(--text-xl); margin: 0 0 var(--space-4); }
+  .plaques { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+</style>
+</head>
+<body class="theme-links">
+
+<nav class="ds-nav">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+    MMP
+  </a>
+  <span class="crumb">Design System / Golf UI Kit</span>
+  <div class="nav-links">
+    <a href="index.html">Overview</a>
+    <a href="Foundations.html">Foundations</a>
+    <a href="Components.html">Components</a>
+    <a href="Poker UI Kit.html">Poker</a>
+    <a href="Golf UI Kit.html" class="active">Golf</a>
+    <a href="Homepage.html">Homepage</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <span class="t-eyebrow">Links theme · Challenge Cup scoring</span>
+  <h1>Golf UI Kit <em>on the tee</em></h1>
+  <p>Editorial sport-page surfaces for the new MMP Challenge Cup app. Tournament home, live leaderboard, score entry, and the all-time trophy plaque list. Built for one-handed phone use during a round.</p>
+</header>
+
+<main class="canvas">
+<div class="frames">
+
+  <div class="col">
+    <!-- 1. TOURNAMENT HOME -->
+    <div class="frame">
+      <div class="label"><span class="num">01</span><span class="title">Tournament home — 2026 Links Cup</span></div>
+      <div class="surface tour">
+        <div class="tour-bar">
+          <span class="crumbs">Poker · Tournament · Golf · Links Cup · <strong>2026 Links Cup</strong></span>
+          <a class="switch" href="Poker UI Kit.html">Switch to Poker →</a>
+        </div>
+        <div class="tour-tabs">
+          <a href="#" class="active">Tournament</a>
+          <a href="#">Roster</a>
+          <a href="#">Course</a>
+          <a href="#">All-time →</a>
+        </div>
+        <div class="tour-hero">
+          <div class="eyebrow">2026 Links Cup</div>
+          <h2>Round 1 · Kedron Dells</h2>
+          <div class="meta">Sun, May 3 · Organized by Harish · Tee times 10:06 / 10:16</div>
+          <div style="display:flex; gap:var(--space-3); margin-top:var(--space-5);">
+            <button class="btn btn-primary">Enter scores</button>
+            <button class="btn btn-secondary">View card</button>
+            <button class="btn btn-ghost">Course map</button>
+          </div>
+        </div>
+        <div class="schedule">
+          <h3>Schedule</h3>
+          <div class="schedule-row"><span class="when">May 3</span><span class="what">Round 1<span class="sub">Kedron Dells · 10:06 / 10:16</span></span><span class="who">Harish</span></div>
+          <div class="schedule-row"><span class="when">Jun 14</span><span class="what">Round 2<span class="sub">Glen Eagle · TBD</span></span><span class="who">Junior</span></div>
+          <div class="schedule-row"><span class="when">Aug 9</span><span class="what">Round 3<span class="sub">Wooden Sticks · TBD</span></span><span class="who">Kerwin</span></div>
+          <div class="schedule-row"><span class="when">Sep 27</span><span class="what">Final · Cup Day<span class="sub">Course TBD · trophy presentation</span></span><span class="who">All</span></div>
+        </div>
+        <div style="padding: 0 var(--space-6) var(--space-5);">
+          <div class="timer-card">
+            <div class="timer-label">Round 1 tees off in</div>
+            <div class="timer-countdown t-num">01:42:18</div>
+            <div class="timer-meta">Updated May 1, 2026 · Leaderboard wakes when first card is entered</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SCORE ENTRY -->
+    <div class="frame">
+      <div class="label"><span class="num">03</span><span class="title">Score entry — hole-by-hole</span></div>
+      <div class="surface" style="max-width: 460px;">
+        <div class="round-hd"><span class="title">Round 1 · Kedron Dells</span></div>
+        <div class="score-entry">
+          <h3>Front nine</h3>
+          <div class="hole"><span class="hole-num">1</span><span class="hole-info"><strong>Par 4</strong>375 yds · index 7</span><span class="stepper"><button>−</button><span class="val">4</span><button>+</button></span></div>
+          <div class="hole"><span class="hole-num">2</span><span class="hole-info"><strong>Par 3</strong>168 yds · index 15</span><span class="stepper"><button>−</button><span class="val">3</span><button>+</button></span></div>
+          <div class="hole"><span class="hole-num">3</span><span class="hole-info"><strong>Par 5</strong>512 yds · index 3</span><span class="stepper"><button>−</button><span class="val">6</span><button>+</button></span></div>
+          <div class="hole"><span class="hole-num">4</span><span class="hole-info"><strong>Par 4</strong>410 yds · index 1</span><span class="stepper"><button>−</button><span class="val">5</span><button>+</button></span></div>
+          <div style="margin-top: var(--space-4); display:flex; gap:var(--space-3); align-items:center;">
+            <span class="t-eyebrow">Front 9 running</span>
+            <span class="chip score over t-num" style="margin-left:auto;">+2</span>
+          </div>
+          <div class="slide-track slide-track-confirm" style="margin-top: var(--space-4);">
+            <div class="slide-instruction">▶︎ Slide to post Round 1</div>
+            <div class="slide-button"><span class="slide-icon">›</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="col">
+    <!-- 2. LEADERBOARD -->
+    <div class="frame">
+      <div class="label"><span class="num">02</span><span class="title">Live leaderboard</span></div>
+      <div class="surface">
+        <div class="round-hd">
+          <div>
+            <div class="t-eyebrow" style="margin-bottom: 4px;">Round 1 · Kedron Dells</div>
+            <div class="title">Leaderboard</div>
+            <div class="meta">May 3 · Organized by Harish</div>
+          </div>
+          <span class="live">LIVE</span>
+        </div>
+        <div class="leaderboard">
+          <div class="leaderboard-head"><span>Pos</span><span>Player</span><span style="text-align:right;">Thru</span><span style="text-align:right;">Total</span></div>
+          <div class="leader-row gold"><span class="pos">1</span><span class="name">Harish Dhiman</span><span class="thru">F</span><span class="total under">−4</span></div>
+          <div class="leader-row alt"><span class="pos">T2</span><span class="name">Kerwin Matthew</span><span class="thru">F</span><span class="total under">−2</span></div>
+          <div class="leader-row"><span class="pos">T2</span><span class="name">Junior Buckland</span><span class="thru">F</span><span class="total under">−2</span></div>
+          <div class="leader-row alt"><span class="pos">4</span><span class="name">Seymour Matthew</span><span class="thru">F</span><span class="total level">E</span></div>
+          <div class="leader-row"><span class="pos">5</span><span class="name">Darren Baptiste</span><span class="thru">F</span><span class="total over">+3</span></div>
+          <div class="leader-row alt"><span class="pos">6</span><span class="name">Chris Braithwaite</span><span class="thru">F</span><span class="total over">+5</span></div>
+          <div class="leader-row" style="opacity: 0.55;"><span class="pos">—</span><span class="name">Tony Stewart</span><span class="thru">WD</span><span class="total" style="color:var(--ink-3);">—</span></div>
+        </div>
+        <div style="padding: 0 var(--space-6) var(--space-5);">
+          <div class="t-eyebrow" style="margin-bottom:var(--space-2);">Today’s ace shot</div>
+          <div class="panel">
+            <div style="font-family:var(--font-display); font-size:var(--text-lg); font-weight:500;">Harish · hole 7, eagle from 142</div>
+            <div style="color:var(--ink-2); font-size:var(--text-sm); margin-top:4px;">7-iron tucked behind the bunker. Card auto-flagged for plaque review.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. ALL-TIME -->
+    <div class="frame">
+      <div class="label"><span class="num">04</span><span class="title">All-time · trophy plaques</span></div>
+      <div class="surface">
+        <div class="round-hd">
+          <span class="title">All-time Cup</span>
+          <span class="meta">Since 2008</span>
+        </div>
+        <div class="all-time">
+          <div class="plaques">
+            <div class="plaque"><div class="plaque-year">2024–25</div><div class="plaque-line">Golf · <strong>Harish Dhiman</strong></div><div class="plaque-line">Poker · <strong>Junior Buckland</strong></div></div>
+            <div class="plaque"><div class="plaque-year">2023–24</div><div class="plaque-line">Golf · <strong>Kerwin Matthew</strong></div><div class="plaque-line">Poker · <strong>Tony Stewart</strong></div></div>
+            <div class="plaque"><div class="plaque-year">2016–17</div><div class="plaque-line">Golf · <strong>Kerwin Matthew</strong></div><div class="plaque-line">Poker · <strong>Chris Braithwaite</strong></div></div>
+            <div class="plaque"><div class="plaque-year">2015–16</div><div class="plaque-line">Golf · <strong>Junior Buckland</strong></div><div class="plaque-line">Poker · <strong>Harish Dhiman</strong></div></div>
+            <div class="plaque"><div class="plaque-year">2014–15</div><div class="plaque-line">Golf · <strong>Kerwin Matthew</strong></div><div class="plaque-line">Poker · <strong>Junior Buckland</strong></div></div>
+            <div class="plaque"><div class="plaque-year">2008–09</div><div class="plaque-line">Golf · <strong>Kerwin Matthew</strong></div><div class="plaque-line">Poker · <strong>Tony Stewart</strong></div></div>
+          </div>
+          <div style="text-align:center; margin-top: var(--space-5);"><a href="#" class="t-eyebrow" style="color:var(--accent);">View all 17 years →</a></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</main>
+
+</body></html>

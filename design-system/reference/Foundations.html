@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MMP Design System — Foundations</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { padding-bottom: var(--space-9); }
+
+  /* ─── Page chrome ─── */
+  .ds-nav { position: sticky; top: 0; z-index: var(--z-elevated); display: flex; align-items: center; gap: var(--space-5); padding: var(--space-3) var(--space-6); background: var(--bg-raised); border-bottom: 1px solid var(--rule); backdrop-filter: blur(8px); }
+  .ds-nav .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--ink); text-decoration: none; }
+  .ds-nav .brand svg { width: 28px; height: 28px; color: var(--brand-fairway); }
+  .ds-nav .crumb { font-size: var(--text-xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .ds-nav .nav-links { margin-left: auto; display: flex; gap: var(--space-5); font-size: var(--text-sm); }
+  .ds-nav .nav-links a { color: var(--ink-2); text-decoration: none; }
+  .ds-nav .nav-links a.active { color: var(--ink); font-weight: 600; }
+
+  .hero { padding: var(--space-9) var(--space-6) var(--space-7); max-width: 1200px; margin: 0 auto; }
+  .hero .eyebrow { display: inline-block; padding: 4px 10px; border: 1px solid var(--rule-strong); border-radius: var(--radius-pill); white-space: nowrap; }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-5xl); line-height: 0.95; letter-spacing: var(--tracking-tight); margin: var(--space-4) 0 var(--space-3); font-variation-settings: "opsz" 144; max-width: 18ch; }
+  .hero h1 em { font-style: italic; color: var(--brand-fairway); font-weight: 500; }
+  .hero p.lede { font-family: var(--font-display); font-weight: 400; font-size: var(--text-xl); line-height: var(--leading-snug); max-width: 50ch; color: var(--ink-2); }
+
+  .hero-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-7); align-items: end; margin-top: var(--space-7); }
+  .hero-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--rule); }
+  .hero-meta dt { font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); margin-bottom: var(--space-1); }
+  .hero-meta dd { margin: 0; font-family: var(--font-display); font-size: var(--text-lg); }
+
+  /* ── shared section chrome ── */
+  section.ds { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6); border-top: 1px solid var(--rule); }
+  section.ds > header { display: grid; grid-template-columns: 240px 1fr; gap: var(--space-7); margin-bottom: var(--space-6); align-items: start; }
+  section.ds > header .num { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); }
+  section.ds > header h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-3xl); letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-2); line-height: 1.05; }
+  section.ds > header p { font-size: var(--text-md); color: var(--ink-2); max-width: 60ch; margin: 0; }
+
+  /* ── color swatches ── */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-4); }
+  .swatch { display: flex; flex-direction: column; gap: var(--space-2); }
+  .swatch .chip { aspect-ratio: 4/3; border-radius: var(--radius-md); border: 1px solid rgba(0,0,0,0.08); }
+  .swatch .name { font-family: var(--font-ui); font-weight: 600; font-size: var(--text-sm); }
+  .swatch .meta { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); }
+
+  /* themed swatch panels */
+  .theme-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--rule); border-radius: var(--radius-lg); overflow: hidden; }
+  .theme-panel > div { padding: var(--space-6); }
+  .theme-panel .theme-felt, .theme-panel .theme-links { background: var(--bg); color: var(--ink); }
+  .theme-panel h3 { font-family: var(--font-display); font-size: var(--text-xl); margin: 0 0 var(--space-1); }
+  .theme-panel .desc { font-size: var(--text-sm); color: var(--ink-2); margin-bottom: var(--space-5); max-width: 32ch; }
+  .theme-panel .row { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; }
+  .theme-panel .pill { font-family: var(--font-mono); font-size: var(--text-xs); padding: 4px 10px; border-radius: var(--radius-pill); display: inline-flex; align-items: center; gap: 6px; }
+  .theme-panel .pill::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--swatch-color); border: 1px solid rgba(0,0,0,0.15); }
+
+  /* ── Type ── */
+  .type-stack > * + * { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px dashed var(--rule); }
+  .type-row { display: grid; grid-template-columns: 200px 1fr; gap: var(--space-5); align-items: baseline; }
+  .type-row .meta { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); }
+  .type-row .meta strong { display: block; font-family: var(--font-ui); font-weight: 600; color: var(--ink); font-size: var(--text-sm); margin-bottom: 2px; }
+
+  /* ── Spacing ── */
+  .scale-row { display: grid; grid-template-columns: 80px 80px 1fr; gap: var(--space-4); align-items: center; padding: var(--space-2) 0; border-bottom: 1px dashed var(--rule); }
+  .scale-row:last-child { border-bottom: 0; }
+  .scale-row .name { font-family: var(--font-mono); font-size: var(--text-sm); }
+  .scale-row .px { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); }
+  .scale-row .bar { height: 14px; background: var(--brand-fairway); border-radius: 3px; }
+
+  /* ── Radius / shadow demo ── */
+  .demo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-4); }
+  .demo-card { background: var(--bg-raised); padding: var(--space-5); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 130px; gap: var(--space-2); border: 1px solid var(--rule); }
+  .demo-card .label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); }
+  .demo-card .val { font-family: var(--font-display); font-size: var(--text-lg); }
+
+  /* ── Logo ── */
+  .logo-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: var(--space-4); }
+  .logo-tile { padding: var(--space-7); border-radius: var(--radius-lg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); border: 1px solid var(--rule); min-height: 220px; }
+  .logo-tile .label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); position: absolute; bottom: var(--space-3); left: var(--space-4); }
+  .logo-tile { position: relative; }
+  .logo-tile.dark { background: var(--brand-ink); color: var(--brand-cream); }
+  .logo-tile.gold { background: var(--brand-ink); color: var(--gold); }
+
+  /* ── motion strip ── */
+  .motion-row { display: grid; grid-template-columns: 200px 1fr 100px; gap: var(--space-5); align-items: center; padding: var(--space-3) 0; border-bottom: 1px dashed var(--rule); }
+  .motion-track { position: relative; height: 30px; background: var(--bg-sunken); border-radius: var(--radius-pill); overflow: hidden; }
+  .motion-dot { position: absolute; top: 5px; left: 5px; width: 20px; height: 20px; background: var(--brand-fairway); border-radius: 50%; animation: motionLoop 3s infinite; }
+  .motion-row[data-ease="out"] .motion-dot { animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  .motion-row[data-ease="in-out"] .motion-dot { animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  .motion-row[data-ease="spring"] .motion-dot { animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes motionLoop { 0%, 10% { left: 5px; } 50% { left: calc(100% - 25px); } 90%, 100% { left: 5px; } }
+  .motion-name { font-family: var(--font-mono); font-size: var(--text-sm); }
+
+  @media (max-width: 800px) {
+    section.ds > header, .hero-grid, .theme-panel, .logo-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: var(--text-4xl); }
+  }
+</style>
+</head>
+<body class="theme-links">
+
+<nav class="ds-nav">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+    MMP
+  </a>
+  <span class="crumb">Design System / Foundations</span>
+  <div class="nav-links">
+    <a href="index.html">Overview</a>
+    <a href="Foundations.html" class="active">Foundations</a>
+    <a href="Components.html">Components</a>
+    <a href="Poker UI Kit.html">Poker</a>
+    <a href="Golf UI Kit.html">Golf</a>
+    <a href="Homepage.html">Homepage</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <span class="eyebrow t-eyebrow">MMP · Design System v0.1</span>
+  <h1>Friend-group sport, <em>kept honest</em>.</h1>
+  <div class="hero-grid">
+    <p class="lede">MMP is the umbrella over a poker dealer and a golf scoring app shared by the same group of friends since 2008. The design system lets the two surfaces feel like one place, while letting each one feel right at the table or on the tee.</p>
+    <dl class="hero-meta">
+      <div><dt>Tagline</dt><dd>Bound by Brotherhood</dd></div>
+      <div><dt>Surfaces</dt><dd>Poker, Golf, Marketing</dd></div>
+      <div><dt>Themes</dt><dd>Felt &middot; Links</dd></div>
+      <div><dt>Rooted in</dt><dd>The cup, since 2008</dd></div>
+    </dl>
+  </div>
+</header>
+
+<!-- ─── Themes ─── -->
+<section class="ds" id="themes">
+  <header>
+    <div><span class="num">01</span></div>
+    <div>
+      <h2>Two themes, one spine</h2>
+      <p>Every component is theme-aware. Apply <code>.theme-felt</code> on the poker app, <code>.theme-links</code> on golf and marketing. Tokens swap; type, spacing, radii, and component shapes don&rsquo;t.</p>
+    </div>
+  </header>
+
+  <div class="theme-panel">
+    <div class="theme-links">
+      <h3>Links</h3>
+      <p class="desc">Light. Editorial. Fairway green on cream parchment, with engraved-plaque gold for the cup. Used by the golf app and the MMP homepage.</p>
+      <div class="row">
+        <span class="pill" style="--swatch-color:#f6f1e7; background:#fff; border:1px solid var(--rule);">bg #F6F1E7</span>
+        <span class="pill" style="--swatch-color:#2f5d3a; background:#fff; border:1px solid var(--rule);">fairway #2F5D3A</span>
+        <span class="pill" style="--swatch-color:#b08d3a; background:#fff; border:1px solid var(--rule);">gold #B08D3A</span>
+        <span class="pill" style="--swatch-color:#b54a2a; background:#fff; border:1px solid var(--rule);">clay #B54A2A</span>
+        <span class="pill" style="--swatch-color:#14151a; background:#fff; border:1px solid var(--rule);">ink #14151A</span>
+      </div>
+    </div>
+    <div class="theme-felt">
+      <h3>Felt</h3>
+      <p class="desc">Dark. Casino-room. Built on the live poker-dealer tokens so we don&rsquo;t fight the existing app. Trophy gold replaces the lone-green-everywhere look.</p>
+      <div class="row">
+        <span class="pill" style="--swatch-color:#15171b; background:rgba(255,255,255,.05);">bg #15171B</span>
+        <span class="pill" style="--swatch-color:#2ecc71; background:rgba(255,255,255,.05);">felt #2ECC71</span>
+        <span class="pill" style="--swatch-color:#d4a017; background:rgba(255,255,255,.05);">gold #D4A017</span>
+        <span class="pill" style="--swatch-color:#e74c3c; background:rgba(255,255,255,.05);">heart #E74C3C</span>
+        <span class="pill" style="--swatch-color:#f6f1e7; background:rgba(255,255,255,.05);">cream #F6F1E7</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Color ─── -->
+<section class="ds" id="color">
+  <header>
+    <div><span class="num">02</span></div>
+    <div>
+      <h2>Color</h2>
+      <p>Brand colors come from the trophy: dark walnut base, gold plaque, white-cream highlights, and the green of the playing surfaces &mdash; felt indoors, fairway out.</p>
+    </div>
+  </header>
+
+  <h3 class="t-eyebrow" style="margin-bottom:var(--space-3); color:var(--ink-3);">Brand</h3>
+  <div class="swatch-grid" style="margin-bottom:var(--space-6);">
+    <div class="swatch"><div class="chip" style="background:#14151a"></div><div class="name">Ink</div><div class="meta">#14151A</div></div>
+    <div class="swatch"><div class="chip" style="background:#b08d3a"></div><div class="name">Plaque Gold</div><div class="meta">#B08D3A</div></div>
+    <div class="swatch"><div class="chip" style="background:#d4a017"></div><div class="name">Cup Gold</div><div class="meta">#D4A017</div></div>
+    <div class="swatch"><div class="chip" style="background:#2f5d3a"></div><div class="name">Fairway</div><div class="meta">#2F5D3A</div></div>
+    <div class="swatch"><div class="chip" style="background:#0f4a35"></div><div class="name">Felt</div><div class="meta">#0F4A35</div></div>
+    <div class="swatch"><div class="chip" style="background:#b54a2a"></div><div class="name">Clay</div><div class="meta">#B54A2A</div></div>
+    <div class="swatch"><div class="chip" style="background:#f4eddd; border-color:var(--rule);"></div><div class="name">Cream</div><div class="meta">#F4EDDD</div></div>
+  </div>
+
+  <h3 class="t-eyebrow" style="margin-bottom:var(--space-3); color:var(--ink-3);">Links theme — surfaces &amp; text</h3>
+  <div class="swatch-grid" style="margin-bottom:var(--space-6);">
+    <div class="swatch"><div class="chip" style="background:#f6f1e7"></div><div class="name">bg</div><div class="meta">#F6F1E7</div></div>
+    <div class="swatch"><div class="chip" style="background:#ffffff"></div><div class="name">bg-raised</div><div class="meta">#FFFFFF</div></div>
+    <div class="swatch"><div class="chip" style="background:#ede5d3"></div><div class="name">bg-sunken</div><div class="meta">#EDE5D3</div></div>
+    <div class="swatch"><div class="chip" style="background:#14151a"></div><div class="name">ink</div><div class="meta">#14151A</div></div>
+    <div class="swatch"><div class="chip" style="background:#3a3d44"></div><div class="name">ink-2</div><div class="meta">#3A3D44</div></div>
+    <div class="swatch"><div class="chip" style="background:#6f7280"></div><div class="name">ink-3</div><div class="meta">#6F7280</div></div>
+  </div>
+
+  <h3 class="t-eyebrow" style="margin-bottom:var(--space-3); color:var(--ink-3);">Felt theme — surfaces &amp; text</h3>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="chip" style="background:#15171b"></div><div class="name">bg</div><div class="meta">#15171B</div></div>
+    <div class="swatch"><div class="chip" style="background:#20242b"></div><div class="name">bg-raised</div><div class="meta">#20242B</div></div>
+    <div class="swatch"><div class="chip" style="background:#0f1115"></div><div class="name">bg-sunken</div><div class="meta">#0F1115</div></div>
+    <div class="swatch"><div class="chip" style="background:#f6f1e7"></div><div class="name">ink</div><div class="meta">#F6F1E7</div></div>
+    <div class="swatch"><div class="chip" style="background:#c8c2b3"></div><div class="name">ink-2</div><div class="meta">#C8C2B3</div></div>
+    <div class="swatch"><div class="chip" style="background:#8a8676"></div><div class="name">ink-3</div><div class="meta">#8A8676</div></div>
+  </div>
+</section>
+
+<!-- ─── Type ─── -->
+<section class="ds" id="type">
+  <header>
+    <div><span class="num">03</span></div>
+    <div>
+      <h2>Type</h2>
+      <p>Three families. Fraunces for display &mdash; serif with optical sizes, the only font that should ever feel ceremonial. Inter Tight for UI &mdash; reads at every size. JetBrains Mono for scores, ranks, timers, anything counted.</p>
+    </div>
+  </header>
+
+  <div class="type-stack">
+    <div class="type-row">
+      <div class="meta"><strong>Display / Hero</strong>Fraunces 600, 88/0.95, opsz 144</div>
+      <div class="t-display" style="font-size:var(--text-5xl);">Bound by Brotherhood</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Page Title</strong>Fraunces 600, 60/0.95</div>
+      <div class="t-display" style="font-size:var(--text-4xl);">2026 Links Cup</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Section Title</strong>Fraunces 600, 44/1.05</div>
+      <div class="t-title" style="font-size:var(--text-3xl);">Round 1 &middot; Kedron Dells</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Card Title</strong>Fraunces 600, 32/1.2</div>
+      <div class="t-title" style="font-size:var(--text-2xl);">Tee times 10:06 / 10:16</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Lede</strong>Fraunces 400, 24/1.2 italic</div>
+      <div style="font-family:var(--font-display); font-size:var(--text-xl); font-style:italic; line-height:1.2;">Friend-group sport, kept honest.</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Body</strong>Inter Tight 400, 16/1.5</div>
+      <div>Organized by Harish. Leaderboard wakes up the moment the first card is entered.</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Caption</strong>Inter Tight 400, 13/1.4</div>
+      <div style="font-size:var(--text-xs); color:var(--ink-2);">Updated May 1, 2026 &middot; All-time standings dated to first cup, 2008&ndash;09.</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Eyebrow</strong>Inter Tight 600, 11px, 0.18em tracking</div>
+      <div class="t-eyebrow">Schedule</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Plaque</strong>Inter Tight 700, gold, all caps</div>
+      <div class="t-plaque" style="font-size:var(--text-sm);">2014–2015 &middot; Golf: Kerwin Matthew &middot; Poker: Junior Buckland</div>
+    </div>
+    <div class="type-row">
+      <div class="meta"><strong>Score / Mono</strong>JetBrains Mono 500, tnum</div>
+      <div class="t-num" style="font-size:var(--text-2xl);">−4&nbsp;&nbsp;72&nbsp;&nbsp;06:42</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Spacing ─── -->
+<section class="ds" id="spacing">
+  <header>
+    <div><span class="num">04</span></div>
+    <div>
+      <h2>Spacing &amp; rhythm</h2>
+      <p>4-pixel grid. Use the named scale (<code>--space-1</code> through <code>--space-9</code>) so density rules transfer between Felt and Links without re-tuning.</p>
+    </div>
+  </header>
+
+  <div>
+    <div class="scale-row"><div class="name">--space-1</div><div class="px">4&nbsp;px</div><div class="bar" style="width:4px"></div></div>
+    <div class="scale-row"><div class="name">--space-2</div><div class="px">8&nbsp;px</div><div class="bar" style="width:8px"></div></div>
+    <div class="scale-row"><div class="name">--space-3</div><div class="px">12&nbsp;px</div><div class="bar" style="width:12px"></div></div>
+    <div class="scale-row"><div class="name">--space-4</div><div class="px">16&nbsp;px</div><div class="bar" style="width:16px"></div></div>
+    <div class="scale-row"><div class="name">--space-5</div><div class="px">24&nbsp;px</div><div class="bar" style="width:24px"></div></div>
+    <div class="scale-row"><div class="name">--space-6</div><div class="px">32&nbsp;px</div><div class="bar" style="width:32px"></div></div>
+    <div class="scale-row"><div class="name">--space-7</div><div class="px">48&nbsp;px</div><div class="bar" style="width:48px"></div></div>
+    <div class="scale-row"><div class="name">--space-8</div><div class="px">64&nbsp;px</div><div class="bar" style="width:64px"></div></div>
+    <div class="scale-row"><div class="name">--space-9</div><div class="px">96&nbsp;px</div><div class="bar" style="width:96px"></div></div>
+  </div>
+</section>
+
+<!-- ─── Radius / Shadow ─── -->
+<section class="ds" id="surfaces">
+  <header>
+    <div><span class="num">05</span></div>
+    <div>
+      <h2>Radii &amp; elevation</h2>
+      <p>Cards round at <code>md</code> by default; the trophy plate, score plaques, and modals at <code>lg</code>. Shadows are subtle in Links, deeper in Felt.</p>
+    </div>
+  </header>
+  <div class="demo-grid">
+    <div class="demo-card" style="border-radius:var(--radius-xs);"><span class="val">xs</span><span class="label">4&nbsp;px</span></div>
+    <div class="demo-card" style="border-radius:var(--radius-sm);"><span class="val">sm</span><span class="label">6&nbsp;px</span></div>
+    <div class="demo-card" style="border-radius:var(--radius-md);"><span class="val">md</span><span class="label">10&nbsp;px</span></div>
+    <div class="demo-card" style="border-radius:var(--radius-lg);"><span class="val">lg</span><span class="label">14&nbsp;px</span></div>
+    <div class="demo-card" style="border-radius:var(--radius-xl);"><span class="val">xl</span><span class="label">20&nbsp;px</span></div>
+    <div class="demo-card" style="border-radius:var(--radius-pill);"><span class="val">pill</span><span class="label">round</span></div>
+  </div>
+  <div class="demo-grid" style="margin-top:var(--space-5);">
+    <div class="demo-card" style="box-shadow:var(--shadow-xs); border:0;"><span class="val">xs</span><span class="label">--shadow-xs</span></div>
+    <div class="demo-card" style="box-shadow:var(--shadow-sm); border:0;"><span class="val">sm</span><span class="label">--shadow-sm</span></div>
+    <div class="demo-card" style="box-shadow:var(--shadow-md); border:0;"><span class="val">md</span><span class="label">--shadow-md</span></div>
+    <div class="demo-card" style="box-shadow:var(--shadow-lg); border:0;"><span class="val">lg</span><span class="label">--shadow-lg</span></div>
+  </div>
+</section>
+
+<!-- ─── Motion ─── -->
+<section class="ds" id="motion">
+  <header>
+    <div><span class="num">06</span></div>
+    <div>
+      <h2>Motion</h2>
+      <p>Most state changes use <code>--dur</code> (220 ms) on <code>--ease-out</code>. Card flips and tee-time reveals can use <code>--ease-spring</code> for personality. Avoid bouncy easing on numbers &mdash; scores should feel certain.</p>
+    </div>
+  </header>
+  <div class="motion-row" data-ease="out"><div class="motion-name">--ease-out</div><div class="motion-track"><div class="motion-dot"></div></div><div style="font-family:var(--font-mono); font-size:var(--text-xs); color:var(--ink-3);">default</div></div>
+  <div class="motion-row" data-ease="in-out"><div class="motion-name">--ease-in-out</div><div class="motion-track"><div class="motion-dot"></div></div><div style="font-family:var(--font-mono); font-size:var(--text-xs); color:var(--ink-3);">reversible</div></div>
+  <div class="motion-row" data-ease="spring"><div class="motion-name">--ease-spring</div><div class="motion-track"><div class="motion-dot"></div></div><div style="font-family:var(--font-mono); font-size:var(--text-xs); color:var(--ink-3);">card flip</div></div>
+</section>
+
+<!-- ─── Logo ─── -->
+<section class="ds" id="logo">
+  <header>
+    <div><span class="num">07</span></div>
+    <div>
+      <h2>Logo &amp; brotherhood mark</h2>
+      <p>The mark is two interlocked rings &mdash; one for each MMP, a chain that won&rsquo;t come apart. Pair it with the wordmark in horizontal lockup, or use the mark alone at small sizes.</p>
+    </div>
+  </header>
+  <div class="logo-grid">
+    <div class="logo-tile" style="background:var(--bg-raised);">
+      <svg viewBox="0 0 320 80" style="width:280px; height:auto; color:var(--brand-ink);" fill="none">
+        <g stroke="currentColor" fill="none">
+          <ellipse cx="22" cy="40" rx="14" ry="18" stroke-width="3.5"/>
+          <ellipse cx="42" cy="40" rx="14" ry="18" stroke-width="3.5"/>
+          <path d="M28.4 26.6 Q 32 30 32 40 Q 32 50 28.4 53.4" stroke-width="3.5" stroke-linecap="round"/>
+        </g>
+        <text x="74" y="52" font-family="Fraunces, serif" font-weight="700" font-size="44" letter-spacing="-1" fill="currentColor">MMP</text>
+        <text x="180" y="42" font-family="Inter Tight, sans-serif" font-weight="500" font-size="11" letter-spacing="3" fill="currentColor" opacity="0.6">BOUND BY</text>
+        <text x="180" y="56" font-family="Inter Tight, sans-serif" font-weight="500" font-size="11" letter-spacing="3" fill="currentColor" opacity="0.6">BROTHERHOOD</text>
+      </svg>
+      <span class="label">Lockup &middot; Light</span>
+    </div>
+    <div class="logo-tile dark">
+      <svg viewBox="0 0 64 64" style="width:80px; height:80px; color:var(--brand-cream);" fill="none" stroke="currentColor">
+        <ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="3.5"/>
+        <ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="3.5"/>
+        <path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="3.5" stroke-linecap="round"/>
+      </svg>
+      <span class="label">Mark &middot; Reverse</span>
+    </div>
+    <div class="logo-tile gold">
+      <svg viewBox="0 0 64 64" style="width:80px; height:80px; color:var(--gold);" fill="none" stroke="currentColor">
+        <ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="3.5"/>
+        <ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="3.5"/>
+        <path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="3.5" stroke-linecap="round"/>
+      </svg>
+      <span class="label">Mark &middot; Plaque</span>
+    </div>
+  </div>
+</section>
+
+<footer style="max-width:1200px; margin:var(--space-7) auto 0; padding:var(--space-6) var(--space-6) var(--space-9); border-top:1px solid var(--rule); color:var(--ink-3); font-size:var(--text-sm); display:flex; justify-content:space-between;">
+  <span>MMP Design System &middot; v0.1 &middot; May 2026</span>
+  <span>Made with 💕 in the 6ix</span>
+</footer>
+
+</body></html>

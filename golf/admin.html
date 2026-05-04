@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>MMP Admin · Enter Golf Round</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --bg-elev: #14181d;
+    --bg-elev-2: #1b2026;
+    --line: #262d36;
+    --line-strong: #344052;
+    --text: #eef2f7;
+    --text-dim: #93a0b1;
+    --text-mute: #62708a;
+    --good: #34d399;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --accent: #16a34a;        /* golf = green */
+    --accent-soft: #0f3a23;
+    --accent-ink: #ecfdf5;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+
+  .shell { max-width: 720px; margin: 0 auto; padding: 24px 16px 80px; }
+  header.top { border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 24px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: 0.04em; font-size: 16px; }
+  .brand-mark { width: 26px; height: 26px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 12px; font-weight: 900; }
+  .brand-sub { color: var(--text-dim); font-weight: 500; font-size: 12px; letter-spacing: 0; }
+  h1 { font-size: 22px; margin: 12px 0 4px; letter-spacing: -0.01em; }
+  .lede { color: var(--text-dim); font-size: 14px; margin: 0; }
+
+  .card { background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin: 0 0 12px; font-weight: 700; }
+
+  .field { display: block; margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; font-weight: 600; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 10px 12px; font-size: 16px; /* 16px to prevent iOS zoom */
+    background: var(--bg-elev-2); border: 1px solid var(--line-strong); border-radius: 8px;
+    color: var(--text); font-family: var(--sans);
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px #16a34a33; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .field-row { grid-template-columns: 1fr; } }
+
+  .player-row {
+    display: grid;
+    grid-template-columns: 1fr 76px 76px 64px;
+    gap: 8px; align-items: center;
+    padding: 10px 0; border-top: 1px solid var(--line);
+  }
+  .player-row:first-child { border-top: 0; }
+  .player-row.is-dnp { opacity: 0.45; }
+  .player-row .name { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .player-row .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg-elev-2); border: 1px solid var(--line); color: var(--text);
+    display: grid; place-items: center; font-weight: 700; font-size: 11px; flex: 0 0 auto;
+  }
+  .player-row .name-text { font-weight: 600; font-size: 15px; }
+  .player-row input[type="number"] {
+    width: 100%; padding: 8px 8px; font-size: 16px; text-align: center;
+    background: var(--bg-elev-2); border: 1px solid var(--line-strong); border-radius: 6px;
+    color: var(--text); font-family: var(--mono); -moz-appearance: textfield;
+  }
+  .player-row input[type="number"]::-webkit-outer-spin-button,
+  .player-row input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .player-row .net {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    text-align: center; font-weight: 700; padding: 8px 4px;
+    background: var(--bg-elev-2); border: 1px dashed var(--line); border-radius: 6px;
+    color: var(--text-dim);
+  }
+  .player-row .net.is-set { color: var(--accent); border-style: solid; border-color: var(--accent-soft); background: #0f3a2333; }
+
+  .col-head {
+    display: grid;
+    grid-template-columns: 1fr 76px 76px 64px;
+    gap: 8px; padding: 0 0 8px;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mute); font-weight: 700;
+  }
+  .col-head span { text-align: center; }
+  .col-head span:first-child { text-align: left; }
+
+  .toggle-dnp {
+    appearance: none; width: 28px; height: 28px; border-radius: 6px;
+    background: var(--bg-elev-2); border: 1px solid var(--line);
+    color: var(--text-dim); font-size: 14px; font-weight: 800; cursor: pointer;
+  }
+  .toggle-dnp.is-active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+  .btn { padding: 12px 16px; border-radius: 8px; font-weight: 700; font-size: 14px; border: 1px solid var(--line-strong); background: var(--bg-elev-2); color: var(--text); }
+  .btn:hover { border-color: var(--text-dim); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn.ghost { background: transparent; }
+  .btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+  .status {
+    margin-top: 12px; padding: 10px 12px; border-radius: 8px;
+    font-size: 13px; display: none;
+  }
+  .status.is-ok { background: #052e1a; border: 1px solid #14532d; color: #bbf7d0; display: block; }
+  .status.is-err { background: #2a0a0a; border: 1px solid #7f1d1d; color: #fecaca; display: block; }
+
+  details { background: var(--bg-elev-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-top: 10px; }
+  details summary { font-size: 12px; color: var(--text-dim); cursor: pointer; font-weight: 700; letter-spacing: 0.04em; }
+  details pre {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+    padding: 10px; margin-top: 10px; overflow: auto; max-height: 300px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 480px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
+  .summary-tile { background: var(--bg-elev-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .summary-tile .lbl { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-mute); font-weight: 700; }
+  .summary-tile .val { font-size: 18px; font-weight: 800; margin-top: 2px; }
+  .summary-tile .sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  .hint { color: var(--text-mute); font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<main class="shell">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div>
+        MMP CHALLENGE CUP — ADMIN
+        <div class="brand-sub">Enter a round. Download the JSON. Replace <code>data/golf.json</code>.</div>
+      </div>
+    </div>
+    <h1>New round</h1>
+    <p class="lede">After a round, fill this in, hit <strong>Save round</strong>, and replace <code>data/golf.json</code> in the project. Net = gross − handicap.</p>
+  </header>
+
+  <div class="card">
+    <h2>Round details</h2>
+    <div class="field-row">
+      <label class="field"><span>Date</span><input type="date" id="f-date" required></label>
+      <label class="field"><span>Course</span><input type="text" id="f-course" placeholder="e.g. Kedron Dells" required></label>
+    </div>
+    <div class="field-row">
+      <label class="field"><span>Organizer</span><select id="f-organizer"><option value="">—</option></select></label>
+      <label class="field"><span>Tee times <span class="hint" style="margin:0;">(comma-separated)</span></span><input type="text" id="f-tees" placeholder="10:06, 10:16"></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Scores</h2>
+    <div class="col-head">
+      <span>Player</span><span>HCP</span><span>Gross</span><span>Net</span>
+    </div>
+    <div id="player-rows"></div>
+    <p class="hint">Tap a player's name to toggle <strong>Did not play</strong>. Handicaps are remembered for next time.</p>
+  </div>
+
+  <div class="card">
+    <h2>Round summary</h2>
+    <div class="summary-grid">
+      <div class="summary-tile"><div class="lbl">Players in</div><div class="val" id="sum-players">0</div><div class="sub">of 11</div></div>
+      <div class="summary-tile"><div class="lbl">Low net</div><div class="val" id="sum-low-net">—</div><div class="sub" id="sum-low-net-name">—</div></div>
+      <div class="summary-tile"><div class="lbl">Low gross</div><div class="val" id="sum-low-gross">—</div><div class="sub" id="sum-low-gross-name">—</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Save</h2>
+    <div class="actions">
+      <button class="btn primary" id="btn-save">Save round &amp; download golf.json</button>
+      <button class="btn" id="btn-copy">Copy JSON to clipboard</button>
+      <button class="btn ghost" id="btn-clear">Clear form</button>
+    </div>
+    <div class="status" id="status"></div>
+    <details>
+      <summary>Preview generated JSON</summary>
+      <pre id="preview"></pre>
+    </details>
+    <p class="hint" style="margin-top:14px;">Player handicaps are saved to your browser's localStorage so they persist between rounds. To change a player's permanent handicap across the whole project, edit <code>data/players.json</code>.</p>
+  </div>
+
+</main>
+
+<script>
+  /* ------------------------------------------------------------------
+     MMP admin — single-file golf round entry.
+     Reads data/golf.json + data/players.json on load (when served).
+     Falls back to a built-in roster when opened via file://.
+     ------------------------------------------------------------------ */
+  const FALLBACK_ROSTER = [
+    { id: "jas",     name: "Jas",     currentHandicap: 18, sports: ["golf"] },
+    { id: "junior",  name: "Junior",  currentHandicap: 19, sports: ["golf","poker"] },
+    { id: "harish",  name: "Harish",  currentHandicap: 20, sports: ["golf","poker"] },
+    { id: "kerwin",  name: "Kerwin",  currentHandicap: 22, sports: ["golf","poker"] },
+    { id: "seymour", name: "Seymour", currentHandicap: 23, sports: ["golf","poker"] },
+    { id: "tony",    name: "Tony",    currentHandicap: 26, sports: ["golf","poker"] },
+    { id: "lorenzo", name: "Lorenzo", currentHandicap: 34, sports: ["golf","poker"] },
+    { id: "neave",   name: "Neave",   currentHandicap: 36, sports: ["golf","poker"] },
+    { id: "chris",   name: "Chris",   currentHandicap: 39, sports: ["golf","poker"] },
+    { id: "gary",    name: "Gary",    currentHandicap: 44, sports: ["golf","poker"] },
+    { id: "wayne",   name: "Wayne",   currentHandicap: 56, sports: ["golf","poker"] },
+  ];
+  const FALLBACK_GOLF = {
+    sport: "golf",
+    seasons: [{
+      id: "2026", label: "2026 Links Cup", minRoundsForRanking: 3,
+      rounds: [{ id: "2026-r001", date: "2026-05-03", course: "Kedron Dells", organizer: "Harish", teeTimes: ["10:06", "10:16"], played: false, results: [] }],
+      finalStandings: []
+    }]
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+  const initials = (n) => n.split(" ").map(s => s[0]).slice(0,2).join("").toUpperCase();
+  const HCP_KEY = "mmp.handicaps.v1";
+
+  let players = [];
+  let golfData = null;
+
+  /* fetch with graceful fallback so the page works opened locally too */
+  async function tryFetch(path, fallback) {
+    try {
+      const r = await fetch(path, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      return await r.json();
+    } catch {
+      return fallback;
+    }
+  }
+
+  async function init() {
+    const [pj, gj] = await Promise.all([
+      tryFetch("data/players.json", { players: FALLBACK_ROSTER }),
+      tryFetch("data/golf.json", FALLBACK_GOLF),
+    ]);
+    // Filter to golf participants only — Darren plays poker, not golf.
+    players = (pj.players || [])
+      .filter(p => !p.sports || p.sports.includes("golf"))
+      .map(p => ({ ...p }));
+    golfData = gj;
+
+    // Apply locally-saved handicaps over the file's currentHandicap.
+    const savedHcp = JSON.parse(localStorage.getItem(HCP_KEY) || "{}");
+    players.forEach(p => { if (savedHcp[p.id] != null) p.currentHandicap = savedHcp[p.id]; });
+
+    // Populate organizer dropdown from the golf roster.
+    const orgSel = $("#f-organizer");
+    players.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.name; opt.textContent = p.name;
+      orgSel.appendChild(opt);
+    });
+
+    // Pre-populate form from the next unplayed round if there is one.
+    const upcoming = golfData.seasons[0]?.rounds?.find(r => !r.played);
+    if (upcoming) {
+      $("#f-date").value = upcoming.date;
+      $("#f-course").value = upcoming.course || "";
+      $("#f-tees").value = (upcoming.teeTimes || []).join(", ");
+      if (upcoming.organizer) orgSel.value = upcoming.organizer;
+    }
+
+    renderPlayers();
+    bindEvents();
+    refreshSummary();
+    refreshPreview();
+  }
+
+  function renderPlayers() {
+    const root = $("#player-rows");
+    root.innerHTML = players.map(p => `
+      <div class="player-row" data-pid="${p.id}" data-dnp="false">
+        <div class="name">
+          <button class="toggle-dnp is-active" type="button" title="Toggle did-not-play">${initials(p.name)}</button>
+          <span class="name-text">${p.name}</span>
+        </div>
+        <input type="number" class="hcp" min="0" max="54" step="1" inputmode="numeric" value="${p.currentHandicap ?? ''}" placeholder="—" />
+        <input type="number" class="gross" min="50" max="150" step="1" inputmode="numeric" placeholder="—" />
+        <div class="net">—</div>
+      </div>
+    `).join("");
+  }
+
+  function bindEvents() {
+    const root = $("#player-rows");
+    root.addEventListener("input", (e) => {
+      if (e.target.matches(".gross, .hcp")) {
+        recalcRow(e.target.closest(".player-row"));
+        refreshSummary();
+        refreshPreview();
+      }
+    });
+    root.addEventListener("click", (e) => {
+      if (e.target.matches(".toggle-dnp")) {
+        const row = e.target.closest(".player-row");
+        const dnp = row.dataset.dnp === "true";
+        row.dataset.dnp = (!dnp).toString();
+        e.target.classList.toggle("is-active", dnp); // flipped: active when participating
+        row.classList.toggle("is-dnp", !dnp);
+        if (!dnp) {
+          // marking as DNP — clear gross
+          row.querySelector(".gross").value = "";
+          row.querySelector(".net").textContent = "—";
+          row.querySelector(".net").classList.remove("is-set");
+        }
+        refreshSummary();
+        refreshPreview();
+      }
+    });
+    ["#f-date","#f-course","#f-tees","#f-organizer"].forEach(s => $(s).addEventListener("input", refreshPreview));
+    $("#f-organizer").addEventListener("change", refreshPreview);
+    $("#btn-save").addEventListener("click", onSave);
+    $("#btn-copy").addEventListener("click", onCopy);
+    $("#btn-clear").addEventListener("click", onClear);
+  }
+
+  function recalcRow(row) {
+    const gross = parseFloat(row.querySelector(".gross").value);
+    const hcp = parseFloat(row.querySelector(".hcp").value);
+    const netCell = row.querySelector(".net");
+    if (Number.isFinite(gross) && Number.isFinite(hcp)) {
+      const net = gross - hcp;
+      netCell.textContent = net.toString();
+      netCell.classList.add("is-set");
+    } else if (Number.isFinite(gross)) {
+      netCell.textContent = "(no hcp)";
+      netCell.classList.remove("is-set");
+    } else {
+      netCell.textContent = "—";
+      netCell.classList.remove("is-set");
+    }
+  }
+
+  function collectResults() {
+    const rows = [...document.querySelectorAll(".player-row")];
+    const results = [];
+    rows.forEach(row => {
+      if (row.dataset.dnp === "true") return;
+      const pid = row.dataset.pid;
+      const gross = parseFloat(row.querySelector(".gross").value);
+      const hcp = parseFloat(row.querySelector(".hcp").value);
+      if (!Number.isFinite(gross)) return;
+      const player = players.find(p => p.id === pid);
+      results.push({
+        playerId: pid,
+        name: player.name,
+        gross,
+        handicap: Number.isFinite(hcp) ? hcp : null,
+        net: Number.isFinite(hcp) ? gross - hcp : null,
+      });
+    });
+    return results;
+  }
+
+  function buildRound() {
+    const date = $("#f-date").value;
+    const course = $("#f-course").value.trim();
+    const organizer = $("#f-organizer").value || null;
+    const tees = $("#f-tees").value.split(",").map(s => s.trim()).filter(Boolean);
+    const results = collectResults();
+    return {
+      id: roundId(date, course),
+      date, course,
+      organizer,
+      teeTimes: tees,
+      played: results.length > 0,
+      results,
+    };
+  }
+
+  function roundId(date, course) {
+    const slug = (course || "round").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return `${date || "undated"}-${slug}`;
+  }
+
+  function refreshSummary() {
+    const results = collectResults();
+    $("#sum-players").textContent = results.length;
+    const lowNet = results.filter(r => r.net != null).sort((a,b) => a.net - b.net)[0];
+    const lowGross = results.slice().sort((a,b) => a.gross - b.gross)[0];
+    $("#sum-low-net").textContent = lowNet ? lowNet.net : "—";
+    $("#sum-low-net-name").textContent = lowNet ? lowNet.name : "—";
+    $("#sum-low-gross").textContent = lowGross ? lowGross.gross : "—";
+    $("#sum-low-gross-name").textContent = lowGross ? lowGross.name : "—";
+  }
+
+  function buildUpdatedGolfJson() {
+    // Clone existing data; replace or append the round in season 2026.
+    const out = JSON.parse(JSON.stringify(golfData));
+    const round = buildRound();
+    let season = out.seasons.find(s => s.id === seasonForDate(round.date));
+    if (!season) {
+      season = { id: seasonForDate(round.date), label: `${seasonForDate(round.date)} Links Cup`, minRoundsForRanking: 3, rounds: [], finalStandings: [] };
+      out.seasons.unshift(season);
+    }
+    const idx = season.rounds.findIndex(r => r.id === round.id);
+    if (idx >= 0) season.rounds[idx] = round;
+    else season.rounds.push(round);
+    season.rounds.sort((a,b) => (a.date || "").localeCompare(b.date || ""));
+    return out;
+  }
+
+  function seasonForDate(iso) { return (iso || "").slice(0, 4) || "2026"; }
+
+  function refreshPreview() {
+    const data = buildUpdatedGolfJson();
+    $("#preview").textContent = JSON.stringify(data, null, 2);
+  }
+
+  function persistHandicaps() {
+    const map = {};
+    document.querySelectorAll(".player-row").forEach(row => {
+      const pid = row.dataset.pid;
+      const hcp = parseFloat(row.querySelector(".hcp").value);
+      if (Number.isFinite(hcp)) map[pid] = hcp;
+    });
+    localStorage.setItem(HCP_KEY, JSON.stringify(map));
+  }
+
+  function onSave() {
+    const round = buildRound();
+    if (!round.date || !round.course) return showStatus("Date and course are required.", false);
+    if (round.results.length === 0) return showStatus("Enter at least one player's gross score, or this isn't a saveable round.", false);
+
+    persistHandicaps();
+    const data = buildUpdatedGolfJson();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "golf.json"; a.click();
+    URL.revokeObjectURL(url);
+    showStatus(`Saved. Drop the downloaded golf.json into data/ to replace the current file. Round id: ${round.id}.`, true);
+  }
+
+  async function onCopy() {
+    const data = buildUpdatedGolfJson();
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      showStatus("Copied. Paste over data/golf.json.", true);
+    } catch {
+      showStatus("Clipboard blocked. Use the Save button to download.", false);
+    }
+  }
+
+  function onClear() {
+    document.querySelectorAll(".gross").forEach(i => i.value = "");
+    document.querySelectorAll(".net").forEach(n => { n.textContent = "—"; n.classList.remove("is-set"); });
+    document.querySelectorAll(".player-row").forEach(r => { r.dataset.dnp = "false"; r.classList.remove("is-dnp"); r.querySelector(".toggle-dnp").classList.add("is-active"); });
+    refreshSummary();
+    refreshPreview();
+  }
+
+  function showStatus(msg, ok) {
+    const s = $("#status");
+    s.textContent = msg;
+    s.classList.toggle("is-ok", !!ok);
+    s.classList.toggle("is-err", !ok);
+  }
+
+  init();
+</script>
+
+</body>
+</html>

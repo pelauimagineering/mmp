@@ -1,0 +1,13 @@
+.DS_Store
+node_modules/
+*.log
+.env
+.env.local
+
+# Vendored poker-dealer runtime artifacts
+poker-dealer/database/*.db
+poker-dealer/database/*.db-*
+poker-dealer/.env
+
+# Excel sources stay local — JSON is the deployed truth
+golf/MMP Poker*.xlsx

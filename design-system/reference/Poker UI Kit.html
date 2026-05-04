@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MMP Design System — Poker UI Kit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  body.theme-felt { background: var(--bg); }
+  .ds-nav { position: sticky; top: 0; z-index: var(--z-elevated); display: flex; align-items: center; gap: var(--space-5); padding: var(--space-3) var(--space-6); background: var(--bg-sunken); border-bottom: 1px solid var(--rule); backdrop-filter: blur(8px); }
+  .ds-nav .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; text-decoration: none; color: var(--ink); }
+  .ds-nav .brand svg { width: 28px; height: 28px; color: var(--primary); }
+  .ds-nav .crumb { font-size: var(--text-xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
+  .ds-nav .nav-links { margin-left: auto; display: flex; gap: var(--space-5); font-size: var(--text-sm); }
+  .ds-nav .nav-links a { color: var(--ink-2); text-decoration: none; }
+  .ds-nav .nav-links a.active { color: var(--ink); font-weight: 600; }
+
+  .hero { padding: var(--space-7) var(--space-6) var(--space-5); max-width: 1280px; margin: 0 auto; }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-4xl); letter-spacing: var(--tracking-tight); margin: var(--space-3) 0; color: var(--ink); }
+  .hero h1 em { font-style: italic; color: var(--primary); }
+  .hero p { color: var(--ink-2); max-width: 65ch; margin: 0; }
+
+  .canvas { max-width: 1280px; margin: 0 auto; padding: var(--space-5) var(--space-6) var(--space-9); }
+  .frames { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-7); }
+  @media (max-width: 1100px) { .frames { grid-template-columns: 1fr; } }
+
+  .frame { display: flex; flex-direction: column; gap: var(--space-3); }
+  .frame .label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); letter-spacing: var(--tracking-wide); text-transform: uppercase; display: flex; gap: var(--space-3); align-items: center; }
+  .frame .label .num { color: var(--ink-3); }
+  .frame .label .title { color: var(--ink); font-family: var(--font-display); font-size: var(--text-md); text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .surface { background: var(--bg-raised); border-radius: var(--radius-lg); border: 1px solid var(--rule); overflow: hidden; box-shadow: var(--shadow-md); }
+
+  /* Login screen */
+  .login {
+    padding: var(--space-7) var(--space-6) var(--space-6);
+    background: linear-gradient(180deg, #15171b 0%, #0f1115 100%);
+    text-align: center;
+  }
+  .login .login-mark { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: color-mix(in srgb, var(--gold) 14%, transparent); color: var(--gold); margin-bottom: var(--space-3); }
+  .login h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-2xl); margin: 0 0 var(--space-1); color: var(--ink); }
+  .login h2 .suit { color: var(--danger); margin: 0 4px; }
+  .login h2 .suit + .suit { color: var(--ink); }
+  .login p.lede { color: var(--ink-2); font-family: var(--font-display); font-style: italic; margin: 0 0 var(--space-6); }
+  .login form { display: flex; flex-direction: column; gap: var(--space-4); text-align: left; max-width: 320px; margin: 0 auto; }
+  .login .alt { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--rule); font-size: var(--text-xs); color: var(--ink-3); }
+  .login .alt a { color: var(--primary); }
+
+  /* Game screen */
+  .game-frame { padding: 0; }
+  .game-bar { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); background: var(--bg-sunken); border-bottom: 1px solid var(--rule); }
+  .game-bar .brand-mini { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-weight: 600; color: var(--ink); }
+  .game-bar .brand-mini svg { width: 20px; height: 20px; color: var(--primary); }
+  .game-bar .level { margin-left: auto; font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-3); }
+  .game-bar .switch { font-size: var(--text-2xs); letter-spacing: var(--tracking-wide); text-transform: uppercase; color: var(--accent); text-decoration: none; }
+
+  .table {
+    background:
+      radial-gradient(ellipse at center, color-mix(in srgb, var(--brand-felt) 90%, black) 0%, color-mix(in srgb, var(--brand-felt) 60%, black) 60%, var(--bg-sunken) 100%);
+    padding: var(--space-6) var(--space-5);
+    position: relative;
+    border-bottom: 1px solid var(--rule);
+  }
+  .table::before {
+    content: '';
+    position: absolute;
+    inset: var(--space-3);
+    border-radius: var(--radius-xl);
+    border: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
+    pointer-events: none;
+  }
+  .table-eyebrow { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: color-mix(in srgb, var(--gold) 80%, white); text-align: center; margin-bottom: var(--space-4); }
+  .table-cards { display: flex; gap: var(--space-3); justify-content: center; margin-bottom: var(--space-4); }
+  .table-phase { text-align: center; font-family: var(--font-display); font-weight: 600; font-size: var(--text-2xl); color: var(--ink); margin-bottom: var(--space-2); }
+  .table-pot { text-align: center; font-family: var(--font-mono); font-weight: 700; color: var(--gold); font-size: var(--text-lg); }
+
+  .game-body { padding: var(--space-5); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
+  .panel-section { background: var(--bg-sunken); border: 1px solid var(--rule); border-radius: var(--radius-md); padding: var(--space-4); }
+  .panel-section h4 { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); margin: 0 0 var(--space-3); }
+
+  .hole-cards { display: flex; gap: var(--space-3); justify-content: center; margin-bottom: var(--space-3); }
+
+  .dealer-controls { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+
+  /* Community-display TV */
+  .tv {
+    background: linear-gradient(135deg, #0f1115 0%, #15171b 100%);
+    padding: var(--space-7) var(--space-5);
+    text-align: center;
+  }
+  .tv-title { font-family: var(--font-display); font-weight: 600; font-size: var(--text-3xl); color: var(--primary); margin: 0 0 var(--space-5); }
+  .tv-cards { display: flex; gap: var(--space-4); justify-content: center; margin-bottom: var(--space-5); }
+  .tv-phase { display: inline-block; padding: var(--space-2) var(--space-5); background: var(--bg-tonal); color: var(--ink); border-radius: var(--radius-md); font-family: var(--font-display); font-size: var(--text-lg); font-weight: 600; text-transform: capitalize; letter-spacing: var(--tracking-wide); }
+  .tv-revealed { margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--rule); display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap; }
+  .tv-revealed .hand { background: var(--bg-tonal); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+  .tv-revealed .hand-name { font-family: var(--font-ui); font-size: var(--text-xs); color: var(--ink-2); font-weight: 600; }
+  .tv-revealed .hand-cards { display: flex; gap: 4px; }
+
+  /* Players + dealer combined panel */
+  .roster-panel { padding: var(--space-5); }
+  .roster-panel h3 { font-family: var(--font-display); font-size: var(--text-xl); margin: 0 0 var(--space-3); }
+</style>
+</head>
+<body class="theme-felt">
+
+<nav class="ds-nav">
+  <a class="brand" href="index.html">
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+    MMP
+  </a>
+  <span class="crumb">Design System / Poker UI Kit</span>
+  <div class="nav-links">
+    <a href="index.html">Overview</a>
+    <a href="Foundations.html">Foundations</a>
+    <a href="Components.html">Components</a>
+    <a href="Poker UI Kit.html" class="active">Poker</a>
+    <a href="Golf UI Kit.html">Golf</a>
+    <a href="Homepage.html">Homepage</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <span class="t-eyebrow">Felt theme · Texas Hold&rsquo;em dealer</span>
+  <h1>Poker UI Kit <em>at the table</em></h1>
+  <p>Four key surfaces. The kit re-skins the live <code>poker-dealer</code> app with MMP tokens &mdash; same JS, same WebSocket flow, new vocabulary. Plaque gold replaces the all-green chrome; the table itself stays felt.</p>
+</header>
+
+<main class="canvas">
+<div class="frames">
+
+  <!-- 1. LOGIN -->
+  <div class="frame">
+    <div class="label"><span class="num">01</span><span class="title">Login &mdash; user picker</span></div>
+    <div class="surface login">
+      <div class="login-mark">
+        <svg viewBox="0 0 64 64" style="width:36px;height:36px;" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+      </div>
+      <h2>MMP Poker <span class="suit">♥</span><span class="suit">♣</span></h2>
+      <p class="lede">Digital dealer for Texas Hold&rsquo;em.</p>
+      <form onsubmit="event.preventDefault();">
+        <div class="field"><label>Select user</label><select><option>— Select a user —</option><option>Harish</option><option>Junior</option><option>Kerwin</option></select></div>
+        <div class="field"><label>Display name</label><input type="text" placeholder="Your display name"></div>
+        <button class="btn btn-primary btn-lg" type="submit">Take a seat &rarr;</button>
+      </form>
+      <div class="alt"><a href="#">Community Display →</a><br><span style="opacity:0.7;">View community cards on a shared screen.</span></div>
+    </div>
+  </div>
+
+  <!-- 2. GAME — DEALER -->
+  <div class="frame">
+    <div class="label"><span class="num">02</span><span class="title">Game &mdash; dealer view</span></div>
+    <div class="surface game-frame">
+      <div class="game-bar">
+        <span class="brand-mini"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg> MMP <em style="color:var(--ink-3); font-style:italic;">Poker</em></span>
+        <span class="level t-mono">Hand 14 · Lvl 3 · 06:42</span>
+        <a class="switch" href="Golf UI Kit.html">Switch to Golf →</a>
+      </div>
+      <div class="table">
+        <div class="table-eyebrow">Community</div>
+        <div class="table-cards">
+          <div class="card-pc card-pc-md hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div>
+          <div class="card-pc card-pc-md spades"><div class="card-rank">K</div><div class="card-suit">♠</div></div>
+          <div class="card-pc card-pc-md diamonds"><div class="card-rank">10</div><div class="card-suit">♦</div></div>
+          <div class="card-pc card-pc-md card-back"></div>
+          <div class="card-pc card-pc-md card-back"></div>
+        </div>
+        <div class="table-phase">Flop</div>
+        <div class="table-pot">Pot · $240</div>
+      </div>
+      <div class="game-body">
+        <div class="panel-section">
+          <h4>Your hand</h4>
+          <div class="hole-cards">
+            <div class="card-pc card-pc-md hearts"><div class="card-rank">Q</div><div class="card-suit">♥</div></div>
+            <div class="card-pc card-pc-md hearts"><div class="card-rank">J</div><div class="card-suit">♥</div></div>
+          </div>
+          <div class="row" style="display:flex; gap:var(--space-2); justify-content:center;">
+            <span class="chip hand strong">Open-ended straight</span>
+          </div>
+        </div>
+        <div class="panel-section">
+          <h4>Dealer controls</h4>
+          <div class="dealer-controls">
+            <button class="btn btn-primary">Reveal turn</button>
+            <button class="btn btn-secondary">Pause level</button>
+            <button class="btn btn-ghost">Reorder seats</button>
+            <button class="btn btn-danger">End hand</button>
+          </div>
+        </div>
+      </div>
+      <div class="roster-panel" style="border-top:1px solid var(--rule);">
+        <h3>Players · 5</h3>
+        <ul class="player-list">
+          <li class="player-row is-dealer"><span class="drag-handle">⋮⋮</span><span class="name">Harish</span><span class="badge badge-dealer">D</span><span class="badge badge-sb">SB</span><span></span></li>
+          <li class="player-row"><span class="drag-handle">⋮⋮</span><span class="name">Junior</span><span class="badge badge-bb">BB</span><span></span><span></span></li>
+          <li class="player-row"><span class="drag-handle">⋮⋮</span><span class="name">Kerwin</span><span></span><span></span><span></span></li>
+          <li class="player-row is-folded"><span class="drag-handle">⋮⋮</span><span class="name">Darren</span><span class="badge badge-folded">FOLDED</span><span></span><span></span></li>
+          <li class="player-row is-broke"><span class="drag-handle">⋮⋮</span><span class="name">Tony</span><span class="badge badge-broke">BROKE</span><span></span><span></span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. PLAYER VIEW (PEEK) -->
+  <div class="frame">
+    <div class="label"><span class="num">03</span><span class="title">Player view &mdash; peek &amp; fold</span></div>
+    <div class="surface game-frame">
+      <div class="game-bar">
+        <span class="brand-mini"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg> MMP <em style="color:var(--ink-3); font-style:italic;">Poker</em></span>
+        <span class="level t-mono">Junior B · seat 2</span>
+        <a class="switch" href="#">Settings</a>
+      </div>
+      <div style="padding: var(--space-6) var(--space-5); text-align:center; border-bottom:1px solid var(--rule);">
+        <div class="t-eyebrow" style="color:var(--ink-3);">Hole cards</div>
+        <div class="hole-cards" style="margin-top:var(--space-4);">
+          <div class="card-pc card-pc-lg card-back"></div>
+          <div class="card-pc card-pc-lg card-back"></div>
+        </div>
+        <div class="t-mono" style="color:var(--ink-3); font-size:var(--text-xs); margin-top: var(--space-3);">Hold the cards to peek</div>
+      </div>
+      <div style="padding: var(--space-5); display:flex; flex-direction:column; gap:var(--space-3);">
+        <div class="slide-track">
+          <div class="slide-instruction">▶︎ Slide to show cards</div>
+          <div class="slide-button"><span class="slide-icon">👀</span></div>
+        </div>
+        <div class="slide-track slide-track-fold">
+          <div class="slide-instruction">▶︎ Slide to fold</div>
+          <div class="slide-button"><span class="slide-icon">✕</span></div>
+        </div>
+        <div class="timer-card" style="margin-top:var(--space-2);">
+          <div class="timer-label">Blinds increase in</div>
+          <div class="timer-countdown t-num">06:42</div>
+          <div class="timer-meta">Level 3 · SB $2 / BB $4</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. COMMUNITY DISPLAY (TV) -->
+  <div class="frame">
+    <div class="label"><span class="num">04</span><span class="title">Community display &mdash; shared TV</span></div>
+    <div class="surface" style="border-color: var(--gold);">
+      <div class="tv">
+        <h3 class="tv-title">MMP Poker</h3>
+        <div class="tv-cards">
+          <div class="card-pc card-pc-lg hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div>
+          <div class="card-pc card-pc-lg spades"><div class="card-rank">K</div><div class="card-suit">♠</div></div>
+          <div class="card-pc card-pc-lg diamonds"><div class="card-rank">10</div><div class="card-suit">♦</div></div>
+          <div class="card-pc card-pc-lg hearts"><div class="card-rank">7</div><div class="card-suit">♥</div></div>
+          <div class="card-pc card-pc-lg card-back"></div>
+        </div>
+        <div class="tv-phase">Turn</div>
+        <div class="tv-revealed">
+          <div class="hand"><span class="hand-name">Harish</span><span class="hand-cards"><div class="card-pc card-pc-sm hearts"><div class="card-rank">A</div><div class="card-suit">♥</div></div><div class="card-pc card-pc-sm hearts"><div class="card-rank">A</div><div class="card-suit">♣</div></div></span></div>
+          <div class="hand"><span class="hand-name">Junior</span><span class="hand-cards"><div class="card-pc card-pc-sm hearts"><div class="card-rank">Q</div><div class="card-suit">♥</div></div><div class="card-pc card-pc-sm hearts"><div class="card-rank">J</div><div class="card-suit">♥</div></div></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+</body></html>
