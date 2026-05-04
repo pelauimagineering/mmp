@@ -48,7 +48,8 @@
       "Bash(PORT=3000 npm start)",
       "Bash(curl -s -o /dev/null -w \"design-system through symlink: %{http_code}\\\\n\" http://localhost:3000/design-system/tokens.css)",
       "Bash(curl -s -o /dev/null -w \"/css/variables.css: %{http_code}\\\\n\" http://localhost:3000/css/variables.css)",
-      "Bash(curl -s http://localhost:3000/css/common.css)"
+      "Bash(curl -s http://localhost:3000/css/common.css)",
+      "Bash(gh auth *)"
     ]
   }
 }
