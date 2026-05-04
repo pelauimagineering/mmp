@@ -1,0 +1,315 @@
+.community-display-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+.display-header {
+    background-color: var(--color-surface);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.display-title {
+    font-size: var(--font-3xl);
+    font-weight: bold;
+    color: var(--color-primary);
+    margin: 0;
+}
+
+.display-main {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-2xl);
+}
+
+/* Large Community Cards Section */
+.community-section-large {
+    background-color: var(--color-surface);
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    min-width: 80%;
+    text-align: center;
+}
+
+.community-cards-large {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+    min-height: 200px;
+    align-items: center;
+}
+
+/* Larger cards for display */
+.community-cards-large .card {
+    width: 120px;
+    height: 168px;
+}
+
+.community-cards-large .card-rank {
+    font-size: 3rem;
+}
+
+.community-cards-large .card-suit {
+    font-size: 3.5rem;
+}
+
+.phase-indicator-large {
+    text-align: center;
+    margin-top: var(--spacing-xl);
+    font-size: var(--font-2xl);
+    color: var(--color-text-primary);
+    font-weight: bold;
+    text-transform: capitalize;
+    padding: var(--spacing-md);
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.no-cards-message {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--font-xl);
+    padding: var(--spacing-2xl);
+    width: 100%;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .community-cards-large .card {
+        width: 100px;
+        height: 140px;
+    }
+
+    .community-cards-large .card-rank {
+        font-size: 2.5rem;
+    }
+
+    .community-cards-large .card-suit {
+        font-size: 3rem;
+    }
+
+    .phase-indicator-large {
+        font-size: var(--font-xl);
+    }
+}
+
+@media (max-width: 768px) {
+    .display-title {
+        font-size: var(--font-2xl);
+    }
+
+    .community-cards-large {
+        gap: var(--spacing-md);
+    }
+
+    .community-cards-large .card {
+        width: 80px;
+        height: 112px;
+    }
+
+    .community-cards-large .card-rank {
+        font-size: 2rem;
+    }
+
+    .community-cards-large .card-suit {
+        font-size: 2.5rem;
+    }
+
+    .phase-indicator-large {
+        font-size: var(--font-lg);
+    }
+}
+
+@media (max-width: 480px) {
+    .display-main {
+        padding: var(--spacing-md);
+    }
+
+    .community-section-large {
+        padding: var(--spacing-lg);
+        min-width: 100%;
+    }
+
+    .community-cards-large {
+        gap: var(--spacing-sm);
+    }
+
+    .community-cards-large .card {
+        width: 60px;
+        height: 84px;
+    }
+
+    .community-cards-large .card-rank {
+        font-size: var(--font-xl);
+    }
+
+    .community-cards-large .card-suit {
+        font-size: var(--font-2xl);
+    }
+
+    .phase-indicator-large {
+        font-size: var(--font-md);
+    }
+
+    .no-cards-message {
+        font-size: var(--font-md);
+        padding: var(--spacing-lg);
+    }
+}
+
+/* Connection status */
+.connection-status {
+    position: fixed;
+    bottom: var(--spacing-lg);
+    right: var(--spacing-lg);
+    background-color: var(--color-surface-elevated);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--font-sm);
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--color-danger);
+}
+
+.status-indicator.connected {
+    background-color: var(--color-success);
+}
+
+/* Revealed Hands Section - Community Display ONLY */
+.revealed-hands-section {
+    background-color: var(--color-surface);
+    padding: var(--spacing-lg) var(--spacing-md);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    min-width: 80%;
+    margin-top: var(--spacing-xl);
+    text-align: center;
+}
+
+.revealed-hands-section.hidden {
+    display: none;
+}
+
+.revealed-hands-container-community {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    justify-content: center;
+}
+
+.revealed-hand-compact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    width: auto;
+    max-width: 600px;
+}
+
+.player-name-compact {
+    font-size: var(--font-md);
+    font-weight: bold;
+    color: var(--color-text-primary);
+    text-align: center;
+}
+
+.revealed-cards-compact {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex: 1;
+    justify-content: flex-start;
+}
+
+/* Compact card sizing - Single row layout */
+.card-compact {
+    width: 50px !important;
+    height: 70px !important;
+}
+
+.card-compact .card-rank {
+    font-size: var(--font-lg) !important;
+}
+
+.card-compact .card-suit {
+    font-size: var(--font-xl) !important;
+}
+
+/* Responsive adjustments for revealed hands */
+@media (max-width: 768px) {
+    .revealed-hands-title {
+        font-size: var(--font-lg);
+    }
+
+    .player-name-compact {
+        font-size: var(--font-sm);
+        min-width: 80px;
+    }
+
+    .card-compact {
+        width: 40px !important;
+        height: 56px !important;
+    }
+
+    .card-compact .card-rank {
+        font-size: var(--font-md) !important;
+    }
+
+    .card-compact .card-suit {
+        font-size: var(--font-lg) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .revealed-hands-section {
+        padding: var(--spacing-md) var(--spacing-sm);
+        min-width: 100%;
+    }
+
+    .revealed-hand-compact {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+
+    .player-name-compact {
+        font-size: var(--font-xs);
+        min-width: auto;
+    }
+
+    .card-compact {
+        width: 35px !important;
+        height: 49px !important;
+    }
+
+    .card-compact .card-rank {
+        font-size: var(--font-sm) !important;
+    }
+
+    .card-compact .card-suit {
+        font-size: var(--font-md) !important;
+    }
+
+    .revealed-cards-compact {
+        gap: 2px;
+    }
+}

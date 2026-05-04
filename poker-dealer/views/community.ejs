@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MMP Poker Community Cards</title>
+        <link rel="stylesheet" href="/css/variables.css">
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="/css/cards.css">
+        <link rel="stylesheet" href="/css/game.css">
+        <link rel="stylesheet" href="/css/community-display.css">
+        <script src='https://meet.jit.si/external_api.js'></script>
+        <style>
+            html, body { width: 100%; height: 100%; margin: 0px; }
+        </style>
+        <script type="text/javascript">
+            window.onload = () => {
+                loadMain()
+            }
+
+            function loadMain() {
+                const api = new JitsiMeetExternalAPI("8x8.vc", {
+                    roomName: "vpaas-magic-cookie-3652cf032c2e40239b1a3e773f2fafa7/MMPPoker",
+                    jwt: "<%= jwtToken %>",
+                    width: 1100,
+                    parentNode: document.querySelector('#game-room'),
+                    lang: 'en'
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <div class="community-display-container">
+            <header class="display-header">
+                <h1 class="display-title">MMP Poker Community Cards  ♥️ ♣️</h1>
+                    <span>
+                        <input type="checkbox" id="toggle-video" class="btn-check">
+                        <label class="btn btn-primary" for="toggle-video">Show Video</label>
+                    </span>
+            </header>
+
+            <main class="display-main">
+                <!-- Video Section -->
+                <section class="game-room-section">
+                    <div id="game-room"></div>
+                </section>
+
+                <!-- Community Cards Section -->
+                <section class="community-section-large">
+                    <div id="communityCards" class="community-cards-large">
+                        <div class="no-cards-message">Waiting for cards to be dealt...</div>
+                    </div>
+                    <div id="phaseIndicator" class="phase-indicator-large">Waiting for game to start</div>
+
+                    <!-- Blind Level Timer (Issue #27) -->
+                    <div id="timerSection" class="timer-section timer-idle">
+                        <div class="timer-display">
+                            <span class="timer-label">Blind Level</span>
+                            <span id="timerCountdown" class="timer-countdown">7:00</span>
+                        </div>
+                        <div class="blinds-display">
+                            <span class="blinds-label">Blinds:</span>
+                            <span id="blindsAmount" class="blinds-amount">1/2</span>
+                        </div>
+                        <div id="timerAlert" class="timer-alert hidden">
+                            Blinds will increase next hand!
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Revealed Player Hands Section -->
+                <section id="revealedHandsSection" class="revealed-hands-section hidden">
+                    <div id="revealedHandsContainer" class="revealed-hands-container-community"></div>
+                </section>
+            </main>
+
+            <!-- Connection Status -->
+            <div class="connection-status">
+                <div id="statusIndicator" class="status-indicator"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+
+            <footer class="app-footer">
+                <a href="#" onclick="location.reload(); return false;">Made with 💕 in the 6ix</a>
+            </footer>
+
+            <script src="/js/timer.js"></script>
+            <script src="/js/community-display.js"></script>
+        </div>
+    </body>
+</html>

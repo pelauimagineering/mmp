@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MMP Poker</title>
+        <link rel="stylesheet" href="/css/variables.css">
+        <link rel="stylesheet" href="/css/common.css">
+        <link rel="stylesheet" href="/css/cards.css">
+        <link rel="stylesheet" href="/css/game.css">
+        <script src='https://meet.jit.si/external_api.js'></script>
+        <style>
+            html, body { width: 100%; height: 100%; margin: 0px; }
+        </style>
+
+        <script src='https://8x8.vc/vpaas-magic-cookie-3652cf032c2e40239b1a3e773f2fafa7/external_api.js' async></script>
+		<script type="text/javascript">
+		  window.onload = () => {
+			  loadTable()
+		  }
+
+		  function loadTable() {
+              const api = new JitsiMeetExternalAPI("8x8.vc", {
+                roomName: "vpaas-magic-cookie-3652cf032c2e40239b1a3e773f2fafa7/MMPPoker",
+				jwt: "<%= jwtToken %>",
+                parentNode: document.querySelector('#game-room')
+              });
+		  }
+		</script>
+
+    </head>
+    <body>
+        <div class="game-container">
+            <header class="game-header">
+                <h1 class="game-title">MMP Poker ♥️ ♣️ </h1>
+                <span>
+                    <input type="checkbox" id="toggle-video" class="btn-check">
+                    <label class="btn btn-primary" for="toggle-video">Show Video</label>
+                    <button id="resetGameBtn" class="btn btn-danger" style="margin-left: 10px;">Reset Game</button>
+                </span>
+            </header>
+
+            <main class="game-main">
+
+                <!-- Video Section -->
+                <section class="game-room-section">
+                    <div id="game-room"></div>
+                </section>
+
+                <!-- Join Game Section (shown when not in game) -->
+                <section id="joinGameSection" class="join-game-section hidden">
+                    <h2>Welcome to the MMP Poker Dealer!</h2>
+                    <p>Click the button below to join today's game</p>
+                    <button id="joinGameBtn" class="primary">Join Game</button>
+                </section>
+
+                <div class="flexible-container">
+                    <!-- Community Cards Section -->
+                    <section class="community-section">
+                        <h2 class="section-header">Community Cards</h2>
+
+                        <!-- Container for Community Cards and Revealed Hands -->
+                        <div class="cards-display-container">
+                            <div id="communityCards" class="community-cards">
+                                <div class="no-cards-message">Waiting for cards to be dealt...</div>
+                            </div>
+
+                            <!-- Revealed Hands Display -->
+                            <div id="revealedHandsContainer" class="revealed-hands-container"></div>
+                        </div>
+
+                        <div id="phaseIndicator" class="phase-indicator">Phase: Waiting</div>
+
+                        <!-- Blind Level Timer -->
+                        <div id="timerSection" class="timer-section timer-idle">
+                            <div class="timer-display">
+                                <span class="timer-label">Blind Level</span>
+                                <span id="timerCountdown" class="timer-countdown">7:00</span>
+                            </div>
+                            <div class="blinds-display">
+                                <span class="blinds-label">Blinds:</span>
+                                <span id="blindsAmount" class="blinds-amount">1/2</span>
+                            </div>
+                            <div id="timerAlert" class="timer-alert hidden">
+                                Blinds will increase next hand!
+                            </div>
+                            <div id="timerControls" class="timer-controls hidden">
+                                <button id="timerPauseBtn" class="timer-control-btn" title="Pause Timer">⏸</button>
+                                <button id="timerResumeBtn" class="timer-control-btn hidden" title="Resume Timer">▶</button>
+                                <button id="timerResetBtn" class="timer-control-btn" title="Reset Timer">↻</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Your Hole Cards Section -->
+                    <section class="hole-cards-section">
+                        <h2 class="section-header">Your Hole Cards</h2>
+                        <div id="holeCards" class="hole-cards">
+                            <div class="no-cards-message">No cards yet</div>
+                        </div>
+                        <p class="peek-hint">👆 Tap + hold to peek at your cards</p>
+
+                        <!-- Slide to Show Cards Control -->
+                        <div id="slideToShowContainer" class="slide-to-show-container hidden">
+                            <div class="slide-track">
+                                <div class="slide-instruction">Slide to Show →</div>
+                                <div id="slideButton" class="slide-button">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide to Fold Control -->
+                        <div id="slideToFoldContainer" class="slide-to-fold-container hidden">
+                            <div class="slide-track-fold">
+                                <div class="slide-instruction-fold">Slide to Fold →</div>
+                                <div id="slideFoldButton" class="slide-button-fold">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Dealer Controls (only shown for dealer) -->
+                    <section id="dealerControlsSection" class="dealer-controls-section hidden">
+                        <span class="dealer-badge">DEALER</span>
+                        <h2 class="section-header">Dealer Controls</h2>
+                        <div class="dealer-controls">
+                            <button id="shuffleBtn" class="secondary">Shuffle Deck</button>
+                            <button id="dealBtn" class="primary">Deal Cards</button>
+                            <button id="flipBtn" class="secondary" disabled>Flip Community Card</button>
+                        </div>
+                    </section>
+
+                    <!-- Players Section -->
+                    <section class="players-section">
+                        <h2 class="section-header">Players</h2>
+                        <div id="playersList" class="players-list">
+                            <div class="no-cards-message">No players yet</div>
+                        </div>
+                        <!-- Choose Dealer Button -->
+                        <div class="choose-dealer-section">
+                            <button id="chooseDealerBtn" class="secondary" disabled>Random Dealer</button>
+                            <p class="choose-dealer-hint">Click a player's name to select them as dealer, or use the button for random selection</p>
+                        </div>
+
+                        <div class="logout-section">
+                            <button id="logoutBtn" class="danger">Logout <span class="user-name" id="userName">...</span> </button>
+                        </div>
+
+                    </section>
+                </div>
+            </main>
+
+            <!-- Connection Status -->
+            <div class="connection-status">
+                <div id="statusIndicator" class="status-indicator"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <footer class="app-footer">
+            <a href="#" onclick="location.reload(); return false;">Made with 💕 in the 6ix</a>
+        </footer>
+
+        <script src="/js/websocket-client.js"></script>
+        <script src="/js/timer.js"></script>
+        <script src="/js/game.js"></script>
+        <script src="/js/dealer-controls.js"></script>
+    </body>
+</html>
