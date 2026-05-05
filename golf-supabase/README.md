@@ -10,6 +10,7 @@ Schema, RPC, and one-time seed for the live golf scoring backend.
 4. In the Supabase **SQL editor**, run, in order:
    - `migrations/0001_init.sql`
    - `migrations/0002_rpc.sql`
+   - `migrations/0003_grants.sql`
 5. Set the score-entry passphrase:
    ```sql
    insert into _secret (key, value) values ('golf_passphrase', 'YOUR-PHRASE')
@@ -32,6 +33,19 @@ update _secret set value = '<new phrase>' where key = 'golf_passphrase';
 The score-entry form will hit "Wrong passphrase. Tap to retry" on the
 next sync attempt; entering the new phrase clears localStorage and
 drains the queue.
+
+## Troubleshooting
+
+**`42501: permission denied for table …` when running the seed script.**
+The role grants in `0003_grants.sql` haven't been applied. Run that
+migration in the SQL editor and re-run the seed.
+
+**`42501: new row violates row-level security policy` when calling
+the RPC from the SPA.** The passphrase row is missing or wrong. Run:
+```sql
+insert into _secret (key, value) values ('golf_passphrase', '<phrase>')
+on conflict (key) do update set value = excluded.value;
+```
 
 ## Re-seeding
 
