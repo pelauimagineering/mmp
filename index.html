@@ -19,19 +19,39 @@
   .topbar .nav-links a { color: var(--ink-2); text-decoration: none; white-space: nowrap; }
   .topbar .nav-links a:hover { color: var(--ink); }
 
-  .hero { max-width: 1200px; margin: 0 auto; padding: var(--space-9) var(--space-6) var(--space-7); display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-7); align-items: center; }
+  /* Belt-and-suspenders against horizontal scroll on small viewports
+   * caused by any element exceeding 100vw (e.g. the trophy below). */
+  html, body { overflow-x: hidden; }
+
+  .hero { max-width: 720px; margin: 0 auto; padding: var(--space-8) var(--space-6) var(--space-6); text-align: center; }
   .hero .eyebrow { display: inline-block; padding: 4px 12px; border: 1px solid var(--rule-strong); border-radius: var(--radius-pill); font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
-  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-5xl); line-height: 0.92; letter-spacing: var(--tracking-tight); margin: var(--space-4) 0 var(--space-3); font-variation-settings: "opsz" 144; }
-  .hero h1 em { font-style: italic; color: var(--primary); font-weight: 500; }
-  .hero p.lede { font-family: var(--font-display); font-size: var(--text-xl); font-style: italic; color: var(--ink-2); max-width: 32ch; line-height: 1.25; }
-  .hero .ctas { display: flex; gap: var(--space-3); margin-top: var(--space-5); flex-wrap: wrap; }
-  .trophy-stage { position: relative; aspect-ratio: 3/4; max-width: 460px; margin: 0 auto; }
-  .trophy-stage img { width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); }
+  .hero p.lede { font-family: var(--font-display); font-size: var(--text-xl); font-style: italic; color: var(--ink-2); max-width: 38ch; line-height: 1.25; margin: var(--space-4) auto var(--space-5); }
+  .hero .ctas { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
+
+  .closing { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6) var(--space-9); border-top: 1px solid var(--rule); text-align: center; }
+  .closing h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-5xl); line-height: 0.95; letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-6); font-variation-settings: "opsz" 144; }
+  .closing h1 em { font-style: italic; color: var(--primary); font-weight: 500; }
+  @media (max-width: 480px) {
+    .closing h1 { font-size: var(--text-4xl); }
+  }
+  .trophy-stage { position: relative; aspect-ratio: 3/4; width: min(460px, calc(100vw - 2 * var(--space-6))); margin: 0 auto; }
+  .trophy-stage img { width: 100%; height: 100%; object-fit: cover; object-position: center top; border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); display: block; }
   .trophy-stage::after { content: ''; position: absolute; inset: -8px; border: 1px solid var(--rule); border-radius: calc(var(--radius-xl) + 8px); pointer-events: none; }
 
   .doors { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6); border-top: 1px solid var(--rule); }
   .doors-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); }
-  @media (max-width: 800px) { .doors-grid, .hero { grid-template-columns: 1fr; } }
+  @media (max-width: 800px) { .doors-grid { grid-template-columns: 1fr; } }
+
+  /* In-season ordering: the active sport floats to the first column on
+   * desktop and to the top on mobile. Driven by [data-in-season] on body. */
+  body[data-in-season="golf"] .door.golf,
+  body[data-in-season="poker"] .door.poker,
+  body[data-in-season="golf"] #golf-standings,
+  body[data-in-season="poker"] #poker-standings { order: -1; }
+
+  .door .in-season-tag { display: none; position: absolute; top: var(--space-5); right: 76px; padding: 4px 10px; border-radius: var(--radius-pill); background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); color: white; font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; font-weight: 700; }
+  body[data-in-season="golf"] .door.golf .in-season-tag,
+  body[data-in-season="poker"] .door.poker .in-season-tag { display: inline-block; }
   .door {
     position: relative;
     border-radius: var(--radius-xl);
@@ -41,7 +61,6 @@
     text-decoration: none;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     padding: var(--space-6);
     transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
     border: 1px solid var(--rule);
@@ -53,13 +72,26 @@
   .door .arrow { position: absolute; top: var(--space-5); right: var(--space-5); width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); transition: background var(--dur) var(--ease-out); }
   .door:hover .arrow { background: rgba(255,255,255,0.32); }
 
+  /* Decorative motif sits at the top of the card as a normal flex
+   * child (not absolute) — guarantees real layout space below it
+   * before the text block, regardless of viewport width. The next
+   * sibling (.eyebrow) uses margin-top:auto to push the eyebrow +
+   * headline + description to the bottom of the card on tall
+   * viewports while keeping a minimum gap from the motif. */
+  .door-motif { display: inline-flex; gap: 14px; font-size: 32px; line-height: 1; pointer-events: none; user-select: none; margin-bottom: var(--space-5); }
+  .door-motif .suit-red { color: #e74c3c; }
+  .door-motif .suit-black { color: #f4eddd; }
+  .door .eyebrow { margin-top: auto; }
+  @media (max-width: 480px) {
+    .door-motif { font-size: 24px; gap: 10px; margin-bottom: var(--space-4); }
+  }
+
   .door.poker {
     background:
       radial-gradient(ellipse at 70% 40%, color-mix(in srgb, var(--brand-felt) 70%, black) 0%, #0a2418 70%),
       linear-gradient(135deg, #0f1115, #15171b);
   }
   .door.poker::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 18% 70%, rgba(231,76,60,0.18) 0%, transparent 30%), radial-gradient(circle at 78% 30%, rgba(212,160,23,0.18) 0%, transparent 35%); }
-  .door.poker::after { content: '♠ ♥ ♦ ♣'; position: absolute; top: var(--space-5); left: var(--space-6); font-size: 32px; color: var(--gold); letter-spacing: 14px; opacity: 0.7; }
 
   .door.golf {
     background:
@@ -67,7 +99,6 @@
       linear-gradient(180deg, #1d3a26 0%, #0f2418 100%);
   }
   .door.golf::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 80% 35%, rgba(244,237,221,0.25) 0%, transparent 25%), radial-gradient(circle at 12% 90%, rgba(212,160,23,0.18) 0%, transparent 30%); }
-  .door.golf::after { content: '⛳'; position: absolute; top: var(--space-5); left: var(--space-6); font-size: 32px; opacity: 0.85; }
 
   .standings { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6); border-top: 1px solid var(--rule); }
   .standings-head { display: flex; align-items: end; justify-content: space-between; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3); }
@@ -113,17 +144,11 @@
 </nav>
 
 <section class="hero">
-  <div>
-    <span class="eyebrow">Since 2008 · mmp.pelau.com</span>
-    <h1>Competitive, yes<br><em>Honest? Usuually.</em></h1>
-    <p class="lede">One trophy. Two sports. The same guys, every year, since 2008.</p>
-    <div class="ctas">
-      <a class="btn btn-plaque" href="#doors">Enter the cup</a>
-      <a class="btn btn-ghost" href="#standings">All-time standings →</a>
-    </div>
-  </div>
-  <div class="trophy-stage">
-    <img src="design-system/assets/trophy.jpg" alt="The MMP Challenge Cup — engraved walnut plaque, gold cup">
+  <span class="eyebrow">Since 2008 · mmp.pelau.com</span>
+  <p class="lede">One trophy. Two sports. Every year, since 2008.</p>
+  <div class="ctas">
+    <a class="btn btn-plaque" href="#doors">Enter the cup</a>
+    <a class="btn btn-ghost" href="#standings">All-time standings →</a>
   </div>
 </section>
 
@@ -131,15 +156,24 @@
   <div class="doors-grid">
     <a class="door poker" href="https://poker.pelau.com/">
       <span class="arrow">↗</span>
+      <span class="in-season-tag">In season</span>
+      <span class="door-motif" aria-hidden="true">
+        <span class="suit-black">♠</span>
+        <span class="suit-red">♥</span>
+        <span class="suit-red">♦</span>
+        <span class="suit-black">♣</span>
+      </span>
       <span class="eyebrow">poker.pelau.com</span>
       <h3>Poker</h3>
-      <p>Texas Hold'em, dealt in your pocket. Tony, where's your buy-in?</p>
+      <p>Texas Hold'em, digital dealer.</p>
     </a>
     <a class="door golf" href="/golf/">
       <span class="arrow">↗</span>
+      <span class="in-season-tag">In season</span>
+      <span class="door-motif" aria-hidden="true">⛳</span>
       <span class="eyebrow">mmp.pelau.com/golf</span>
       <h3>Golf</h3>
-      <p>Live leaderboard the moment the first card is entered.</p>
+      <p>Live leaderboard.</p>
     </a>
   </div>
 </section>
@@ -171,6 +205,13 @@
   </div>
 </section>
 
+<section class="closing">
+  <h1>Bring it on, <em>boys.</em></h1>
+  <div class="trophy-stage">
+    <img src="design-system/assets/trophy.jpg" alt="The MMP Challenge Cup — engraved walnut plaque, gold cup">
+  </div>
+</section>
+
 <footer class="site">
   <div class="mark">
     <svg viewBox="0 0 64 64" style="width:20px;height:20px;color:var(--primary);" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/></svg>
@@ -180,6 +221,12 @@
 </footer>
 
 <script type="module">
+  // Featured sport defaults to whichever is in season — golf May–Oct,
+  // poker Nov–Apr — matching the convention used by the golf SPA.
+  // Drives the [data-in-season] attribute that orders doors + standings.
+  const month = new Date().getMonth() + 1;
+  document.body.dataset.inSeason = (month >= 5 && month <= 10) ? 'golf' : 'poker';
+
   const MONTHS = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
 
   // Append T00:00:00 so the ISO date is parsed in local time, not UTC —
