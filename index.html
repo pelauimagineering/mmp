@@ -62,7 +62,10 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: var(--space-6);
+    /* Reserve top-row space for the decorative motif so text never
+     * overlaps it on narrow viewports where content overflows the
+     * aspect-ratio'd height. */
+    padding: 80px var(--space-6) var(--space-6);
     transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
     border: 1px solid var(--rule);
   }
@@ -73,13 +76,22 @@
   .door .arrow { position: absolute; top: var(--space-5); right: var(--space-5); width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); transition: background var(--dur) var(--ease-out); }
   .door:hover .arrow { background: rgba(255,255,255,0.32); }
 
+  /* Decorative top-left motif. Real DOM (not ::after) so the poker
+   * suits can each carry their traditional red/black colour. */
+  .door-motif { position: absolute; top: var(--space-5); left: var(--space-6); display: inline-flex; gap: 14px; font-size: 32px; line-height: 1; pointer-events: none; user-select: none; }
+  .door-motif .suit-red { color: #e74c3c; }
+  .door-motif .suit-black { color: #f4eddd; }
+  @media (max-width: 480px) {
+    .door-motif { font-size: 24px; gap: 10px; }
+    .door { padding-top: 64px; }
+  }
+
   .door.poker {
     background:
       radial-gradient(ellipse at 70% 40%, color-mix(in srgb, var(--brand-felt) 70%, black) 0%, #0a2418 70%),
       linear-gradient(135deg, #0f1115, #15171b);
   }
   .door.poker::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 18% 70%, rgba(231,76,60,0.18) 0%, transparent 30%), radial-gradient(circle at 78% 30%, rgba(212,160,23,0.18) 0%, transparent 35%); }
-  .door.poker::after { content: '♠ ♥ ♦ ♣'; position: absolute; top: var(--space-5); left: var(--space-6); font-size: 32px; color: var(--gold); letter-spacing: 14px; opacity: 0.7; }
 
   .door.golf {
     background:
@@ -87,7 +99,6 @@
       linear-gradient(180deg, #1d3a26 0%, #0f2418 100%);
   }
   .door.golf::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 80% 35%, rgba(244,237,221,0.25) 0%, transparent 25%), radial-gradient(circle at 12% 90%, rgba(212,160,23,0.18) 0%, transparent 30%); }
-  .door.golf::after { content: '⛳'; position: absolute; top: var(--space-5); left: var(--space-6); font-size: 32px; opacity: 0.85; }
 
   .standings { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6); border-top: 1px solid var(--rule); }
   .standings-head { display: flex; align-items: end; justify-content: space-between; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3); }
@@ -146,6 +157,12 @@
     <a class="door poker" href="https://poker.pelau.com/">
       <span class="arrow">↗</span>
       <span class="in-season-tag">In season</span>
+      <span class="door-motif" aria-hidden="true">
+        <span class="suit-black">♠</span>
+        <span class="suit-red">♥</span>
+        <span class="suit-red">♦</span>
+        <span class="suit-black">♣</span>
+      </span>
       <span class="eyebrow">poker.pelau.com</span>
       <h3>Poker</h3>
       <p>Texas Hold'em, dealt in your pocket. Tony, where's your buy-in?</p>
@@ -153,6 +170,7 @@
     <a class="door golf" href="/golf/">
       <span class="arrow">↗</span>
       <span class="in-season-tag">In season</span>
+      <span class="door-motif" aria-hidden="true">⛳</span>
       <span class="eyebrow">mmp.pelau.com/golf</span>
       <h3>Golf</h3>
       <p>Live leaderboard the moment the first card is entered.</p>
