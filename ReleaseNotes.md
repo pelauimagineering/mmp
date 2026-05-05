@@ -1,5 +1,21 @@
 # Release notes
 
+## 2026-05-04 · `feature/homepage-seasonal-default`
+
+Homepage refresh.
+
+- Trophy image moved from the top hero to a closing section just above the
+  footer. Width capped to `min(460px, calc(100vw − gutter))` and `overflow-x:
+  hidden` on `html, body` to prevent horizontal scroll on iPhone.
+- Headline changed to **"Bring it on, _boys._"** and relocated above the
+  trophy in the new closing section. The top of the page is now a slim
+  text-led intro (eyebrow + lede + CTAs).
+- Featured sport is now season-aware: golf May–Oct, poker Nov–Apr (matching
+  the golf SPA's `inSeasonSport()`). On load, `body[data-in-season]` is set,
+  CSS reorders the doors and standings cards so the in-season sport floats
+  to the top, and an "In season" pill appears on its door. Manual switching
+  is unchanged — both doors stay clickable.
+
 ## 2026-05-04 · `bugfix/digitalocean-deploy-fixes`
 
 DigitalOcean App Platform refused the first deploy with two errors.
