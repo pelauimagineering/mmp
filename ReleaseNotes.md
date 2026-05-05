@@ -1,5 +1,53 @@
 # Release notes
 
+## 2026-05-05 · `feature/golf-supabase-realtime`
+
+Live golf scoring backed by Supabase, with full offline support on the
+course.
+
+- **Database** (`golf-supabase/`): Postgres schema for `players`,
+  `seasons`, `rounds`, `results`, plus a `_secret` table for the
+  shared score-entry passphrase. RLS denies anon writes; the
+  `enter_round(passphrase, payload)` SECURITY DEFINER RPC verifies
+  the passphrase and upserts the round + every result row.
+  Realtime publication enabled on `rounds` and `results`.
+- **Seed**: `golf-supabase/scripts/seed-from-json.js` reads the
+  existing `golf/data/*.json` and idempotently upserts everything
+  via the Supabase REST API using the service role key (kept in
+  `.env`, gitignored).
+- **Leaderboard SPA** (`golf/index.html`): now fetches a single
+  `seasons → rounds → results` JOIN from Supabase on first paint
+  and subscribes to a Realtime channel for live updates. Renders
+  through a `shapeForSpa()` adapter so every existing renderer
+  function works unmodified. A localStorage soft-cache primes the
+  view on flaky connections so users see yesterday's data instead
+  of a spinner. Refetches coalesce bursty Realtime events into a
+  single re-render with a 200ms debounce.
+- **Score entry** (`golf/score-entry.html`): rewritten as an
+  offline-first queue + sync.
+  - **`golf/lib/queue.js`** — IndexedDB wrapper (`put`, `list`,
+    `delete`, `count`).
+  - **`golf/sw.js`** — service worker that precaches the form's
+    HTML/CSS/JS + supabase-js bundle so the page loads with zero
+    network. Supabase REST/Realtime requests are network-only.
+  - **Save** writes the round payload to IndexedDB and immediately
+    schedules a sync; sync triggers fire on `online`, page load,
+    and a 30-second poll. Each queued payload is sent through the
+    `enter_round()` RPC; successful entries are removed from the
+    queue.
+  - **Status chip** with four states: Ready / Offline / Syncing /
+    Synced / Sync paused. Pending count is shown alongside; tap to
+    retry.
+  - The "Copy JSON" + "Download" buttons survive as panic-button
+    fallbacks for browser-nuke recovery.
+- Idempotency: every queued payload is keyed on `(round_id,
+  player_id)` upsert, so retries can never duplicate or corrupt
+  data.
+
+Manual one-time setup (Supabase project creation, applying
+migrations, seeding the passphrase) documented in
+`golf-supabase/README.md`.
+
 ## 2026-05-04 · `feature/homepage-seasonal-default`
 
 Homepage refresh.

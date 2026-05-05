@@ -346,6 +346,39 @@ details.legend[open] summary::after { content: ""; }
 .btn.ghost { background: transparent; }
 .btn[disabled] { opacity: .5; cursor: not-allowed; }
 
+/* ---------- sync status chip ---------- */
+.sync-status {
+  margin-top: var(--space-3);
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-tonal);
+  border: 1px solid var(--rule);
+  font-family: var(--font-ui); font-size: var(--text-xs); font-weight: 600;
+  color: var(--ink-2);
+}
+.sync-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--ink-3);
+}
+[data-state="synced"]  .sync-dot { background: var(--success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 18%, transparent); }
+[data-state="syncing"] .sync-dot { background: var(--warning); animation: sync-pulse 1.2s ease-in-out infinite; }
+[data-state="offline"] .sync-dot { background: var(--ink-3); }
+[data-state="paused"]  .sync-dot { background: var(--danger); }
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+.sync-pending {
+  margin-left: var(--space-2);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--warning) 18%, var(--bg-raised));
+  color: var(--warning);
+  font-family: var(--font-mono); font-size: var(--text-2xs); font-weight: 700;
+  cursor: pointer;
+}
+
 /* ---------- status / preview ---------- */
 .status {
   margin-top: var(--space-3); padding: 10px var(--space-3);

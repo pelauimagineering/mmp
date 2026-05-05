@@ -10,6 +10,23 @@
 <link rel="stylesheet" href="../design-system/tokens.css">
 <link rel="stylesheet" href="../design-system/components.css">
 <link rel="stylesheet" href="./score-entry.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  // Re-export the IDB queue + supabase client helpers as window.GolfSync
+  // for the inline classic <script> below.
+  import { queue } from './lib/queue.js';
+  import { getSupabase } from './lib/golf-data.js';
+  window.GolfSync = { queue, getSupabase };
+  window.dispatchEvent(new Event('golf-sync-ready'));
+
+  // Service worker for the offline app shell. Registered after the
+  // module loads so the SW URL resolves correctly.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      console.warn('SW registration failed:', err);
+    });
+  }
+</script>
 </head>
 <body class="theme-links">
 <main class="shell">
@@ -65,16 +82,22 @@
   <div class="card">
     <h2>Save</h2>
     <div class="actions">
-      <button class="btn primary" id="btn-save">Save round &amp; download golf.json</button>
+      <button class="btn primary" id="btn-save">Save round</button>
       <button class="btn" id="btn-copy">Copy JSON to clipboard</button>
+      <button class="btn" id="btn-download">Download golf.json</button>
       <button class="btn ghost" id="btn-clear">Clear scores</button>
+    </div>
+    <div class="sync-status" id="sync-status" data-state="idle">
+      <span class="sync-dot"></span>
+      <span class="sync-label" id="sync-label">Ready.</span>
+      <span class="sync-pending" id="sync-pending" hidden></span>
     </div>
     <div class="status" id="status"></div>
     <details class="preview">
       <summary>Preview generated JSON</summary>
       <pre id="preview"></pre>
     </details>
-    <p class="hint" style="margin-top:14px;">Round details (date, course, organizer, tees) persist in your browser between visits to this page so you don't have to retype them.</p>
+    <p class="hint" style="margin-top:14px;">Saves go to a local queue first, so the form works even on a course with no signal. Each queued round syncs to the live leaderboard automatically when the network returns.</p>
   </div>
 
 </main>
@@ -297,7 +320,18 @@
     });
     $("#btn-save").addEventListener("click", onSave);
     $("#btn-copy").addEventListener("click", onCopy);
+    $("#btn-download").addEventListener("click", onDownload);
     $("#btn-clear").addEventListener("click", onClear);
+
+    // Sync triggers: drain the queue whenever it could plausibly succeed.
+    window.addEventListener("online", syncQueue);
+    setInterval(syncQueue, 30000);
+    if (window.GolfSync) {
+      refreshPending();
+      syncQueue();
+    } else {
+      window.addEventListener("golf-sync-ready", () => { refreshPending(); syncQueue(); }, { once: true });
+    }
   }
 
   function readCard(card) {
@@ -455,30 +489,143 @@
     }));
   }
 
-  function onSave() {
+  // ── Save flow: queue locally, sync best-effort. Always succeeds offline. ──
+  const PASSPHRASE_KEY = "mmp.golf.passphrase";
+
+  // RPC payload uses snake_case to match the SQL function signature.
+  function buildRoundPayload() {
+    const round = buildRound();
+    return {
+      round: {
+        id: round.id,
+        season_id: `golf-${seasonForDate(round.date)}`,
+        date: round.date,
+        course: round.course,
+        organizer: round.organizer,
+        tee_times: round.teeTimes,
+        played: round.played,
+      },
+      results: round.results.map((r) => ({
+        player_id: r.playerId,
+        name: r.name,
+        attended: r.attended,
+        holes_played: r.holesPlayed,
+        gross: r.gross,
+        handicap: r.handicap,
+        pars: r.pars,
+        birdies: r.birdies,
+        eagles: r.eagles,
+        albatrosses: r.albatrosses,
+        hole_in_ones: r.holeInOnes,
+      })),
+    };
+  }
+
+  async function onSave() {
     const round = buildRound();
     if (!round.date || !round.course) return showStatus("Date and course are required.", false);
     if (round.results.length === 0) return showStatus("Mark at least one player as Played, or this isn't a saveable round.", false);
+    if (!window.GolfSync) return showStatus("Sync library still loading — try again in a second.", false);
 
     persistRoundDetails();
-    const data = buildUpdatedGolfJson();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "golf.json"; a.click();
-    URL.revokeObjectURL(url);
+    try {
+      await window.GolfSync.queue.put(buildRoundPayload());
+    } catch (e) {
+      return showStatus(`Could not save locally: ${e.message}`, false);
+    }
     saveCount++;
-    showStatus(`Saved (${saveCount}). Drop the downloaded golf.json into data/ to replace the current file. Round id: ${round.id}.`, true);
+    showStatus(`Saved locally (${saveCount}). Round id: ${round.id}.`, true);
+    await refreshPending();
+    syncQueue();
   }
 
+  async function syncQueue() {
+    if (!window.GolfSync) return;
+    if (!navigator.onLine) {
+      setSyncState("offline", "Offline — will sync when connected.");
+      return;
+    }
+    const pending = await window.GolfSync.queue.list();
+    if (!pending.length) {
+      setSyncState("synced", "All rounds synced.");
+      return;
+    }
+
+    let pass = localStorage.getItem(PASSPHRASE_KEY);
+    if (!pass) {
+      pass = prompt("Score-entry passphrase (needed to sync):");
+      if (!pass) {
+        setSyncState("paused", "Sync paused — passphrase required.");
+        return;
+      }
+    }
+
+    setSyncState("syncing", `Syncing ${pending.length}…`);
+    let supa;
+    try { supa = window.GolfSync.getSupabase(); }
+    catch (e) {
+      setSyncState("paused", `Sync paused — ${e.message}`);
+      return;
+    }
+
+    for (const { id, payload } of pending) {
+      const { error } = await supa.rpc("enter_round", { p_passphrase: pass, p_payload: payload });
+      if (error) {
+        if (/passphrase/i.test(error.message || "")) {
+          localStorage.removeItem(PASSPHRASE_KEY);
+          setSyncState("paused", "Wrong passphrase — tap the queue chip to retry.");
+        } else {
+          setSyncState("paused", `Sync paused: ${error.message}. Will retry.`);
+        }
+        await refreshPending();
+        return;
+      }
+      await window.GolfSync.queue.delete(id);
+    }
+    localStorage.setItem(PASSPHRASE_KEY, pass);
+    await refreshPending();
+    setSyncState("synced", "All rounds synced.");
+  }
+
+  function setSyncState(state, label) {
+    const el = $("#sync-status");
+    el.dataset.state = state;
+    $("#sync-label").textContent = label;
+  }
+
+  async function refreshPending() {
+    if (!window.GolfSync) return;
+    const n = await window.GolfSync.queue.count();
+    const el = $("#sync-pending");
+    if (n > 0) {
+      el.textContent = `${n} pending`;
+      el.hidden = false;
+      el.onclick = syncQueue;     // tap to retry
+    } else {
+      el.hidden = true;
+    }
+  }
+
+  // Panic-button fallbacks — preserved from the file-replacement era so the
+  // user can recover queued rounds before nuking the browser.
   async function onCopy() {
     const data = buildUpdatedGolfJson();
     try {
       await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
       showStatus("Copied. Paste over data/golf.json.", true);
     } catch {
-      showStatus("Clipboard blocked. Use the Save button to download.", false);
+      showStatus("Clipboard blocked. Use Download instead.", false);
     }
+  }
+
+  function onDownload() {
+    const data = buildUpdatedGolfJson();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "golf.json"; a.click();
+    URL.revokeObjectURL(url);
+    showStatus("Downloaded golf.json.", true);
   }
 
   function onClear() {

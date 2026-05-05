@@ -11,6 +11,9 @@ poker-dealer/database/*.db
 poker-dealer/database/*.db-*
 poker-dealer/.env
 
+# Supabase seed-script credentials (service role key — never commit)
+golf-supabase/.env
+
 # Poker-dealer's local copy of the shared design system. Created by
 # `npm install` (postinstall script) so the Node app can serve
 # /design-system/* via Express's static middleware. Not a symlink in
