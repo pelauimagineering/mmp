@@ -57,7 +57,10 @@
       "Bash(curl -s -o /dev/null -w \"/design-system/assets/mmp-mark.svg: %{http_code}\\\\n\" http://localhost:3000/design-system/assets/mmp-mark.svg)",
       "Bash(curl -s -o /dev/null -w \"404 file directly: %{http_code}\\\\n\" http://localhost:8765/404.html)",
       "Bash(curl -s -o /dev/null -w \"404 page tokens.css: %{http_code}\\\\n\" http://localhost:8765/design-system/tokens.css)",
-      "Bash(curl -s http://localhost:8765/404.html)"
+      "Bash(curl -s http://localhost:8765/404.html)",
+      "Bash(curl -s http://localhost:8765/)",
+      "Bash(python3 -c \"import sys,re; t=sys.stdin.read\\(\\); h=re.search\\(r'<section class=\\\\\"hero\\\\\".*?</section>',t,re.S\\); c=re.search\\(r'<section class=\\\\\"closing\\\\\".*?</section>',t,re.S\\); print\\('hero has trophy:', 'trophy' in \\(h.group\\(\\) if h else ''\\)\\); print\\('closing has trophy:', 'trophy' in \\(c.group\\(\\) if c else ''\\)\\)\")",
+      "Bash(awk '/^\\\\s*\\\\.door/{print NR\": \"$0}' /Users/darren/code/mmp/index.html)"
     ]
   }
 }
