@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Page not found · MMP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/design-system/tokens.css">
+<link rel="stylesheet" href="/design-system/components.css">
+<style>
+  body { background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
+  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-7) var(--space-6); }
+  .card { max-width: 520px; text-align: center; }
+  .mark { display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: color-mix(in srgb, var(--gold) 14%, transparent); color: var(--gold); margin-bottom: var(--space-4); }
+  .mark svg { width: 36px; height: 36px; }
+  .eyebrow { display: inline-block; padding: 4px 12px; border: 1px solid var(--rule-strong); border-radius: var(--radius-pill); font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); margin-bottom: var(--space-4); }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-4xl); line-height: 1; letter-spacing: var(--tracking-tight); margin: 0 0 var(--space-3); font-variation-settings: "opsz" 144; }
+  h1 em { font-style: italic; color: var(--primary); font-weight: 500; }
+  p.lede { font-family: var(--font-display); font-size: var(--text-lg); font-style: italic; color: var(--ink-2); margin: 0 0 var(--space-5); }
+  .ctas { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
+  footer { padding: var(--space-5) var(--space-6); border-top: 1px solid var(--rule); color: var(--ink-3); font-family: var(--font-ui); font-size: var(--text-xs); text-align: center; }
+</style>
+</head>
+<body class="theme-links">
+<main>
+  <div class="card">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
+    </div>
+    <span class="eyebrow">Error · 404</span>
+    <h1>Wrong table, <em>same brotherhood.</em></h1>
+    <p class="lede">That page doesn't exist — yet.</p>
+    <div class="ctas">
+      <a class="btn btn-plaque" href="/">Back to the trophy</a>
+      <a class="btn btn-ghost" href="/golf/">Golf leaderboard →</a>
+    </div>
+  </div>
+</main>
+<footer>MMP · Bound by Brotherhood · Memorial Memorial Pelau Challenge Cup</footer>
+</body>
+</html>

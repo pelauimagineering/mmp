@@ -1,5 +1,17 @@
 # Release notes
 
+## 2026-05-04 · `bugfix/digitalocean-deploy-fixes`
+
+DigitalOcean App Platform refused the first deploy with two errors.
+
+- **Symlink upload failure** at `poker-dealer/public/design-system`. DO doesn't
+  follow symlinks during upload. Replaced the symlink with a `postinstall`
+  script in `poker-dealer/package.json` that mirrors `design-system/` into
+  `poker-dealer/public/design-system/` on `npm install`. The path is
+  gitignored; Express still serves `/design-system/*` exactly as before.
+- **Missing `404.html`**. Added one at the repo root using the design system
+  (theme-links, MMP mark, "Back to the trophy" CTA).
+
 ## 2026-05-03 · `feature/mmp-unified-design-system`
 
 Bootstrapped the unified MMP web property at `mmp.pelau.com`.

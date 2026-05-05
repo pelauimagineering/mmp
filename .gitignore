@@ -11,5 +11,11 @@ poker-dealer/database/*.db
 poker-dealer/database/*.db-*
 poker-dealer/.env
 
+# Poker-dealer's local copy of the shared design system. Created by
+# `npm install` (postinstall script) so the Node app can serve
+# /design-system/* via Express's static middleware. Not a symlink in
+# git because not every host (DigitalOcean App Platform) follows them.
+poker-dealer/public/design-system/
+
 # Excel sources stay local — JSON is the deployed truth
 golf/MMP Poker*.xlsx
