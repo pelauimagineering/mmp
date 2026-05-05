@@ -10,6 +10,14 @@
 <link rel="stylesheet" href="../design-system/tokens.css">
 <link rel="stylesheet" href="../design-system/components.css">
 <link rel="stylesheet" href="./styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  // Re-export the ES-module helpers as window.GolfData so the inline
+  // <script> below (which is a classic script, not a module) can use them.
+  import * as GolfData from './lib/golf-data.js';
+  window.GolfData = GolfData;
+  window.dispatchEvent(new Event('golf-data-ready'));
+</script>
 </head>
 <body class="theme-links" data-sport="poker">
 
@@ -167,15 +175,77 @@ async function fetchJson(path) {
 }
 
 async function loadAll() {
-  const [poker, golf, players] = await Promise.all([
+  const [poker, players, golfFromSupabase] = await Promise.all([
     fetchJson("data/poker.json"),
-    fetchJson("data/golf.json"),
     fetchJson("data/players.json"),
+    loadGolfLive(),
   ]);
   DATA.poker = poker;
-  DATA.golf = golf;
-  DATA.players = (players && players.players) || [];
+  DATA.golf = golfFromSupabase || (await fetchJson("data/golf.json")); // last-resort if supabase + cache both empty
+  DATA.players = (golfFromSupabase?._players?.length ? golfFromSupabase._players : (players && players.players) || []);
   DATA.loaded = true;
+}
+
+// Golf data lives in Supabase. Use a localStorage soft-cache so the
+// SPA paints quickly on flaky connections and then refines once the
+// fresh data arrives. Realtime subscription wires up on first success.
+async function loadGolfLive() {
+  const cached = window.GolfData.readSoftCache();
+  // Attempt fresh fetch in the background; surface the cache immediately if present.
+  const livePromise = window.GolfData.loadGolfFromSupabase()
+    .then((fresh) => {
+      window.GolfData.writeSoftCache(fresh);
+      return fresh;
+    })
+    .catch((err) => {
+      console.warn("Supabase fetch failed; relying on cache.", err);
+      return null;
+    });
+  // First load: prefer fresh if it arrives quickly (200ms grace window),
+  // otherwise return cache and let the Realtime channel patch it later.
+  if (cached && cached.data) {
+    const fresh = await Promise.race([
+      livePromise,
+      new Promise((r) => setTimeout(() => r(null), 200)),
+    ]);
+    if (!fresh && livePromise) {
+      // Refine view once the slow fetch lands.
+      livePromise.then((late) => { if (late) { DATA.golf = late; dispatch(); } });
+      return cached.data;
+    }
+    return fresh || cached.data;
+  }
+  return livePromise;
+}
+
+function subscribeGolfLive() {
+  try {
+    const supa = window.GolfData.getSupabase();
+    supa
+      .channel("golf-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "results" }, refetchGolfLive)
+      .on("postgres_changes", { event: "*", schema: "public", table: "rounds" },  refetchGolfLive)
+      .subscribe();
+  } catch (e) {
+    console.warn("Realtime subscription failed:", e);
+  }
+}
+
+let refetchTimer = null;
+function refetchGolfLive() {
+  // Coalesce bursts of changes into a single refetch.
+  clearTimeout(refetchTimer);
+  refetchTimer = setTimeout(async () => {
+    try {
+      const fresh = await window.GolfData.loadGolfFromSupabase();
+      window.GolfData.writeSoftCache(fresh);
+      DATA.golf = fresh;
+      if (fresh._players?.length) DATA.players = fresh._players;
+      dispatch();
+    } catch (e) {
+      console.warn("Refetch failed:", e);
+    }
+  }, 200);
 }
 
 // ---------- Aggregations ----------
@@ -1121,6 +1191,7 @@ function bindStandingsRowClicks(sport) {
 // ============================ Bootstrap ============================
 async function init() {
   await loadAll();
+  subscribeGolfLive();
   $("#footer-date").textContent = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   window.addEventListener("hashchange", dispatch);
   if (!location.hash || location.hash === "#" || location.hash === "#/") {
@@ -1129,7 +1200,13 @@ async function init() {
     dispatch();
   }
 }
-init();
+
+// Wait for the GolfData module to register itself on window before booting.
+if (window.GolfData) {
+  init();
+} else {
+  window.addEventListener('golf-data-ready', init, { once: true });
+}
 </script>
 
 </body>
