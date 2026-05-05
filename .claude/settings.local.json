@@ -49,7 +49,15 @@
       "Bash(curl -s -o /dev/null -w \"design-system through symlink: %{http_code}\\\\n\" http://localhost:3000/design-system/tokens.css)",
       "Bash(curl -s -o /dev/null -w \"/css/variables.css: %{http_code}\\\\n\" http://localhost:3000/css/variables.css)",
       "Bash(curl -s http://localhost:3000/css/common.css)",
-      "Bash(gh auth *)"
+      "Bash(gh auth *)",
+      "Bash(node scripts/sync-design-system.js)",
+      "Bash(curl -s -o /dev/null -w \"/ login: %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"/design-system/tokens.css: %{http_code}\\\\n\" http://localhost:3000/design-system/tokens.css)",
+      "Bash(curl -s -o /dev/null -w \"/design-system/components.css: %{http_code}\\\\n\" http://localhost:3000/design-system/components.css)",
+      "Bash(curl -s -o /dev/null -w \"/design-system/assets/mmp-mark.svg: %{http_code}\\\\n\" http://localhost:3000/design-system/assets/mmp-mark.svg)",
+      "Bash(curl -s -o /dev/null -w \"404 file directly: %{http_code}\\\\n\" http://localhost:8765/404.html)",
+      "Bash(curl -s -o /dev/null -w \"404 page tokens.css: %{http_code}\\\\n\" http://localhost:8765/design-system/tokens.css)",
+      "Bash(curl -s http://localhost:8765/404.html)"
     ]
   }
 }
