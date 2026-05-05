@@ -8,6 +8,7 @@
     "start:reset": "node server/index.js --reset",
     "dev": "node --watch server/index.js",
     "db:init": "node scripts/init-db.js",
+    "postinstall": "node scripts/sync-design-system.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
