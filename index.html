@@ -61,11 +61,7 @@
     text-decoration: none;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    /* Reserve top-row space for the decorative motif so text never
-     * overlaps it on narrow viewports where content overflows the
-     * aspect-ratio'd height. */
-    padding: 80px var(--space-6) var(--space-6);
+    padding: var(--space-6);
     transition: transform var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
     border: 1px solid var(--rule);
   }
@@ -76,14 +72,18 @@
   .door .arrow { position: absolute; top: var(--space-5); right: var(--space-5); width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.16); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; font-size: var(--text-xl); transition: background var(--dur) var(--ease-out); }
   .door:hover .arrow { background: rgba(255,255,255,0.32); }
 
-  /* Decorative top-left motif. Real DOM (not ::after) so the poker
-   * suits can each carry their traditional red/black colour. */
-  .door-motif { position: absolute; top: var(--space-5); left: var(--space-6); display: inline-flex; gap: 14px; font-size: 32px; line-height: 1; pointer-events: none; user-select: none; }
+  /* Decorative motif sits at the top of the card as a normal flex
+   * child (not absolute) — guarantees real layout space below it
+   * before the text block, regardless of viewport width. The next
+   * sibling (.eyebrow) uses margin-top:auto to push the eyebrow +
+   * headline + description to the bottom of the card on tall
+   * viewports while keeping a minimum gap from the motif. */
+  .door-motif { display: inline-flex; gap: 14px; font-size: 32px; line-height: 1; pointer-events: none; user-select: none; margin-bottom: var(--space-5); }
   .door-motif .suit-red { color: #e74c3c; }
   .door-motif .suit-black { color: #f4eddd; }
+  .door .eyebrow { margin-top: auto; }
   @media (max-width: 480px) {
-    .door-motif { font-size: 24px; gap: 10px; }
-    .door { padding-top: 64px; }
+    .door-motif { font-size: 24px; gap: 10px; margin-bottom: var(--space-4); }
   }
 
   .door.poker {
