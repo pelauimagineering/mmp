@@ -5,5 +5,5 @@
 //
 // To rotate: update the values here and redeploy.
 
-export const SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';
-export const SUPABASE_ANON_KEY = 'PASTE-ANON-KEY-HERE';
+export const SUPABASE_URL = 'https://jgzgyodxvounnirgmggl.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_MFxQU33CYCPWPa0j9VbVJA_bqIDS-sN';
