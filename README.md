@@ -1,7 +1,7 @@
 # MMP — Bound by Brotherhood
 
-The Memorial Memorial Pelau Challenge Cup web property. One trophy, two games,
-six guys, since 2008.
+The MMP Challenge Cup web property. One trophy, two games,
+guys, since 2008.
 
 This monorepo ships **three deployable surfaces** under one shared design system:
 
