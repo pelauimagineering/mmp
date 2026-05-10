@@ -13,6 +13,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="design-system/tokens.css">
 <link rel="stylesheet" href="design-system/components.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  // Re-export the Supabase adapter on window so the page-bottom inline
+  // module can use it. The bottom script waits on `golf-data-ready`
+  // before reading window.GolfData.
+  import * as GolfData from '/golf/lib/golf-data.js';
+  window.GolfData = GolfData;
+  window.dispatchEvent(new Event('golf-data-ready'));
+</script>
 <style>
   body { background: var(--bg); }
 
@@ -274,9 +283,37 @@
     </li>
   `).join('');
 
+  // Golf data lives in Supabase. Load order:
+  //   1. live Supabase fetch via the shared adapter (window.GolfData)
+  //   2. localStorage soft-cache from a previous successful fetch
+  //   3. /golf/data/golf.json as a last-resort static fallback
+  // Poker stays on the static JSON — only golf is on Supabase.
+  const waitForGolfData = () => new Promise((resolve) => {
+    if (window.GolfData) return resolve();
+    window.addEventListener('golf-data-ready', () => resolve(), { once: true });
+  });
+
+  const loadGolfLive = async () => {
+    await waitForGolfData();
+    try {
+      const fresh = await window.GolfData.loadGolfFromSupabase();
+      if (fresh && fresh.seasons && fresh.seasons.length) {
+        window.GolfData.writeSoftCache(fresh);
+        return fresh;
+      }
+    } catch (e) {
+      console.warn('Supabase fetch failed; falling back.', e);
+    }
+    const cached = window.GolfData.readSoftCache();
+    if (cached && cached.data && cached.data.seasons && cached.data.seasons.length) {
+      return cached.data;
+    }
+    return tryFetch('/golf/data/golf.json');
+  };
+
   const [poker, golf] = await Promise.all([
     tryFetch('/golf/data/poker.json'),
-    tryFetch('/golf/data/golf.json'),
+    loadGolfLive(),
   ]);
 
   // ── Poker standings: count rank-1 finishes per player across all seasons ──

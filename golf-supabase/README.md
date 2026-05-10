@@ -11,6 +11,8 @@ Schema, RPC, and one-time seed for the live golf scoring backend.
    - `migrations/0001_init.sql`
    - `migrations/0002_rpc.sql`
    - `migrations/0003_grants.sql`
+   - `migrations/0004_final_standings.sql`
+   - `migrations/0005_enter_round_recompute.sql`
 5. Set the score-entry passphrase:
    ```sql
    insert into _secret (key, value) values ('golf_passphrase', 'YOUR-PHRASE')
@@ -22,6 +24,10 @@ Schema, RPC, and one-time seed for the live golf scoring backend.
    cd golf-supabase
    cp .env.example .env   # then edit .env with SUPABASE_URL + SUPABASE_SERVICE_ROLE
    node scripts/seed-from-json.js
+   ```
+8. Backfill `final_standings` for the seeded seasons:
+   ```sql
+   select recompute_season_standings(id) from seasons where sport = 'golf';
    ```
 
 ## Rotating the passphrase

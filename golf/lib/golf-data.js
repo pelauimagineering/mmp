@@ -4,7 +4,10 @@
 // Keeping the legacy shape means the renderers don't change at all
 // when we swap the backend out from under them.
 
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase-config.js';
+// Absolute path so the adapter is importable from any page on the site
+// (the root /index.html, the golf SPA, the score-entry form) without
+// each consumer needing its own config bridge.
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '/golf/supabase-config.js';
 
 const SCORING_MATRIX = {
   attendance: { points: 5,  label: 'Showed up',  description: 'Played the round.' },
@@ -39,7 +42,7 @@ export async function loadGolfFromSupabase() {
     supa.from('players').select('*'),
     supa
       .from('seasons')
-      .select('id,label,sport, rounds:rounds(id,date,course,organizer,tee_times,played, results:results(*))')
+      .select('id,label,sport, rounds:rounds(id,date,course,organizer,tee_times,played, results:results(*)), final_standings:final_standings(*)')
       .eq('sport', 'golf')
       .order('id', { ascending: true }),
   ]);
@@ -84,7 +87,16 @@ export function shapeForSpa(playersRows, seasonsRows) {
             holeInOnes: x.hole_in_ones ?? 0,
           })),
         })),
-      finalStandings: [],
+      finalStandings: (s.final_standings || [])
+        .slice()
+        .sort((a, b) => a.rank - b.rank)
+        .map((p) => ({
+          rank: p.rank,
+          playerId: p.player_id,
+          name: p.name,
+          totalPoints: Number(p.total_points),
+          roundsPlayed: p.rounds_played,
+        })),
     })),
     _players: playersRows.map((p) => ({
       id: p.id,
