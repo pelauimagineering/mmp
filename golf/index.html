@@ -119,6 +119,23 @@ const SPORT_CONFIG = {
 // Golf scoring constants (mirror the matrix in data/golf.json)
 const GOLF_POINTS = { attendance: 5, par: 1, birdie: 3, eagle: 10, albatross: 20, holeInOne: 25, lowRound: 3 };
 
+// Penalty for shooting well over handicap par. Bands stack on the diff
+// (gross − par − handicap), where par/handicap scale linearly for 9-hole
+// rounds (par=36, handicap/2). Mirrors recompute_season_standings() in
+// golf-supabase/migrations/0006_penalty_rule.sql.
+function golfPenaltyFor(r) {
+  if (!r.attended) return 0;
+  if (!Number.isFinite(r.gross) || !Number.isFinite(r.handicap)) return 0;
+  if (r.holesPlayed !== 9 && r.holesPlayed !== 18) return 0;
+  const par = r.holesPlayed === 18 ? 72 : 36;
+  const hcp = r.holesPlayed === 18 ? r.handicap : r.handicap / 2;
+  const diff = r.gross - par - hcp;
+  if (diff > 15) return 3;
+  if (diff > 10) return 2;
+  if (diff > 5)  return 1;
+  return 0;
+}
+
 // ---------- Helpers ----------
 const $  = (sel, root=document) => root.querySelector(sel);
 const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
@@ -307,7 +324,8 @@ function annotateGolfRound(round) {
   for (const r of results) {
     const id = r.playerId || slug(r.name);
     r.lowRound = lowRoundIds.has(id);
-    if (!r.attended) { r.points = 0; continue; }
+    if (!r.attended) { r.points = 0; r.penalty = 0; continue; }
+    r.penalty = golfPenaltyFor(r);
     r.points =
       GOLF_POINTS.attendance
       + (r.pars || 0) * GOLF_POINTS.par
@@ -315,7 +333,8 @@ function annotateGolfRound(round) {
       + (r.eagles || 0) * GOLF_POINTS.eagle
       + (r.albatrosses || 0) * GOLF_POINTS.albatross
       + (r.holeInOnes || 0) * GOLF_POINTS.holeInOne
-      + (r.lowRound ? GOLF_POINTS.lowRound : 0);
+      + (r.lowRound ? GOLF_POINTS.lowRound : 0)
+      - r.penalty;
   }
   return results;
 }
@@ -733,7 +752,10 @@ function renderGolfStandingsRows(standings) {
 function renderScoringRulesPanel() {
   const m = DATA.golf?.scoringMatrix;
   if (!m) return "";
-  const order = ["attendance","par","birdie","eagle","albatross","holeInOne","lowRound"];
+  const order = ["attendance","par","birdie","eagle","albatross","holeInOne","lowRound","penalty"];
+  const formatPts = (entry) => entry.display
+    ? entry.display
+    : (entry.points >= 0 ? `+${entry.points}` : `${entry.points}`);
   return `
     <div class="panel">
       <div class="panel-head"><h2>How scoring works</h2></div>
@@ -741,7 +763,7 @@ function renderScoringRulesPanel() {
         <thead><tr><th class="num" style="width: 80px;">Pts</th><th>Achievement</th><th>Description</th></tr></thead>
         <tbody>
           ${order.map(k => m[k] ? `<tr>
-            <td class="num"><strong>+${m[k].points}</strong></td>
+            <td class="num"><strong>${formatPts(m[k])}</strong></td>
             <td>${escapeHtml(m[k].label)}</td>
             <td class="muted">${escapeHtml(m[k].description)}</td>
           </tr>` : "").join("")}
