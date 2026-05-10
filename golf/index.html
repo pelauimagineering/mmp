@@ -953,6 +953,7 @@ function renderGolfRoundDetail(root, season, round) {
           <th class="num">Alb</th>
           <th class="num">HIO</th>
           <th class="num">Low</th>
+          <th class="num pen-col">Penalty</th>
           <th class="num">Pts</th>
         </tr></thead>
         <tbody>${annotated.map(r => {
@@ -970,6 +971,7 @@ function renderGolfRoundDetail(root, season, round) {
             <td class="num">${fmt(r.albatrosses, {dash:"–"})}</td>
             <td class="num">${fmt(r.holeInOnes, {dash:"–"})}</td>
             <td class="num">${r.lowRound ? "✓" : "–"}</td>
+            <td class="num${r.penalty ? " pen-cell" : ""}">${r.penalty ? `−${r.penalty}` : "–"}</td>
             <td class="num"><strong>${fmt(r.points)}</strong></td>
           </tr>`;
         }).join("")}</tbody>
