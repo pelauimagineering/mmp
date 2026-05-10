@@ -185,7 +185,11 @@ async function loadAll() {
     loadGolfLive(),
   ]);
   DATA.poker = poker;
-  DATA.golf = golfFromSupabase || (await fetchJson("data/golf.json")); // last-resort if supabase + cache both empty
+  // An RLS-blocked or unseeded Supabase returns a truthy-but-empty
+  // {seasons: []} shape, not an error — fall back to the static JSON
+  // in that case instead of rendering a blank leaderboard.
+  const liveHasSeasons = !!(golfFromSupabase && golfFromSupabase.seasons && golfFromSupabase.seasons.length);
+  DATA.golf = liveHasSeasons ? golfFromSupabase : (await fetchJson("data/golf.json"));
   DATA.players = (golfFromSupabase?._players?.length ? golfFromSupabase._players : (players && players.players) || []);
   DATA.loaded = true;
 }
