@@ -940,6 +940,7 @@ function renderGolfRoundDetail(root, season, round) {
     </div>
     <div class="panel" style="margin-top: 24px;">
       <div class="panel-head"><h2>Scorecard</h2><div class="spacer"></div><span class="hint">Net = Gross − HCP · Low Round = lowest net (18 holes)</span></div>
+      <div class="table-scroll">
       <table class="t">
         <thead><tr>
           <th>Player</th>
@@ -976,6 +977,7 @@ function renderGolfRoundDetail(root, season, round) {
           </tr>`;
         }).join("")}</tbody>
       </table>
+      </div>
     </div>
     ${renderScoringRulesPanel()}
   `;
