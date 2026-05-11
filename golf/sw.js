@@ -7,7 +7,7 @@
 //
 // Bump CACHE_NAME on every deploy that changes any of these files.
 
-const CACHE_NAME = 'mmp-golf-v1';
+const CACHE_NAME = 'mmp-golf-v3';
 
 const SHELL = [
   './score-entry.html',

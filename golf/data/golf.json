@@ -14,7 +14,8 @@
     "eagle":       { "points": 10, "label": "Eagle",       "description": "2 strokes under the alotted strokes for the hole" },
     "albatross":   { "points": 20, "label": "Albatross",   "description": "3 strokes under the alotted strokes for the hole" },
     "holeInOne":   { "points": 25, "label": "Hole in One", "description": "Self-explanatory" },
-    "lowRound":    { "points": 3,  "label": "Low Round",   "description": "Lowest net score (gross − handicap) for the 18-hole session" }
+    "lowRound":    { "points": 3,  "label": "Low Round",   "description": "Lowest net score (gross − handicap) for the 18-hole session" },
+    "penalty":     { "points": -3, "display": "−1 to −3", "label": "Over handicap par", "description": "Score over (par + handicap): 6–10 over → −1 pt; 11–15 → −2 pts; 16+ → −3 pts. 9-hole rounds use par 36 and handicap/2." }
   },
   "seasons": [
     {

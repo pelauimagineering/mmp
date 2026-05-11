@@ -16,6 +16,7 @@ body[data-sport="poker"] {
   --primary-ink: #ffffff;
   --leader-row: #f7ece4;     /* rust-tinted */
   --leader-row-alt: #f0e0d2;
+  --danger: #c0392b;
 }
 body[data-sport="poker"] .golf-only { display: none !important; }
 
@@ -236,6 +237,15 @@ table.t tbody tr.is-zero { color: var(--ink-3); }
 table.t tbody tr.is-clickable { cursor: pointer; }
 table.t tbody tr.is-clickable:hover { background: var(--bg-tonal); }
 table.t td.dim { color: var(--ink-3); }
+table.t td.pen-cell {
+  color: var(--danger); font-weight: 700;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  box-shadow: inset 2px 0 0 0 var(--danger), inset -2px 0 0 0 var(--danger);
+}
+table.t th.pen-col {
+  color: var(--danger); letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
 
 .rank-cell {
   display: inline-flex; align-items: center; gap: var(--space-3);

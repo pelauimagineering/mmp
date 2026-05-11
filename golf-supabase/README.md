@@ -13,6 +13,7 @@ Schema, RPC, and one-time seed for the live golf scoring backend.
    - `migrations/0003_grants.sql`
    - `migrations/0004_final_standings.sql`
    - `migrations/0005_enter_round_recompute.sql`
+   - `migrations/0006_penalty_rule.sql`
 5. Set the score-entry passphrase:
    ```sql
    insert into _secret (key, value) values ('golf_passphrase', 'YOUR-PHRASE')

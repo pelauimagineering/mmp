@@ -17,6 +17,10 @@ const SCORING_MATRIX = {
   albatross:  { points: 20, label: 'Albatross',  description: 'Per albatross.' },
   holeInOne:  { points: 25, label: 'Hole-in-one',description: 'Per ace.' },
   lowRound:   { points: 3,  label: 'Low round',  description: 'Lowest 18-hole gross of the round (ties each get full points).' },
+  // Penalty bands stack as diff (gross − handicap par) climbs. 9-hole
+  // rounds use par 36 and handicap/2.
+  penalty:    { points: -3, display: '−1 to −3', label: 'Over handicap par',
+                description: 'Score over (par + handicap): 6–10 over → −1 pt; 11–15 → −2 pts; 16+ → −3 pts.' },
 };
 
 const CACHE_KEY = 'mmp.golf.lastFetch';

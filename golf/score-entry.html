@@ -135,6 +135,7 @@
       albatross:  { points: 20, label: "Albatross",   description: "3 strokes under the alotted strokes for the hole" },
       holeInOne:  { points: 25, label: "Hole in One", description: "Self-explanatory" },
       lowRound:   { points: 3,  label: "Low Round",   description: "Lowest net score (gross − handicap) for the 18-hole session" },
+      penalty:    { points: -3, display: "−1 to −3", label: "Over handicap par", description: "Score over (par + handicap): 6–10 over → −1 pt; 11–15 → −2 pts; 16+ → −3 pts. 9-hole rounds use par 36 and handicap/2." },
     },
     seasons: [{
       id: "2026", label: "2026 Links Cup",
@@ -144,6 +145,22 @@
   };
 
   const POINTS = { attendance: 5, par: 1, birdie: 3, eagle: 10, albatross: 20, holeInOne: 25, lowRound: 3 };
+
+  // Penalty bands on the diff (gross − par − handicap). Mirrors
+  // recompute_season_standings() in 0006_penalty_rule.sql and
+  // golfPenaltyFor() in golf/index.html.
+  function penaltyFor(r) {
+    if (!r.attended) return 0;
+    if (!Number.isFinite(r.gross) || !Number.isFinite(r.handicap)) return 0;
+    if (r.holesPlayed !== 9 && r.holesPlayed !== 18) return 0;
+    const par = r.holesPlayed === 18 ? 72 : 36;
+    const hcp = r.holesPlayed === 18 ? r.handicap : r.handicap / 2;
+    const diff = r.gross - par - hcp;
+    if (diff > 15) return 3;
+    if (diff > 10) return 2;
+    if (diff > 5)  return 1;
+    return 0;
+  }
   const COUNT_FIELDS = [
     { key: "pars",        label: "Pars",      pts: 1 },
     { key: "birdies",     label: "Birdies",   pts: 3 },
@@ -211,11 +228,12 @@
   }
 
   function renderLegend() {
-    const order = ["attendance","par","birdie","eagle","albatross","holeInOne","lowRound"];
+    const order = ["attendance","par","birdie","eagle","albatross","holeInOne","lowRound","penalty"];
+    const formatPts = (m) => m.display ? m.display : (m.points >= 0 ? `+${m.points}` : `${m.points}`);
     $("#legend-grid").innerHTML = order.map(k => {
       const m = scoringMatrix[k]; if (!m) return "";
       return `<div class="legend-row">
-        <span class="pts">+${m.points}</span>
+        <span class="pts">${formatPts(m)}</span>
         <span class="name">${m.label}</span>
         <span class="desc">${m.description}</span>
       </div>`;
@@ -275,6 +293,7 @@
           `).join("")}
         </div>
         <div class="pc-low-round">+3 Low Round</div>
+        <div class="pc-penalty"></div>
       </div>
     `).join("");
   }
@@ -377,7 +396,8 @@
       + (result.eagles || 0) * POINTS.eagle
       + (result.albatrosses || 0) * POINTS.albatross
       + (result.holeInOnes || 0) * POINTS.holeInOne
-      + (isLowRound ? POINTS.lowRound : 0);
+      + (isLowRound ? POINTS.lowRound : 0)
+      - penaltyFor(result);
   }
 
   function computeLowRound(results) {
@@ -397,6 +417,7 @@
       ...r,
       net: netOf(r),
       lowRound: lowRoundIds.has(r.playerId),
+      penalty: penaltyFor(r),
       points: pointsFor(r, lowRoundIds.has(r.playerId)),
     }));
   }
@@ -436,6 +457,9 @@
       valEl.textContent = r.points || 0;
       ptsEl.classList.toggle("zero", !r.points);
       card.classList.toggle("is-low-round", r.lowRound);
+      card.classList.toggle("is-penalty", r.penalty > 0);
+      const penaltyEl = $(".pc-penalty", card);
+      if (penaltyEl) penaltyEl.textContent = r.penalty ? `−${r.penalty} Over handicap par` : "";
       const netEl = $(".pc-net", card);
       if (netEl) {
         if (Number.isFinite(r.net)) {
