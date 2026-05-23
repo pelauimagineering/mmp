@@ -23,6 +23,7 @@ body[data-sport="poker"] .golf-only { display: none !important; }
 /* ---------- shell ---------- */
 * { box-sizing: border-box; }
 .shell { max-width: 1280px; margin: 0 auto; padding: 0 var(--space-6) var(--space-9); }
+header.top .shell { padding-bottom: 0; }
 .stack > * + * { margin-top: var(--space-5); }
 .grid-main { display: grid; grid-template-columns: 1fr 320px; gap: var(--space-5); }
 @media (max-width: 960px) { .grid-main { grid-template-columns: 1fr; } }
@@ -110,6 +111,14 @@ header.top {
   transition: background var(--dur-fast) var(--ease-out);
 }
 .enter-scores:hover { background: var(--primary-hover); }
+.enter-scores.secondary {
+  background: transparent; color: var(--primary);
+  border-color: var(--primary);
+}
+.enter-scores.secondary:hover {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  color: var(--primary-hover);
+}
 .enter-scores::before {
   content: ""; width: 14px; height: 14px; display: inline-block;
   background-color: currentColor;
@@ -147,12 +156,22 @@ header.top {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 18%, transparent);
 }
 @media (max-width: 720px) {
+  header.top { position: static; padding: var(--space-2) 0; }
+  .top-row { gap: var(--space-3); row-gap: var(--space-2); }
+  .right-rail {
+    margin-left: 0; width: 100%;
+    flex-wrap: wrap; gap: var(--space-2);
+  }
+  .right-rail .enter-scores { padding: 8px 14px; font-size: var(--text-xs); }
+  .right-rail .all-time-link { padding: 6px 10px; }
+  .brand-sub { display: none; }
   .hero-title {
     flex-direction: column; align-items: flex-start;
-    gap: 6px; margin-top: var(--space-4);
+    gap: 6px; margin-top: var(--space-3);
   }
   .hero-title h1 { font-size: var(--text-2xl); }
   .hero-title .meta { font-size: var(--text-sm); }
+  .kpis { margin-top: var(--space-3) !important; }
 }
 .breadcrumb {
   font-family: var(--font-ui); color: var(--ink-3);

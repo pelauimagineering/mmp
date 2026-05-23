@@ -40,8 +40,8 @@
     <div class="season-picker" id="season-picker" role="tablist" aria-label="Season"></div>
     <div class="right-rail">
       <a class="enter-scores golf-only" id="header-enter-scores" href="score-entry.html">Enter scores</a>
+      <a class="enter-scores secondary golf-only" id="header-create-round" href="admin.html">Create round</a>
       <a class="all-time-link" id="all-time-link" href="#/poker/all-time">All-time →</a>
-      <a class="all-time-link" id="switch-poker-link" href="https://poker.pelau.com/" target="_blank" rel="noopener">Switch to dealer →</a>
     </div>
   </div>
 </header>
@@ -663,7 +663,8 @@ function renderGolfSeasonView(root, season) {
   const standings = buildGolfSeasonStandings(season);
   const playedRounds = (season.rounds || []).filter(r => r.played);
   const lastRound = playedRounds[playedRounds.length - 1];
-  const upcoming = (season.rounds || []).find(r => !r.played);
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const upcoming = (season.rounds || []).find(r => !r.played && r.date >= todayISO);
   const seasonComplete = !upcoming && lastRound;
 
   // Last round: highest points + low round
