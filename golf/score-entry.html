@@ -210,19 +210,28 @@
     });
 
     // Edit mode: ?roundId=<id> targets an existing round for editing.
-    // Look in the static JSON first, then fall back to live Supabase (and its soft-cache) since
-    // played rounds typically only live in Supabase, not in data/golf.json.
+    // Try Supabase first — it's the live source of truth and a round id may also
+    // appear in the static data/golf.json snapshot with stale or completely
+    // different metadata (e.g. a recycled id pointing at a new course/date).
+    // Fall back to the soft cache, then to the static snapshot, if Supabase is
+    // unreachable.
     const requestedEditId = new URLSearchParams(location.search).get("roundId");
-    let editRound = requestedEditId
-      ? (golfData.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId)
-      : null;
-    if (requestedEditId && !editRound) {
+    let editRound = null;
+    if (requestedEditId) {
+      // Make sure the lazy Supabase client + loader are ready before calling.
+      if (!window.GolfSync) {
+        await new Promise(res => window.addEventListener("golf-sync-ready", res, { once: true }));
+      }
       try {
         const live = await window.GolfSync.loadGolfFromSupabase();
         editRound = (live.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
-      } catch {
-        const cached = window.GolfSync.readSoftCache();
+      } catch { /* offline / no creds — fall through to caches */ }
+      if (!editRound) {
+        const cached = window.GolfSync.readSoftCache?.();
         editRound = (cached?.data?.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
+      }
+      if (!editRound) {
+        editRound = (golfData.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
       }
     }
     if (requestedEditId && !editRound) {
