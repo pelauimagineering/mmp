@@ -146,9 +146,19 @@
         <div class="brand-sub">Enter a round. Download the JSON. Replace <code>data/golf.json</code>.</div>
       </div>
     </div>
-    <h1>New round</h1>
+    <h1 id="page-title">New round</h1>
     <p class="lede">After a round, fill this in, hit <strong>Save round</strong>, and replace <code>data/golf.json</code> in the project. Net = gross − handicap.</p>
   </header>
+
+  <div class="card">
+    <h2>Edit existing round</h2>
+    <label class="field"><span>Round</span>
+      <select id="f-edit-round">
+        <option value="">— New round —</option>
+      </select>
+    </label>
+    <p class="hint" style="margin-top:8px;">Pick a round to edit in place. The original round id is preserved, so renaming the date or course will not create a duplicate row.</p>
+  </div>
 
   <div class="card">
     <h2>Round details</h2>
@@ -231,6 +241,7 @@
 
   let players = [];
   let golfData = null;
+  let editingRoundId = null;  // when set, buildRound() reuses this id so renames don't fork the round
 
   /* fetch with graceful fallback so the page works opened locally too */
   async function tryFetch(path, fallback) {
@@ -266,7 +277,16 @@
       orgSel.appendChild(opt);
     });
 
-    // Pre-populate form from the next unplayed round if there is one.
+    // Populate the "Edit existing round" picker with every round, most recent first.
+    const editSel = $("#f-edit-round");
+    allRounds().forEach(({ round, season }) => {
+      const opt = document.createElement("option");
+      opt.value = round.id;
+      opt.textContent = `${round.date || "—"} · ${round.course || "Round"} · ${season.label}${round.played ? "" : " (upcoming)"}`;
+      editSel.appendChild(opt);
+    });
+
+    // Pre-populate form from the next unplayed round if there is one (no edit-mode side effects).
     const upcoming = golfData.seasons[0]?.rounds?.find(r => !r.played);
     if (upcoming) {
       $("#f-date").value = upcoming.date;
@@ -279,6 +299,62 @@
     bindEvents();
     refreshSummary();
     refreshPreview();
+  }
+
+  // All rounds across all seasons, ordered by date descending.
+  function allRounds() {
+    return (golfData?.seasons || [])
+      .flatMap(s => (s.rounds || []).map(round => ({ round, season: s })))
+      .sort((a, b) => (b.round.date || "").localeCompare(a.round.date || ""));
+  }
+
+  // Pre-fill every form field from an existing round and enter edit mode.
+  function loadRoundForEdit(roundId) {
+    if (!roundId) {
+      editingRoundId = null;
+      $("#page-title").textContent = "New round";
+      onClear();
+      $("#f-date").value = "";
+      $("#f-course").value = "";
+      $("#f-tees").value = "";
+      $("#f-organizer").value = "";
+      refreshSummary();
+      refreshPreview();
+      return;
+    }
+    const found = allRounds().find(x => x.round.id === roundId);
+    if (!found) { showStatus(`Round "${roundId}" not found.`, false); return; }
+    const round = found.round;
+    editingRoundId = round.id;
+    $("#page-title").textContent = "Edit round";
+    $("#f-date").value = round.date || "";
+    $("#f-course").value = round.course || "";
+    $("#f-tees").value = (round.teeTimes || []).join(", ");
+    $("#f-organizer").value = round.organizer || "";
+
+    // Per-player rows: default all to DNP, then apply results.
+    document.querySelectorAll(".player-row").forEach(row => {
+      row.dataset.dnp = "true";
+      row.classList.add("is-dnp");
+      row.querySelector(".toggle-dnp").classList.remove("is-active");
+      row.querySelector(".gross").value = "";
+      const netCell = row.querySelector(".net");
+      netCell.textContent = "—";
+      netCell.classList.remove("is-set");
+    });
+    (round.results || []).forEach(r => {
+      const row = document.querySelector(`.player-row[data-pid="${CSS.escape(r.playerId || "")}"]`);
+      if (!row) return;
+      row.dataset.dnp = "false";
+      row.classList.remove("is-dnp");
+      row.querySelector(".toggle-dnp").classList.add("is-active");
+      if (Number.isFinite(r.handicap)) row.querySelector(".hcp").value = r.handicap;
+      if (Number.isFinite(r.gross))    row.querySelector(".gross").value = r.gross;
+      recalcRow(row);
+    });
+    refreshSummary();
+    refreshPreview();
+    showStatus(`Editing ${round.date} · ${round.course || ""}. Save will overwrite this round (id: ${round.id}).`, true);
   }
 
   function renderPlayers() {
@@ -324,6 +400,7 @@
     });
     ["#f-date","#f-course","#f-tees","#f-organizer"].forEach(s => $(s).addEventListener("input", refreshPreview));
     $("#f-organizer").addEventListener("change", refreshPreview);
+    $("#f-edit-round").addEventListener("change", (e) => loadRoundForEdit(e.target.value));
     $("#btn-save").addEventListener("click", onSave);
     $("#btn-copy").addEventListener("click", onCopy);
     $("#btn-clear").addEventListener("click", onClear);
@@ -374,7 +451,7 @@
     const tees = $("#f-tees").value.split(",").map(s => s.trim()).filter(Boolean);
     const results = collectResults();
     return {
-      id: roundId(date, course),
+      id: editingRoundId || roundId(date, course),
       date, course,
       organizer,
       teeTimes: tees,
@@ -435,7 +512,7 @@
   function onSave() {
     const round = buildRound();
     if (!round.date || !round.course) return showStatus("Date and course are required.", false);
-    if (round.results.length === 0) return showStatus("Enter at least one player's gross score, or this isn't a saveable round.", false);
+    if (round.results.length === 0 && !editingRoundId) return showStatus("Enter at least one player's gross score, or this isn't a saveable round.", false);
 
     persistHandicaps();
     const data = buildUpdatedGolfJson();

@@ -19,8 +19,8 @@
   // Re-export the IDB queue + supabase client helpers as window.GolfSync
   // for the inline classic <script> below.
   import { queue } from './lib/queue.js';
-  import { getSupabase } from './lib/golf-data.js';
-  window.GolfSync = { queue, getSupabase };
+  import { getSupabase, loadGolfFromSupabase, readSoftCache } from './lib/golf-data.js';
+  window.GolfSync = { queue, getSupabase, loadGolfFromSupabase, readSoftCache };
   window.dispatchEvent(new Event('golf-sync-ready'));
 
   // Service worker for the offline app shell. Registered after the
@@ -46,8 +46,8 @@
         <span class="brand-sub">Enter a round. Save. Replace <code>data/golf.json</code>.</span>
       </div>
     </div>
-    <h1>New round</h1>
-    <p class="lede">Toggle who played, enter their gross + count of pars / birdies / eagles, etc. Points compute live. Low round (lowest 18-hole gross) is auto-awarded.</p>
+    <h1 id="page-title">New round</h1>
+    <p class="lede" id="page-lede">Toggle who played, enter their gross + count of pars / birdies / eagles, etc. Points compute live. Low round (lowest 18-hole gross) is auto-awarded.</p>
   </header>
 
   <details class="legend">
@@ -177,6 +177,8 @@
   let golfData = null;
   let scoringMatrix = null;
   let saveCount = 0;
+  let editingRoundId = null;          // set when opened with ?roundId=<id> to edit an existing round
+  let editingOriginalPlayerIds = null; // set of player ids that were in the original round (so we always include them in the payload, even if toggled DNP)
 
   async function tryFetch(path, fallback) {
     try {
@@ -207,24 +209,87 @@
       orgSel.appendChild(opt);
     });
 
-    // Pre-populate from upcoming round, falling back to last entered details
-    const upcoming = golfData.seasons[0]?.rounds?.find(r => !r.played);
+    // Edit mode: ?roundId=<id> targets an existing round for editing.
+    // Look in the static JSON first, then fall back to live Supabase (and its soft-cache) since
+    // played rounds typically only live in Supabase, not in data/golf.json.
+    const requestedEditId = new URLSearchParams(location.search).get("roundId");
+    let editRound = requestedEditId
+      ? (golfData.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId)
+      : null;
+    if (requestedEditId && !editRound) {
+      try {
+        const live = await window.GolfSync.loadGolfFromSupabase();
+        editRound = (live.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
+      } catch {
+        const cached = window.GolfSync.readSoftCache();
+        editRound = (cached?.data?.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
+      }
+    }
+    if (requestedEditId && !editRound) {
+      // Surface clearly so the user knows the link was stale; fall through to create mode.
+      showStatus(`Round "${requestedEditId}" not found — opening as new round.`, false);
+    }
+
+    // Populate metadata. Edit mode wins; otherwise fall back to upcoming round, then last entered.
     const lastDetails = JSON.parse(localStorage.getItem(ROUND_DETAILS_KEY) || "null");
-    if (upcoming) {
-      $("#f-date").value = upcoming.date;
-      $("#f-course").value = upcoming.course || "";
-      $("#f-tees").value = (upcoming.teeTimes || []).join(", ");
-      if (upcoming.organizer) orgSel.value = upcoming.organizer;
-    } else if (lastDetails) {
-      $("#f-date").value = lastDetails.date || "";
-      $("#f-course").value = lastDetails.course || "";
-      $("#f-tees").value = lastDetails.tees || "";
-      if (lastDetails.organizer) orgSel.value = lastDetails.organizer;
+    const seed = editRound
+      || golfData.seasons[0]?.rounds?.find(r => !r.played)
+      || (lastDetails ? { date: lastDetails.date, course: lastDetails.course, teeTimes: (lastDetails.tees || "").split(",").map(s => s.trim()).filter(Boolean), organizer: lastDetails.organizer } : null);
+    if (seed) {
+      $("#f-date").value = seed.date || "";
+      $("#f-course").value = seed.course || "";
+      $("#f-tees").value = (seed.teeTimes || []).join(", ");
+      if (seed.organizer) orgSel.value = seed.organizer;
     }
 
     renderPlayerCards();
+
+    if (editRound) {
+      editingRoundId = editRound.id;
+      editingOriginalPlayerIds = new Set((editRound.results || []).map(r => r.playerId).filter(Boolean));
+      populateScoresFromRound(editRound);
+      $("#page-title").textContent = "Edit round";
+      $("#page-lede").innerHTML = `Editing <strong>${escapeText(editRound.course || "round")}</strong> · ${editRound.date || ""}. Changes upsert by round id — date and course can be safely renamed without forking the round.`;
+      $("#btn-save").textContent = "Save changes";
+      document.title = "MMP Score Entry · Edit Round";
+    }
+
     bindEvents();
     refreshAll();
+  }
+
+  function escapeText(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  }
+
+  // Apply an existing round's per-player results onto the rendered player cards.
+  function populateScoresFromRound(round) {
+    (round.results || []).forEach(r => {
+      const card = document.querySelector(`.player-card[data-pid="${CSS.escape(r.playerId || "")}"]`);
+      if (!card) return;  // player not in roster anymore — skip silently
+      const attended = !!r.attended;
+      card.dataset.attended = attended.toString();
+      card.classList.toggle("is-dnp", !attended);
+      const tog = $('[data-action="toggle-attended"]', card);
+      tog.classList.toggle("is-on", attended);
+      tog.textContent = attended ? "Played" : "DNP";
+
+      const holes = (r.holesPlayed === 9 || r.holesPlayed === 18) ? r.holesPlayed : 18;
+      card.dataset.holes = String(holes);
+      $$('[data-action="set-holes"]', card).forEach(b => b.classList.toggle("is-on", parseInt(b.dataset.holes, 10) === holes));
+
+      if (Number.isFinite(r.handicap)) $(".hcp", card).value = r.handicap;
+      if (Number.isFinite(r.gross))    $(".gross", card).value = r.gross;
+
+      COUNT_FIELDS.forEach(f => {
+        const input = $(`input[data-key="${f.key}"]`, card);
+        const v = r[f.key];
+        if (Number.isFinite(v) && v > 0) {
+          input.value = v;
+          input.closest(".pc-count").classList.add("has-value");
+        }
+      });
+    });
   }
 
   function renderLegend() {
@@ -429,11 +494,12 @@
     const tees = $("#f-tees").value.split(",").map(s => s.trim()).filter(Boolean);
     const all = collectAll();
     // Persist to file shape: drop the convenience fields (net, lowRound, points) — they're derived on read.
+    // Edit mode: also keep any player who was in the original round, so toggling DNP persists as attended=false rather than silently leaving the old row.
     const results = all
-      .filter(r => r.attended || r.gross != null || r.pars || r.birdies || r.eagles || r.albatrosses || r.holeInOnes)
+      .filter(r => r.attended || r.gross != null || r.pars || r.birdies || r.eagles || r.albatrosses || r.holeInOnes || (editingOriginalPlayerIds && editingOriginalPlayerIds.has(r.playerId)))
       .map(({ net, lowRound, points, ...rest }) => rest);
     return {
-      id: roundId(date, course),
+      id: editingRoundId || roundId(date, course),
       date, course, organizer,
       teeTimes: tees,
       played: results.some(r => r.attended),
@@ -552,7 +618,7 @@
   async function onSave() {
     const round = buildRound();
     if (!round.date || !round.course) return showStatus("Date and course are required.", false);
-    if (round.results.length === 0) return showStatus("Mark at least one player as Played, or this isn't a saveable round.", false);
+    if (round.results.length === 0 && !editingRoundId) return showStatus("Mark at least one player as Played, or this isn't a saveable round.", false);
     if (!window.GolfSync) return showStatus("Sync library still loading — try again in a second.", false);
 
     persistRoundDetails();

@@ -1,5 +1,38 @@
 # Release notes
 
+## 2026-05-23 · `claude/issue-10-edit-rounds`
+
+Round editing (Issue #10) — every round (upcoming, in-progress, or played)
+can now be edited end-to-end without forking the row.
+
+- **score-entry.html**: opening `score-entry.html?roundId=<id>` enters edit
+  mode. The form pre-fills every metadata field plus per-player attendance,
+  holes, handicap, gross, and counts. Title becomes "Edit round" and the
+  save button "Save changes". When the round is Supabase-only (typical for
+  played rounds), the form falls back to `loadGolfFromSupabase()` (or its
+  soft cache) so live data can be edited even though the static
+  `data/golf.json` doesn't carry it.
+- **Id stability on edit**: `buildRound()` now reuses the original round id
+  when in edit mode, so renaming the date or course no longer creates an
+  orphaned duplicate row. The original-attendance set is also preserved in
+  the payload so toggling a previously-attended player to DNP correctly
+  flips their row to `attended=false` instead of silently leaving stale
+  data.
+- **score-entry guard relaxed**: the "at least one player attended" save
+  guard is skipped in edit mode so pure metadata edits (date, course,
+  organizer, tee times) on upcoming rounds save without scores.
+- **index.html**: `renderGolfRoundDetail()` gains an "Edit round" button on
+  both upcoming (next to "Enter scores for this round") and played (in the
+  hero row) variants, linking to `score-entry.html?roundId=...`.
+- **admin.html**: new "Edit existing round" picker above the form lists
+  every round from `data/golf.json`, most-recent first. Selecting one
+  pre-fills the form and locks the original id, so the JSON-download flow
+  upgrades to a true edit operation.
+- **No schema / RPC / SW changes** — the existing `enter_round` RPC is
+  already upsert-capable, realtime publication already broadcasts edits,
+  and the offline queue keys on payload id (a queued edit on the same id
+  overwrites a queued create, which is correct).
+
 ## 2026-05-23 · `claude/issue-8-phone-ui-tweaks`
 
 Phone-UI cleanup for the golf SPA (Issue #8).

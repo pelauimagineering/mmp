@@ -64,7 +64,8 @@
       "Bash(node --check golf/lib/queue.js)",
       "Bash(node --check golf/lib/golf-data.js)",
       "Bash(node --input-type=module -e ' *)",
-      "Bash(gh issue *)"
+      "Bash(gh issue *)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }
