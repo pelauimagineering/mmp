@@ -1,5 +1,25 @@
 # Release notes
 
+## 2026-05-23 · `claude/issue-8-phone-ui-tweaks`
+
+Phone-UI cleanup for the golf SPA (Issue #8).
+
+- **Header**: removed the redundant "Switch to dealer" link; replaced
+  the leftover `padding-bottom: var(--space-9)` inside `header.top .shell`
+  that was producing a large empty band below the header actions on phones.
+- **Same plane as content**: header is no longer sticky on phones
+  (≤720px), so it scrolls with the standings/schedule/storylines panels
+  instead of staying pinned and stealing vertical space. Header width
+  already matched content via `.shell max-width: 1280px`; left untouched.
+- **Create round**: added a secondary outline button in the header rail
+  (`#header-create-round`) that links to `admin.html`. Lives next to
+  "Enter scores", uses the existing `.golf-only` toggle so it is hidden
+  in the poker view.
+- **Next Round tile**: now skips any unplayed round whose date is before
+  today (lexicographic ISO compare). When all unplayed rounds are in the
+  past the tile falls through to the existing "Season Complete /
+  Off-season" branch.
+
 ## 2026-05-05 · `feature/golf-supabase-realtime`
 
 Live golf scoring backed by Supabase, with full offline support on the

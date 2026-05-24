@@ -63,7 +63,8 @@
       "Bash(awk '/^\\\\s*\\\\.door/{print NR\": \"$0}' /Users/darren/code/mmp/index.html)",
       "Bash(node --check golf/lib/queue.js)",
       "Bash(node --check golf/lib/golf-data.js)",
-      "Bash(node --input-type=module -e ' *)"
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(gh issue *)"
     ]
   }
 }
