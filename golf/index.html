@@ -914,7 +914,10 @@ function renderGolfRoundDetail(root, season, round) {
           <h1>${escapeHtml(round.course || "Round")} · ${formatDateLong(round.date)}</h1>
           <p>Organizer: <strong>${escapeHtml(round.organizer || "TBD")}</strong>${(round.teeTimes||[]).length ? ` · Tee times <strong>${round.teeTimes.join(" / ")}</strong>` : ''}.</p>
           <p>Results will appear here once entered.</p>
-          <p style="margin-top: 24px;"><a class="enter-scores" href="score-entry.html">Enter scores for this round</a></p>
+          <p style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+            <a class="enter-scores" href="score-entry.html?roundId=${encodeURIComponent(round.id)}">Enter scores for this round</a>
+            <a class="enter-scores secondary" href="score-entry.html?roundId=${encodeURIComponent(round.id)}">Edit round details</a>
+          </p>
         </div>
       </div>
     `;
@@ -933,6 +936,7 @@ function renderGolfRoundDetail(root, season, round) {
       <h1>${escapeHtml(round.course || "Round")} · ${formatDateLong(round.date)}</h1>
       <span class="league-tag">Played</span>
       <span class="meta">Organizer: ${escapeHtml(round.organizer || "—")} · ${attendedCount} player${attendedCount===1?'':'s'} · ${fmt(totalPts)} pts awarded</span>
+      <a class="enter-scores secondary" style="margin-left: auto;" href="score-entry.html?roundId=${encodeURIComponent(round.id)}">Edit round</a>
     </div>
     <div class="kpis" style="margin-top: 18px;">
       <div class="kpi"><div class="kpi-label">Round Winner</div><div class="kpi-value">${escapeHtml(winner?.name || "—")} <span class="units">${fmt(winner?.points)} pts</span></div><div class="kpi-foot">Gross ${fmt(winner?.gross)} · Net ${fmt(winner?.net)}${winner?.lowRound ? ' · low round' : ''}</div></div>
