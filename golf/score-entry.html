@@ -135,7 +135,7 @@
       albatross:  { points: 20, label: "Albatross",   description: "3 strokes under the alotted strokes for the hole" },
       holeInOne:  { points: 25, label: "Hole in One", description: "Self-explanatory" },
       lowRound:   { points: 3,  label: "Low Round",   description: "Lowest net score (gross − handicap) for the 18-hole session" },
-      penalty:    { points: -3, display: "−1 to −3", label: "Over handicap par", description: "Score over (par + handicap): 6–10 over → −1 pt; 11–15 → −2 pts; 16+ → −3 pts. 9-hole rounds use par 36 and handicap/2." },
+      penalty:    { points: -3, display: "−1 and up", label: "Over handicap par", description: "Score over (par + handicap), −1 pt per 5 strokes: 6–10 over → −1 pt; 11–15 → −2 pts; 16–20 → −3 pts; 21–25 → −4 pts; and so on. 9-hole rounds use par 36 and handicap/2." },
     },
     seasons: [{
       id: "2026", label: "2026 Links Cup",
@@ -156,10 +156,9 @@
     const par = r.holesPlayed === 18 ? 72 : 36;
     const hcp = r.holesPlayed === 18 ? r.handicap : r.handicap / 2;
     const diff = r.gross - par - hcp;
-    if (diff > 15) return 3;
-    if (diff > 10) return 2;
-    if (diff > 5)  return 1;
-    return 0;
+    // −1 pt per 5 strokes over handicap par, no upper bound: 6–10 → 1,
+    // 11–15 → 2, 16–20 → 3, 21–25 → 4, and so on.
+    return diff > 5 ? Math.ceil((diff - 5) / 5) : 0;
   }
   const COUNT_FIELDS = [
     { key: "pars",        label: "Pars",      pts: 1 },
