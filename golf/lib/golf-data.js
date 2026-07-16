@@ -16,7 +16,7 @@ const SCORING_MATRIX = {
   eagle:      { points: 10, label: 'Eagle',      description: 'Per eagle.' },
   albatross:  { points: 20, label: 'Albatross',  description: 'Per albatross.' },
   holeInOne:  { points: 25, label: 'Hole-in-one',description: 'Per ace.' },
-  lowRound:   { points: 3,  label: 'Low round',  description: 'Lowest 18-hole gross of the round (ties each get full points).' },
+  lowRound:   { points: 3,  label: 'Low round',  description: 'Lowest 18-hole net (gross − handicap) of the round. Ties split the 3 points evenly.' },
   // Penalty grows without limit, one extra point per 5 strokes over
   // handicap par. 9-hole rounds use par 36 and handicap/2.
   penalty:    { points: -3, display: '−1 and up', label: 'Over handicap par',
@@ -42,31 +42,56 @@ export function getSupabase() {
 
 export async function loadGolfFromSupabase() {
   const supa = getSupabase();
-  const [playersRes, seasonsRes] = await Promise.all([
+  const [playersRes, seasonsRes, coursesRes, seasonPlayersRes] = await Promise.all([
     supa.from('players').select('*'),
     supa
       .from('seasons')
-      .select('id,label,sport, rounds:rounds(id,date,course,organizer,tee_times,played, results:results(*)), final_standings:final_standings(*)')
+      // rounds(*) keeps this query valid whether or not migration 0008
+      // (which adds rounds.course_id) has been applied yet.
+      .select('id,label,sport, rounds:rounds(*, results:results(*)), final_standings:final_standings(*)')
       .eq('sport', 'golf')
       .order('id', { ascending: true }),
+    supa.from('courses').select('*'),
+    supa.from('season_players').select('*'),
   ]);
 
   if (playersRes.error) throw playersRes.error;
   if (seasonsRes.error) throw seasonsRes.error;
+  // courses/season_players arrived with migration 0008 — tolerate a DB
+  // that hasn't applied it yet so the SPA keeps rendering (the handicap
+  // engine simply stays dormant without them).
+  const courses = coursesRes.error ? [] : (coursesRes.data || []);
+  const seasonPlayers = seasonPlayersRes.error ? [] : (seasonPlayersRes.data || []);
 
-  return shapeForSpa(playersRes.data || [], seasonsRes.data || []);
+  return shapeForSpa(playersRes.data || [], seasonsRes.data || [], courses, seasonPlayers);
 }
 
-export function shapeForSpa(playersRows, seasonsRows) {
+export function shapeForSpa(playersRows, seasonsRows, coursesRows = [], seasonPlayersRows = []) {
+  const courses = (coursesRows || []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    par: c.par ?? 72,
+    slope: Number(c.slope),
+    rating: Number(c.rating),
+  }));
+  const courseById = new Map(courses.map((c) => [c.id, c]));
   return {
     sport: 'golf',
     _schema: 'rounds: per-round results, snake_case → camelCase normalized below',
     scoringMatrix: SCORING_MATRIX,
+    courses,
     seasons: seasonsRows.map((s) => ({
       // Strip the "golf-" prefix used in the DB to keep external ids
       // (route paths, cached file ids) consistent with the legacy JSON.
       id: s.id.replace(/^golf-/, ''),
       label: s.label,
+      // playerId → handicap at the start of this season; the input the
+      // running-handicap engine (golf/lib/golf-calc.js) chains from.
+      startingHandicaps: Object.fromEntries(
+        (seasonPlayersRows || [])
+          .filter((sp) => sp.season_id === s.id)
+          .map((sp) => [sp.player_id, sp.starting_handicap])
+      ),
       rounds: (s.rounds || [])
         .slice()
         .sort((a, b) => String(a.date).localeCompare(String(b.date)))
@@ -74,6 +99,8 @@ export function shapeForSpa(playersRows, seasonsRows) {
           id: r.id,
           date: r.date,
           course: r.course,
+          courseId: r.course_id ?? null,
+          courseInfo: (r.course_id && courseById.get(r.course_id)) || null,
           organizer: r.organizer,
           teeTimes: r.tee_times || [],
           played: !!r.played,

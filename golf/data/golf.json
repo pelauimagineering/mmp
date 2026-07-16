@@ -1,11 +1,11 @@
 {
   "sport": "golf",
   "_schema": {
-    "round": "id, date (ISO), course, organizer, teeTimes[], played, notes?, results[]",
-    "result": "playerId, name, attended (bool), holesPlayed (9|18|null), gross (int|null), handicap (int|null), pars, birdies, eagles, albatrosses, holeInOnes. Net is derived = gross - handicap.",
-    "scoring": "Points per round = (attended?5:0) + pars*1 + birdies*3 + eagles*10 + albatrosses*20 + holeInOnes*25 + (lowRound?3:0). Pars/birdies/etc. are RAW achievements — handicap does not adjust them. Low Round: lowest NET (gross - handicap) among players with holesPlayed=18 and handicap set. Ties on low round: each tied player gets 3 (not split).",
+    "round": "id, date (ISO), course, courseId? (slug into data/courses.json), organizer, teeTimes[], played, notes?, results[]",
+    "result": "playerId, name, attended (bool), holesPlayed (9|18|null), gross (int|null), handicap (int|null), pars, birdies, eagles, albatrosses, holeInOnes. Net is derived = gross - handicap. handicap is the player's RUNNING handicap snapshotted before the round (see docs/CALCULATIONS.md).",
+    "scoring": "Points per round = (attended?5:0) + pars*1 + birdies*3 + eagles*10 + albatrosses*20 + holeInOnes*25 + lowRoundPts - penalty. Pars/birdies/etc. are RAW achievements — handicap does not adjust them. Low Round: lowest NET (gross - handicap) among players with holesPlayed=18 and handicap set; ties SPLIT the 3 points evenly. All math lives in golf/lib/golf-calc.js.",
     "terminology": "Golf rounds use 'organizer'. Poker events use 'host'.",
-    "standings": "Computed client-side: highest cumulative points wins."
+    "standings": "Computed client-side: best 10 rounds per player count, highest total wins."
   },
   "scoringMatrix": {
     "attendance":  { "points": 5,  "label": "Attendance",  "description": "Showing up and playing at least 9 holes of an MMP event" },
@@ -14,7 +14,7 @@
     "eagle":       { "points": 10, "label": "Eagle",       "description": "2 strokes under the alotted strokes for the hole" },
     "albatross":   { "points": 20, "label": "Albatross",   "description": "3 strokes under the alotted strokes for the hole" },
     "holeInOne":   { "points": 25, "label": "Hole in One", "description": "Self-explanatory" },
-    "lowRound":    { "points": 3,  "label": "Low Round",   "description": "Lowest net score (gross − handicap) for the 18-hole session" },
+    "lowRound":    { "points": 3,  "label": "Low Round",   "description": "Lowest net score (gross − handicap) for the 18-hole session. Ties split the 3 points evenly." },
     "penalty":     { "points": -3, "display": "−1 to −3", "label": "Over handicap par", "description": "Score over (par + handicap), −1 pt per 5 strokes: 6–10 over → −1 pt; 11–15 → −2 pts; 16–20 → −3 pts; 21–25 → −4 pts; and so on." }
   },
   "seasons": [
@@ -26,6 +26,7 @@
           "id": "2026-r001",
           "date": "2026-05-03",
           "course": "Kedron Dells",
+          "courseId": "kedron-dells",
           "organizer": "Harish",
           "teeTimes": ["10:06", "10:16"],
           "played": false,
