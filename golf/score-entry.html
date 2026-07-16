@@ -17,10 +17,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
   // Re-export the IDB queue + supabase client helpers as window.GolfSync
-  // for the inline classic <script> below.
+  // (and the scoring engine as window.GolfCalc) for the inline classic
+  // <script> below.
   import { queue } from './lib/queue.js';
   import { getSupabase, loadGolfFromSupabase, readSoftCache } from './lib/golf-data.js';
+  import * as GolfCalc from './lib/golf-calc.js';
   window.GolfSync = { queue, getSupabase, loadGolfFromSupabase, readSoftCache };
+  window.GolfCalc = GolfCalc;
   window.dispatchEvent(new Event('golf-sync-ready'));
 
   // Service worker for the offline app shell. Registered after the
@@ -47,21 +50,28 @@
       </div>
     </div>
     <h1 id="page-title">New round</h1>
-    <p class="lede" id="page-lede">Toggle who played, enter their gross + count of pars / birdies / eagles, etc. Points compute live. Low round (lowest 18-hole gross) is auto-awarded.</p>
+    <p class="lede" id="page-lede">Toggle who played, enter their gross + count of pars / birdies / eagles, etc. Points compute live. Low round (lowest 18-hole net) is auto-awarded.</p>
   </header>
 
   <details class="legend">
     <summary>Scoring rules</summary>
     <div class="legend-grid" id="legend-grid"></div>
-    <p class="hint" style="margin-top:10px;">Low-round ties: every player with the lowest 18-hole gross gets the full 3 points (not split).</p>
+    <p class="hint" style="margin-top:10px;">Low-round ties: the 3 points are split evenly between the tied players (1.5 each for a two-way tie).</p>
   </details>
 
   <div class="card">
     <h2>Round details</h2>
     <div class="field-row">
       <label class="field"><span>Date</span><input type="date" id="f-date" required></label>
-      <label class="field"><span>Course</span><input type="text" id="f-course" placeholder="e.g. Kedron Dells" required></label>
+      <label class="field"><span>Course</span><input type="text" id="f-course" list="course-list" placeholder="e.g. Kedron Dells" required autocomplete="off"></label>
     </div>
+    <datalist id="course-list"></datalist>
+    <div class="field-row" id="new-course-row" hidden>
+      <label class="field"><span>Par</span><input type="number" id="f-course-par" value="72" min="54" max="80" step="1" inputmode="numeric"></label>
+      <label class="field"><span>Slope</span><input type="number" id="f-course-slope" min="55" max="155" step="1" inputmode="numeric" placeholder="e.g. 128"></label>
+      <label class="field"><span>Rating</span><input type="number" id="f-course-rating" min="55" max="80" step="0.1" inputmode="decimal" placeholder="e.g. 71.2"></label>
+    </div>
+    <p class="hint" id="new-course-hint" hidden>New course — enter its par, slope and rating (from the scorecard or the club's website) so running handicaps keep working.</p>
     <div class="field-row">
       <label class="field"><span>Organizer</span><select id="f-organizer"><option value="">—</option></select></label>
       <label class="field"><span>Tee times <span class="hint" style="margin:0;">(comma-separated)</span></span><input type="text" id="f-tees" placeholder="10:06, 10:16"></label>
@@ -134,7 +144,7 @@
       eagle:      { points: 10, label: "Eagle",       description: "2 strokes under the alotted strokes for the hole" },
       albatross:  { points: 20, label: "Albatross",   description: "3 strokes under the alotted strokes for the hole" },
       holeInOne:  { points: 25, label: "Hole in One", description: "Self-explanatory" },
-      lowRound:   { points: 3,  label: "Low Round",   description: "Lowest net score (gross − handicap) for the 18-hole session" },
+      lowRound:   { points: 3,  label: "Low Round",   description: "Lowest net score (gross − handicap) for the 18-hole session. Ties split the 3 points evenly." },
       penalty:    { points: -3, display: "−1 and up", label: "Over handicap par", description: "Score over (par + handicap), −1 pt per 5 strokes: 6–10 over → −1 pt; 11–15 → −2 pts; 16–20 → −3 pts; 21–25 → −4 pts; and so on. 9-hole rounds use par 36 and handicap/2." },
     },
     seasons: [{
@@ -144,22 +154,8 @@
     }]
   };
 
-  const POINTS = { attendance: 5, par: 1, birdie: 3, eagle: 10, albatross: 20, holeInOne: 25, lowRound: 3 };
-
-  // Penalty bands on the diff (gross − par − handicap). Mirrors
-  // recompute_season_standings() in 0006_penalty_rule.sql and
-  // golfPenaltyFor() in golf/index.html.
-  function penaltyFor(r) {
-    if (!r.attended) return 0;
-    if (!Number.isFinite(r.gross) || !Number.isFinite(r.handicap)) return 0;
-    if (r.holesPlayed !== 9 && r.holesPlayed !== 18) return 0;
-    const par = r.holesPlayed === 18 ? 72 : 36;
-    const hcp = r.holesPlayed === 18 ? r.handicap : r.handicap / 2;
-    const diff = r.gross - par - hcp;
-    // −1 pt per 5 strokes over handicap par, no upper bound: 6–10 → 1,
-    // 11–15 → 2, 16–20 → 3, 21–25 → 4, and so on.
-    return diff > 5 ? Math.ceil((diff - 5) / 5) : 0;
-  }
+  // All scoring math (points, penalty, net, low round with tie split,
+  // running handicaps) comes from golf/lib/golf-calc.js (window.GolfCalc).
   const COUNT_FIELDS = [
     { key: "pars",        label: "Pars",      pts: 1 },
     { key: "birdies",     label: "Birdies",   pts: 3 },
@@ -175,6 +171,8 @@
   let players = [];
   let golfData = null;
   let scoringMatrix = null;
+  let courses = [];            // [{id, name, par, slope, rating}] — Supabase → soft cache → data/courses.json
+  let runningHcp = null;       // Map<playerId, {current, starting, ...}> from GolfCalc.runningHandicaps
   let saveCount = 0;
   let editingRoundId = null;          // set when opened with ?roundId=<id> to edit an existing round
   let editingOriginalPlayerIds = null; // set of player ids that were in the original round (so we always include them in the payload, even if toggled DNP)
@@ -208,27 +206,47 @@
       orgSel.appendChild(opt);
     });
 
+    // Make sure the lazy Supabase client / calc engine module is ready.
+    if (!window.GolfSync || !window.GolfCalc) {
+      await new Promise(res => window.addEventListener("golf-sync-ready", res, { once: true }));
+    }
+
+    // Live season data drives the course picker + running-handicap
+    // pre-fills. Supabase → soft cache → static fallbacks, so the form
+    // still works on a course with no signal.
+    let live = null;
+    try { live = await window.GolfSync.loadGolfFromSupabase(); }
+    catch { /* offline / no creds */ }
+    if (!live || !(live.seasons || []).length) {
+      live = window.GolfSync.readSoftCache?.()?.data || live;
+    }
+
+    courses = (live?.courses?.length)
+      ? live.courses
+      : ((await tryFetch("data/courses.json", { courses: [] })).courses || []);
+    populateCourseList();
+
+    // Running handicaps from the latest live season (needs migration
+    // 0008's starting handicaps; stays null — static pre-fills — until
+    // then).
+    const liveSeason = (live?.seasons || []).reduce(
+      (latest, s) => (!latest || String(s.id) > String(latest.id) ? s : latest), null);
+    if (liveSeason && Object.keys(liveSeason.startingHandicaps || {}).length) {
+      runningHcp = window.GolfCalc.runningHandicaps({
+        rounds: (liveSeason.rounds || []).filter(r => r.played),
+        startingHandicaps: liveSeason.startingHandicaps,
+      });
+    }
+
     // Edit mode: ?roundId=<id> targets an existing round for editing.
-    // Try Supabase first — it's the live source of truth and a round id may also
-    // appear in the static data/golf.json snapshot with stale or completely
-    // different metadata (e.g. a recycled id pointing at a new course/date).
-    // Fall back to the soft cache, then to the static snapshot, if Supabase is
-    // unreachable.
+    // The live data is the source of truth; a round id may also appear
+    // in the static data/golf.json snapshot with stale or completely
+    // different metadata (e.g. a recycled id pointing at a new
+    // course/date). Fall back to the static snapshot when offline.
     const requestedEditId = new URLSearchParams(location.search).get("roundId");
     let editRound = null;
     if (requestedEditId) {
-      // Make sure the lazy Supabase client + loader are ready before calling.
-      if (!window.GolfSync) {
-        await new Promise(res => window.addEventListener("golf-sync-ready", res, { once: true }));
-      }
-      try {
-        const live = await window.GolfSync.loadGolfFromSupabase();
-        editRound = (live.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
-      } catch { /* offline / no creds — fall through to caches */ }
-      if (!editRound) {
-        const cached = window.GolfSync.readSoftCache?.();
-        editRound = (cached?.data?.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
-      }
+      editRound = (live?.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
       if (!editRound) {
         editRound = (golfData.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
       }
@@ -313,15 +331,28 @@
     }).join("");
   }
 
+  // Pre-fill each player's HCP with their live running handicap when
+  // available; fall back to the static roster value. The organizer can
+  // always type over it — whatever is in the field gets snapshotted
+  // into the round.
+  function prefillFor(p) {
+    const rh = runningHcp?.get(p.id);
+    if (rh && Number.isFinite(rh.current)) return { hcp: rh.current, source: "running" };
+    if (Number.isFinite(p.currentHandicap)) return { hcp: p.currentHandicap, source: "static" };
+    return { hcp: null, source: null };
+  }
+
   function renderPlayerCards() {
     const root = $("#player-cards");
-    root.innerHTML = players.map(p => `
+    root.innerHTML = players.map(p => {
+      const pre = prefillFor(p);
+      return `
       <div class="player-card is-dnp" data-pid="${p.id}" data-attended="false" data-holes="18">
         <div class="pc-head">
           <div class="avatar">${initials(p.name)}</div>
           <div>
             <div class="pname">${p.name}</div>
-            <div class="phint">HCP ${p.currentHandicap ?? "—"}</div>
+            <div class="phint">HCP ${pre.hcp ?? "—"}${pre.source === "running" ? " · running" : ""}</div>
           </div>
           <div class="spacer"></div>
           <button class="pc-toggle" type="button" data-action="toggle-attended">DNP</button>
@@ -340,7 +371,7 @@
           </div>
           <div class="pc-field">
             <span class="pc-label">HCP</span>
-            <input type="number" class="hcp" min="0" max="60" step="1" inputmode="numeric" value="${p.currentHandicap ?? ''}" placeholder="—" />
+            <input type="number" class="hcp" min="0" max="60" step="1" inputmode="numeric" value="${pre.hcp ?? ''}" placeholder="—" />
           </div>
         </div>
         <div class="pc-row three">
@@ -368,7 +399,7 @@
         <div class="pc-low-round">+3 Low Round</div>
         <div class="pc-penalty"></div>
       </div>
-    `).join("");
+    `; }).join("");
   }
 
   function bindEvents() {
@@ -410,7 +441,7 @@
         refreshAll();
       }
     });
-    ["#f-date","#f-course","#f-tees","#f-organizer"].forEach(s => {
+    ["#f-date","#f-course","#f-tees","#f-organizer","#f-course-par","#f-course-slope","#f-course-rating"].forEach(s => {
       $(s).addEventListener("input", refreshAll);
       $(s).addEventListener("change", refreshAll);
     });
@@ -457,42 +488,55 @@
     };
   }
 
-  function netOf(r) {
-    return (Number.isFinite(r.gross) && Number.isFinite(r.handicap)) ? r.gross - r.handicap : null;
+  // ── Course picker helpers ──────────────────────────────────────────
+  function populateCourseList() {
+    $("#course-list").innerHTML = courses
+      .map(c => `<option value="${escapeText(c.name)}"></option>`)
+      .join("");
   }
 
-  function pointsFor(result, isLowRound) {
-    if (!result.attended) return 0;
-    return POINTS.attendance
-      + (result.pars || 0) * POINTS.par
-      + (result.birdies || 0) * POINTS.birdie
-      + (result.eagles || 0) * POINTS.eagle
-      + (result.albatrosses || 0) * POINTS.albatross
-      + (result.holeInOnes || 0) * POINTS.holeInOne
-      + (isLowRound ? POINTS.lowRound : 0)
-      - penaltyFor(result);
+  function matchedCourse() {
+    const name = $("#f-course").value.trim().toLowerCase();
+    if (!name) return null;
+    return courses.find(c => c.name.toLowerCase() === name) || null;
   }
 
-  function computeLowRound(results) {
-    // Low Round = lowest NET among 18-hole players who have a handicap.
-    const eligible = results
-      .map(r => ({ ...r, net: netOf(r) }))
-      .filter(r => r.attended && r.holesPlayed === 18 && Number.isFinite(r.net));
-    if (!eligible.length) return new Set();
-    const min = Math.min(...eligible.map(r => r.net));
-    return new Set(eligible.filter(r => r.net === min).map(r => r.playerId));
+  // A brand-new course typed into the picker, once slope + rating are
+  // filled in. Sent as `new_course` in the payload so enter_round()
+  // adds it to the course table.
+  function newCourseEntry() {
+    const name = $("#f-course").value.trim();
+    if (!name || matchedCourse()) return null;
+    const slope = parseInt($("#f-course-slope").value, 10);
+    const rating = parseFloat($("#f-course-rating").value);
+    if (!Number.isFinite(slope) || !Number.isFinite(rating)) return null;
+    const par = parseInt($("#f-course-par").value, 10);
+    return {
+      id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      name,
+      par: Number.isFinite(par) ? par : 72,
+      slope,
+      rating,
+    };
+  }
+
+  function currentCoursePar() {
+    const m = matchedCourse();
+    if (m) return m.par ?? 72;
+    const v = parseInt($("#f-course-par").value, 10);
+    return Number.isFinite(v) ? v : 72;
+  }
+
+  function updateCourseUI() {
+    const name = $("#f-course").value.trim();
+    const isNew = !!name && !matchedCourse();
+    $("#new-course-row").hidden = !isNew;
+    $("#new-course-hint").hidden = !isNew;
   }
 
   function collectAll() {
     const results = $$(".player-card").map(readCard);
-    const lowRoundIds = computeLowRound(results);
-    return results.map(r => ({
-      ...r,
-      net: netOf(r),
-      lowRound: lowRoundIds.has(r.playerId),
-      penalty: penaltyFor(r),
-      points: pointsFor(r, lowRoundIds.has(r.playerId)),
-    }));
+    return window.GolfCalc.computeRoundPoints({ results }, currentCoursePar());
   }
 
   function buildRound() {
@@ -505,10 +549,12 @@
     // Edit mode: also keep any player who was in the original round, so toggling DNP persists as attended=false rather than silently leaving the old row.
     const results = all
       .filter(r => r.attended || r.gross != null || r.pars || r.birdies || r.eagles || r.albatrosses || r.holeInOnes || (editingOriginalPlayerIds && editingOriginalPlayerIds.has(r.playerId)))
-      .map(({ net, lowRound, points, ...rest }) => rest);
+      .map(({ net, lowRound, lowRoundPts, points, penalty, ...rest }) => rest);
     return {
       id: editingRoundId || roundId(date, course),
-      date, course, organizer,
+      date, course,
+      courseId: matchedCourse()?.id ?? newCourseEntry()?.id ?? null,
+      organizer,
       teeTimes: tees,
       played: results.some(r => r.attended),
       results,
@@ -521,6 +567,7 @@
   }
 
   function refreshAll() {
+    updateCourseUI();
     // Update each card's per-card net + points + low-round flag
     const all = collectAll();
     all.forEach(r => {
@@ -532,6 +579,8 @@
       ptsEl.classList.toggle("zero", !r.points);
       card.classList.toggle("is-low-round", r.lowRound);
       card.classList.toggle("is-penalty", r.penalty > 0);
+      const lowEl = $(".pc-low-round", card);
+      if (lowEl && r.lowRound) lowEl.textContent = `+${r.lowRoundPts} Low Round${r.lowRoundPts !== 3 ? " (tie split)" : ""}`;
       const penaltyEl = $(".pc-penalty", card);
       if (penaltyEl) penaltyEl.textContent = r.penalty ? `−${r.penalty} Over handicap par` : "";
       const netEl = $(".pc-net", card);
@@ -597,16 +646,19 @@
   // RPC payload uses snake_case to match the SQL function signature.
   function buildRoundPayload() {
     const round = buildRound();
+    const newCourse = newCourseEntry();
     return {
       round: {
         id: round.id,
         season_id: `golf-${seasonForDate(round.date)}`,
         date: round.date,
         course: round.course,
+        course_id: round.courseId,
         organizer: round.organizer,
         tee_times: round.teeTimes,
         played: round.played,
       },
+      ...(newCourse ? { new_course: newCourse } : {}),
       results: round.results.map((r) => ({
         player_id: r.playerId,
         name: r.name,

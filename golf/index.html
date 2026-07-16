@@ -16,10 +16,13 @@
 <link rel="stylesheet" href="./styles.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  // Re-export the ES-module helpers as window.GolfData so the inline
-  // <script> below (which is a classic script, not a module) can use them.
+  // Re-export the ES-module helpers as window.GolfData / window.GolfCalc
+  // so the inline <script> below (a classic script, not a module) can
+  // use them.
   import * as GolfData from './lib/golf-data.js';
+  import * as GolfCalc from './lib/golf-calc.js';
   window.GolfData = GolfData;
+  window.GolfCalc = GolfCalc;
   window.dispatchEvent(new Event('golf-data-ready'));
 </script>
 </head>
@@ -116,23 +119,14 @@ const SPORT_CONFIG = {
   },
 };
 
-// Golf scoring constants (mirror the matrix in data/golf.json)
-const GOLF_POINTS = { attendance: 5, par: 1, birdie: 3, eagle: 10, albatross: 20, holeInOne: 25, lowRound: 3 };
+// All golf math (points, penalty, low round, running handicaps,
+// best-10 standings) lives in golf/lib/golf-calc.js (window.GolfCalc),
+// mirrored server-side by recompute_season_standings() in
+// golf-supabase/migrations/0009_scoring_fixes.sql.
 
-// Penalty for shooting well over handicap par. Bands stack on the diff
-// (gross − par − handicap), where par/handicap scale linearly for 9-hole
-// rounds (par=36, handicap/2). Mirrors recompute_season_standings() in
-// golf-supabase/migrations/0006_penalty_rule.sql.
-function golfPenaltyFor(r) {
-  if (!r.attended) return 0;
-  if (!Number.isFinite(r.gross) || !Number.isFinite(r.handicap)) return 0;
-  if (r.holesPlayed !== 9 && r.holesPlayed !== 18) return 0;
-  const par = r.holesPlayed === 18 ? 72 : 36;
-  const hcp = r.holesPlayed === 18 ? r.handicap : r.handicap / 2;
-  const diff = r.gross - par - hcp;
-  // −1 pt per 5 strokes over handicap par, no upper bound: 6–10 → 1,
-  // 11–15 → 2, 16–20 → 3, 21–25 → 4, and so on.
-  return diff > 5 ? Math.ceil((diff - 5) / 5) : 0;
+// Par for a round's course; 72 until the course table says otherwise.
+function golfCoursePar(round) {
+  return round?.courseInfo?.par ?? 72;
 }
 
 // ---------- Helpers ----------
@@ -305,85 +299,21 @@ function buildPokerSeasonStandings(season) {
 // For a single round, compute per-player points + net + tag the low-round winner(s).
 // Returns a list of result objects each augmented with { net, points, lowRound: bool }.
 function annotateGolfRound(round) {
-  const results = (round.results || []).map(r => {
-    const out = { ...r };
-    out.net = (Number.isFinite(r.gross) && Number.isFinite(r.handicap))
-      ? r.gross - r.handicap
-      : null;
-    return out;
-  });
-  // Low round = lowest NET among players who played 18 holes and have a handicap set.
-  // (If handicap is missing, the player can still play but isn't eligible for low round.)
-  const eligible = results.filter(r => r.attended && r.holesPlayed === 18 && Number.isFinite(r.net));
-  let lowRoundIds = new Set();
-  if (eligible.length) {
-    const min = Math.min(...eligible.map(r => r.net));
-    lowRoundIds = new Set(eligible.filter(r => r.net === min).map(r => r.playerId || slug(r.name)));
-  }
-  for (const r of results) {
-    const id = r.playerId || slug(r.name);
-    r.lowRound = lowRoundIds.has(id);
-    if (!r.attended) { r.points = 0; r.penalty = 0; continue; }
-    r.penalty = golfPenaltyFor(r);
-    r.points =
-      GOLF_POINTS.attendance
-      + (r.pars || 0) * GOLF_POINTS.par
-      + (r.birdies || 0) * GOLF_POINTS.birdie
-      + (r.eagles || 0) * GOLF_POINTS.eagle
-      + (r.albatrosses || 0) * GOLF_POINTS.albatross
-      + (r.holeInOnes || 0) * GOLF_POINTS.holeInOne
-      + (r.lowRound ? GOLF_POINTS.lowRound : 0)
-      - r.penalty;
-  }
-  return results;
+  return window.GolfCalc.computeRoundPoints(round, golfCoursePar(round));
 }
 
+// Championship standings: only each player's best 10 rounds count.
 function buildGolfSeasonStandings(season) {
-  const playedRounds = (season.rounds || []).filter(r => r.played);
-  if (!playedRounds.length) return [];
-  const map = new Map();
-  for (const round of playedRounds) {
-    const annotated = annotateGolfRound(round);
-    for (const r of annotated) {
-      const key = r.playerId || slug(r.name);
-      const cur = map.get(key) || {
-        playerId: r.playerId || key, name: r.name,
-        rounds: 0, attended: 0,
-        pars: 0, birdies: 0, eagles: 0, albatrosses: 0, holeInOnes: 0,
-        lowRounds: 0,
-        totalGross: 0,
-        totalPoints: 0,
-        sparkPoints: [],
-      };
-      cur.rounds++;
-      if (r.attended) {
-        cur.attended++;
-        cur.totalGross += (r.gross || 0);
-      }
-      cur.pars        += (r.pars || 0);
-      cur.birdies     += (r.birdies || 0);
-      cur.eagles      += (r.eagles || 0);
-      cur.albatrosses += (r.albatrosses || 0);
-      cur.holeInOnes  += (r.holeInOnes || 0);
-      if (r.lowRound) cur.lowRounds++;
-      cur.totalPoints += r.points;
-      cur.sparkPoints.push(cur.totalPoints);
-      map.set(key, cur);
-    }
-  }
-  const list = [...map.values()];
-  // Highest total points wins. Tiebreaker: more rounds attended, then alphabetical.
-  list.sort((a,b) => {
-    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
-    if (b.attended !== a.attended) return b.attended - a.attended;
-    return a.name.localeCompare(b.name);
-  });
-  let rank = 0, prev = null;
-  list.forEach((p, i) => {
-    if (p.totalPoints !== prev) { rank = i + 1; prev = p.totalPoints; }
-    p.rank = rank;
-  });
-  return list;
+  return window.GolfCalc.buildSeasonStandings(season, { courseParFor: golfCoursePar });
+}
+
+// Running handicaps for a season (null until the season has starting
+// handicaps from Supabase, i.e. before migration 0008 is seeded).
+function golfSeasonRunningHandicaps(season) {
+  const starting = season?.startingHandicaps || {};
+  if (!Object.keys(starting).length) return null;
+  const rounds = (season.rounds || []).filter(r => r.played);
+  return window.GolfCalc.runningHandicaps({ rounds, startingHandicaps: starting });
 }
 
 function buildAllTime(sport) {
@@ -701,7 +631,7 @@ function renderGolfSeasonView(root, season) {
     <section class="grid-main" style="margin-top: 24px;">
       <div class="stack">
         <div class="panel">
-          <div class="panel-head"><h2>Cup Standings</h2><div class="spacer"></div><span class="hint">Highest points wins · awarded Oct 2026</span></div>
+          <div class="panel-head"><h2>Cup Standings</h2><div class="spacer"></div><span class="hint">${playedRounds.length > 10 ? `Best 10 of ${playedRounds.length} rounds count` : "Best 10 rounds count"} · highest points wins</span></div>
           <table class="t" aria-label="Cup standings">
             <thead><tr><th>#</th><th>Player</th><th class="num">Rds</th><th class="num">Par</th><th class="num">Bird</th><th class="num">Eagle+</th><th class="num">Low</th><th class="num">Pts</th><th>Trend</th></tr></thead>
             <tbody>${renderGolfStandingsRows(standings)}</tbody>
@@ -1058,13 +988,22 @@ function renderPlayerView(root, sport, playerId) {
     }
   }).join("");
 
+  // Golf: current running handicap from the latest season's engine run.
+  let hcpLine = "";
+  if (sport === "golf") {
+    const latest = (DATA.golf?.seasons || [])[0];
+    const running = latest ? golfSeasonRunningHandicaps(latest) : null;
+    const me = running?.get(playerId);
+    if (me) hcpLine = ` · Handicap ${me.current}${me.current !== me.starting ? ` (started ${me.starting})` : ""}`;
+  }
+
   root.innerHTML = `
     <div class="breadcrumb"><a href="#/${sport}">${escapeHtml(SPORT_CONFIG[sport].label)}</a> · Player</div>
     <div class="profile-head">
       <div class="avatar is-large">${initials(playerName)}</div>
       <div>
         <h1 style="margin:0; font-size:30px;">${escapeHtml(playerName)}</h1>
-        <div class="muted small">${seasons.length} ${SPORT_CONFIG[sport].label} season${seasons.length===1?'':'s'} on record</div>
+        <div class="muted small">${seasons.length} ${SPORT_CONFIG[sport].label} season${seasons.length===1?'':'s'} on record${escapeHtml(hcpLine)}</div>
       </div>
     </div>
     ${careerHtml}
