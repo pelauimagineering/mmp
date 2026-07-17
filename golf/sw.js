@@ -7,7 +7,7 @@
 //
 // Bump CACHE_NAME on every deploy that changes any of these files.
 
-const CACHE_NAME = 'mmp-golf-v5';
+const CACHE_NAME = 'mmp-golf-v6';
 
 const SHELL = [
   './score-entry.html',
@@ -16,6 +16,8 @@ const SHELL = [
   './supabase-config.js',
   './lib/queue.js',
   './lib/golf-data.js',
+  './lib/golf-calc.js',
+  './data/courses.json',
   '../design-system/tokens.css',
   '../design-system/components.css',
   '../design-system/assets/mmp-mark.svg',
@@ -28,9 +30,11 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) =>
       // addAll is all-or-nothing; one missing URL kills the install.
       // We tolerate misses to keep the worker resilient (e.g. if a
-      // CDN URL changes between deploys).
+      // CDN URL changes between deploys). cache: 'reload' bypasses the
+      // browser's HTTP cache so a new SW version never precaches stale
+      // assets it happens to have on disk.
       Promise.all(SHELL.map((url) =>
-        cache.add(url).catch((err) => {
+        cache.add(new Request(url, { cache: 'reload' })).catch((err) => {
           console.warn('[sw] precache miss', url, err.message);
         })
       ))

@@ -86,16 +86,13 @@ The script picks the most recently modified `MMP Poker*.xlsx`, walks every `Poke
 
 ### Golf (up to 3 rounds/week, May–Oct)
 
-The xlsx-and-script flow is too heavy for three rounds a week. Instead, the project includes `admin.html` — a self-contained, mobile-friendly form. Open it on the phone after the round, tap in each player's gross score, and hit **Save round**. The page does this work locally:
+The xlsx-and-script flow is too heavy for three rounds a week. Instead, `score-entry.html` is a guided, phone-first wizard — one question per screen, built for reluctant technology users:
 
-- Loads `data/players.json` for the roster and `data/golf.json` for the existing season.
-- Persists each player's current handicap in `localStorage` so it pre-fills next round.
-- Computes net = gross − handicap as you type, with a low-gross / low-net summary tile.
-- Builds the updated `golf.json` (existing rounds + this one), and either downloads it or copies it to clipboard.
+- **Plan a future round** with just a date + course (picked from the course table, or add a new one with its par/slope/rating inline) — no scores needed until game day.
+- **Enter scores** on game day: tap who played, then walk player-by-player screens with big − / + steppers for pars/birdies/etc., a live points tile, and handicaps pre-filled from the running-handicap engine (`lib/golf-calc.js`).
+- **Fix a past round** any time — lands on a review screen; tap a player to correct their scores. Edits upsert by round id, so dates/courses rename safely.
 
-The only manual step is replacing `data/golf.json` in the project — drop the downloaded file in, commit, push. If you're hosting on GitHub Pages or Netlify drop, the new round goes live within seconds. The admin page works equally well opened locally (`file://`) or hosted; when no `data/*.json` is reachable, it falls back to a built-in roster so you're never locked out.
-
-The flow purposely avoids any backend, auth, or database. Three rounds a week of tap-tap-save with one file replace is the simplest thing that actually works, and matches the constraint of a single-developer static site.
+Saves land in a local IndexedDB queue first (`lib/queue.js`), then sync to Supabase through the passphrase-gated `enter_round()` RPC whenever the network allows — the form works fully offline at the course (a service worker precaches the shell). An in-progress round drafts to `localStorage`, so an accidental refresh resumes where you left off. When no live data is reachable, the page falls back to `data/*.json` and a built-in roster so you're never locked out.
 
 ### Player roster, handicaps, and other shared facts
 

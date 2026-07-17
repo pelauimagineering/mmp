@@ -36,91 +36,136 @@
 </script>
 </head>
 <body class="theme-links">
-<main class="shell">
+<main class="shell wiz">
 
-  <header class="top">
+  <header class="top wiz-top">
     <a class="back-link" href="index.html">← Back to standings</a>
     <div class="brand">
       <div class="brand-mark">
         <svg viewBox="0 0 64 64" fill="none" stroke="currentColor"><ellipse cx="22" cy="32" rx="14" ry="18" stroke-width="4"/><ellipse cx="42" cy="32" rx="14" ry="18" stroke-width="4"/><path d="M28.4 18.6 Q 32 22 32 32 Q 32 42 28.4 45.4" stroke-width="4" stroke-linecap="round"/></svg>
       </div>
       <div>
-        MMP Score Entry
-        <span class="brand-sub">Enter a round. Save. Replace <code>data/golf.json</code>.</span>
+        MMP Golf
+        <span class="brand-sub">Rounds &amp; scores</span>
       </div>
     </div>
-    <h1 id="page-title">New round</h1>
-    <p class="lede" id="page-lede">Toggle who played, enter their gross + count of pars / birdies / eagles, etc. Points compute live. Low round (lowest 18-hole net) is auto-awarded.</p>
+    <div class="wiz-progress" id="wiz-progress" hidden>
+      <div class="wiz-dots" id="wiz-dots"></div>
+      <div class="wiz-progress-label" id="wiz-progress-label"></div>
+    </div>
   </header>
 
-  <details class="legend">
-    <summary>Scoring rules</summary>
-    <div class="legend-grid" id="legend-grid"></div>
-    <p class="hint" style="margin-top:10px;">Low-round ties: the 3 points are split evenly between the tied players (1.5 each for a two-way tie).</p>
-  </details>
+  <!-- ── Home: choose a task ─────────────────────────────────────── -->
+  <section class="wiz-screen" id="screen-home">
+    <h1>What would you like to do?</h1>
+    <div id="home-resume"></div>
+    <div class="hero-choice" id="home-actions"></div>
+    <div class="hint" id="home-pending" hidden></div>
+    <details class="legend">
+      <summary>Scoring rules</summary>
+      <div class="legend-grid" id="legend-grid"></div>
+      <p class="hint" style="margin-top:10px;">Low-round ties: the 3 points are split evenly between the tied players (1.5 each for a two-way tie).</p>
+    </details>
+  </section>
 
-  <div class="card">
-    <h2>Round details</h2>
-    <div class="field-row">
+  <!-- ── Round details (both branches) ───────────────────────────── -->
+  <section class="wiz-screen" id="screen-details">
+    <h1 id="details-title">Round details</h1>
+    <div class="card">
       <label class="field"><span>Date</span><input type="date" id="f-date" required></label>
-      <label class="field"><span>Course</span><input type="text" id="f-course" list="course-list" placeholder="e.g. Kedron Dells" required autocomplete="off"></label>
-    </div>
-    <datalist id="course-list"></datalist>
-    <div class="field-row" id="new-course-row" hidden>
-      <label class="field"><span>Par</span><input type="number" id="f-course-par" value="72" min="54" max="80" step="1" inputmode="numeric"></label>
-      <label class="field"><span>Slope</span><input type="number" id="f-course-slope" min="55" max="155" step="1" inputmode="numeric" placeholder="e.g. 128"></label>
-      <label class="field"><span>Rating</span><input type="number" id="f-course-rating" min="55" max="80" step="0.1" inputmode="decimal" placeholder="e.g. 71.2"></label>
-    </div>
-    <p class="hint" id="new-course-hint" hidden>New course — enter its par, slope and rating (from the scorecard or the club's website) so running handicaps keep working.</p>
-    <div class="field-row">
+      <label class="field"><span>Course</span><input type="text" id="f-course" list="course-list" placeholder="Start typing the course name…" required autocomplete="off"></label>
+      <datalist id="course-list"></datalist>
+      <div id="new-course-row" hidden>
+        <p class="hint" id="new-course-hint">New course — enter its par, slope and rating (from the scorecard or the club's website) so handicaps keep working.</p>
+        <div class="field-row">
+          <label class="field"><span>Par</span><input type="number" id="f-course-par" value="72" min="54" max="80" step="1" inputmode="numeric"></label>
+          <label class="field"><span>Slope</span><input type="number" id="f-course-slope" min="55" max="155" step="1" inputmode="numeric" placeholder="e.g. 128"></label>
+          <label class="field"><span>Rating</span><input type="number" id="f-course-rating" min="55" max="80" step="0.1" inputmode="decimal" placeholder="e.g. 71.2"></label>
+        </div>
+      </div>
       <label class="field"><span>Organizer</span><select id="f-organizer"><option value="">—</option></select></label>
-      <label class="field"><span>Tee times <span class="hint" style="margin:0;">(comma-separated)</span></span><input type="text" id="f-tees" placeholder="10:06, 10:16"></label>
+      <label class="field"><span>Tee times <span class="hint" style="margin:0; display:inline;">(optional, comma-separated)</span></span><input type="text" id="f-tees" placeholder="10:06, 10:16"></label>
     </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <h2>Scores</h2>
-    <div id="player-cards"></div>
-    <p class="hint">Tap "Played" / "DNP" to toggle attendance. Empty count fields are treated as 0.</p>
-  </div>
+  <!-- ── Confirm (schedule branch) ───────────────────────────────── -->
+  <section class="wiz-screen" id="screen-confirm">
+    <h1>Does this look right?</h1>
+    <div class="card confirm-card" id="confirm-card"></div>
+    <p class="hint">Scores get entered on game day — nothing else is needed now.</p>
+  </section>
 
-  <div class="card">
-    <h2>Round summary</h2>
-    <div class="summary-grid">
-      <div class="summary-tile"><div class="lbl">Played</div><div class="val" id="sum-attended">0</div><div class="sub">of 11</div></div>
+  <!-- ── Who played? ─────────────────────────────────────────────── -->
+  <section class="wiz-screen" id="screen-players">
+    <h1>Who played?</h1>
+    <p class="wiz-help">Tap everyone who came out, then hit Next.</p>
+    <div class="player-grid" id="player-grid"></div>
+  </section>
+
+  <!-- ── One player's scores ─────────────────────────────────────── -->
+  <section class="wiz-screen" id="screen-player">
+    <div id="player-screen"></div>
+  </section>
+
+  <!-- ── Review ──────────────────────────────────────────────────── -->
+  <section class="wiz-screen" id="screen-review">
+    <h1 id="review-title">Check the round</h1>
+    <p class="wiz-help">Tap a player to fix their scores.</p>
+    <div id="review-rows"></div>
+    <div class="summary-grid" style="margin-top: var(--space-4);">
+      <div class="summary-tile"><div class="lbl">Played</div><div class="val" id="sum-attended">0</div><div class="sub" id="sum-attended-sub">players</div></div>
       <div class="summary-tile"><div class="lbl">Low round</div><div class="val" id="sum-low-round">—</div><div class="sub" id="sum-low-round-name">—</div></div>
       <div class="summary-tile"><div class="lbl">Total awarded</div><div class="val" id="sum-total-pts">0</div><div class="sub">points this round</div></div>
     </div>
-  </div>
+    <div id="review-extras"></div>
+  </section>
 
-  <div class="card">
-    <h2>Save</h2>
-    <div class="actions">
-      <button class="btn primary" id="btn-save">Save round</button>
-      <button class="btn" id="btn-copy">Copy JSON to clipboard</button>
-      <button class="btn" id="btn-download">Download golf.json</button>
-      <button class="btn ghost" id="btn-clear">Clear scores</button>
+  <!-- ── Done ────────────────────────────────────────────────────── -->
+  <section class="wiz-screen" id="screen-done">
+    <div class="done-hero">
+      <div class="done-check">✓</div>
+      <h1>Saved</h1>
+      <p class="wiz-help" id="done-summary"></p>
     </div>
     <div class="sync-status" id="sync-status" data-state="idle">
       <span class="sync-dot"></span>
       <span class="sync-label" id="sync-label">Ready.</span>
       <span class="sync-pending" id="sync-pending" hidden></span>
     </div>
-    <div class="status" id="status"></div>
+    <p class="hint">Saves land in a local queue first, so this works even with no signal — everything syncs to the leaderboard automatically once you're connected.</p>
+    <div class="hero-choice">
+      <a class="btn btn-lg primary" href="index.html">See the standings</a>
+      <button class="btn" id="btn-again" type="button">Enter another round</button>
+    </div>
     <details class="preview">
-      <summary>Preview generated JSON</summary>
+      <summary>Backup options</summary>
+      <div class="actions" style="margin: 10px 0;">
+        <button class="btn" id="btn-copy" type="button">Copy JSON to clipboard</button>
+        <button class="btn" id="btn-download" type="button">Download golf.json</button>
+      </div>
+      <div class="status" id="status-done"></div>
       <pre id="preview"></pre>
     </details>
-    <p class="hint" style="margin-top:14px;">Saves go to a local queue first, so the form works even on a course with no signal. Each queued round syncs to the live leaderboard automatically when the network returns.</p>
-  </div>
+  </section>
+
+  <!-- ── Sticky bottom navigation ────────────────────────────────── -->
+  <nav class="wiz-nav" id="wiz-nav" hidden>
+    <div class="status" id="status"></div>
+    <div class="wiz-nav-buttons">
+      <button class="btn ghost" id="btn-back" type="button">← Back</button>
+      <button class="btn btn-lg primary" id="btn-next" type="button">Next →</button>
+    </div>
+  </nav>
 
 </main>
 
 <script>
   /* ------------------------------------------------------------------
-     MMP Challenge Cup — golf score entry, points-based scoring.
-     Reads data/golf.json + data/players.json on load.
-     Falls back to a built-in roster when opened via file://.
+     MMP Challenge Cup — golf round wizard.
+     One question per screen: schedule a future round without scores,
+     or walk game-day scoring player by player. All state lives in the
+     serializable `wizard` object (drafted to localStorage); screens
+     are dumb views rendered from it. Scoring math: window.GolfCalc.
      ------------------------------------------------------------------ */
   const FALLBACK_ROSTER = [
     { id: "jas",     name: "Jas",     currentHandicap: 18, sports: ["golf"] },
@@ -157,25 +202,56 @@
   // All scoring math (points, penalty, net, low round with tie split,
   // running handicaps) comes from golf/lib/golf-calc.js (window.GolfCalc).
   const COUNT_FIELDS = [
-    { key: "pars",        label: "Pars",      pts: 1 },
-    { key: "birdies",     label: "Birdies",   pts: 3 },
-    { key: "eagles",      label: "Eagles",    pts: 10 },
-    { key: "albatrosses", label: "Albatross", pts: 20 },
-    { key: "holeInOnes",  label: "HIO",       pts: 25 },
+    { key: "pars",        label: "Pars",         pts: 1 },
+    { key: "birdies",     label: "Birdies",      pts: 3 },
+    { key: "eagles",      label: "Eagles",       pts: 10 },
+    { key: "albatrosses", label: "Albatrosses",  pts: 20 },
+    { key: "holeInOnes",  label: "Holes-in-one", pts: 25 },
   ];
   const $  = (sel, root=document) => root.querySelector(sel);
   const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
   const initials = (n) => (n||"").split(" ").map(s => s[0]).slice(0,2).join("").toUpperCase();
   const ROUND_DETAILS_KEY = "mmp.golf.lastRoundDetails";
+  const DRAFT_KEY = "mmp.golf.wizardDraft.v1";
+  const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
   let players = [];
   let golfData = null;
   let scoringMatrix = null;
   let courses = [];            // [{id, name, par, slope, rating}] — Supabase → soft cache → data/courses.json
   let runningHcp = null;       // Map<playerId, {current, starting, ...}> from GolfCalc.runningHandicaps
+  let liveData = null;         // shaped Supabase data (or soft cache) for home-screen round lists
   let saveCount = 0;
-  let editingRoundId = null;          // set when opened with ?roundId=<id> to edit an existing round
-  let editingOriginalPlayerIds = null; // set of player ids that were in the original round (so we always include them in the payload, even if toggled DNP)
+
+  // ── Wizard state: the single source of truth, JSON-serializable. ──
+  const blankWizard = () => ({
+    mode: null,        // 'score' | 'schedule' | 'edit'
+    step: "home",      // 'home' | 'details' | 'confirm' | 'players' | 'player' | 'review' | 'done'
+    playerIndex: 0,
+    returnTo: null,    // 'review' when a review row jumped into a player screen
+    roundId: null,
+    editingOriginalPlayerIds: [],
+    details: { date: "", course: "", organizer: "", tees: "" },
+    results: {},       // pid → {attended, holesPlayed, hcp, gross, pars, birdies, eagles, albatrosses, holeInOnes}
+    savedAt: 0,
+  });
+  let wizard = blankWizard();
+
+  function saveDraft() {
+    wizard.savedAt = Date.now();
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(wizard)); } catch { /* quota */ }
+  }
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
+  }
+  function loadDraft() {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+      if (!d || !d.step || d.step === "done" || d.step === "home") return null;
+      if (Date.now() - (d.savedAt || 0) > DRAFT_MAX_AGE_MS) return null;
+      return d;
+    } catch { return null; }
+  }
 
   async function tryFetch(path, fallback) {
     try {
@@ -211,15 +287,16 @@
       await new Promise(res => window.addEventListener("golf-sync-ready", res, { once: true }));
     }
 
-    // Live season data drives the course picker + running-handicap
-    // pre-fills. Supabase → soft cache → static fallbacks, so the form
-    // still works on a course with no signal.
+    // Live season data drives the home screen, course picker and
+    // running-handicap pre-fills. Supabase → soft cache → static
+    // fallbacks, so the form still works on a course with no signal.
     let live = null;
     try { live = await window.GolfSync.loadGolfFromSupabase(); }
     catch { /* offline / no creds */ }
     if (!live || !(live.seasons || []).length) {
       live = window.GolfSync.readSoftCache?.()?.data || live;
     }
+    liveData = live;
 
     courses = (live?.courses?.length)
       ? live.courses
@@ -238,84 +315,131 @@
       });
     }
 
-    // Edit mode: ?roundId=<id> targets an existing round for editing.
-    // The live data is the source of truth; a round id may also appear
-    // in the static data/golf.json snapshot with stale or completely
-    // different metadata (e.g. a recycled id pointing at a new
-    // course/date). Fall back to the static snapshot when offline.
-    const requestedEditId = new URLSearchParams(location.search).get("roundId");
-    let editRound = null;
-    if (requestedEditId) {
-      editRound = (live?.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
-      if (!editRound) {
-        editRound = (golfData.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === requestedEditId);
-      }
-    }
-    if (requestedEditId && !editRound) {
-      // Surface clearly so the user knows the link was stale; fall through to create mode.
-      showStatus(`Round "${requestedEditId}" not found — opening as new round.`, false);
-    }
-
-    // Populate metadata. Edit mode wins; otherwise fall back to upcoming round, then last entered.
-    const lastDetails = JSON.parse(localStorage.getItem(ROUND_DETAILS_KEY) || "null");
-    const seed = editRound
-      || golfData.seasons[0]?.rounds?.find(r => !r.played)
-      || (lastDetails ? { date: lastDetails.date, course: lastDetails.course, teeTimes: (lastDetails.tees || "").split(",").map(s => s.trim()).filter(Boolean), organizer: lastDetails.organizer } : null);
-    if (seed) {
-      $("#f-date").value = seed.date || "";
-      $("#f-course").value = seed.course || "";
-      $("#f-tees").value = (seed.teeTimes || []).join(", ");
-      if (seed.organizer) orgSel.value = seed.organizer;
-    }
-
-    renderPlayerCards();
-
-    if (editRound) {
-      editingRoundId = editRound.id;
-      editingOriginalPlayerIds = new Set((editRound.results || []).map(r => r.playerId).filter(Boolean));
-      populateScoresFromRound(editRound);
-      $("#page-title").textContent = "Edit round";
-      $("#page-lede").innerHTML = `Editing <strong>${escapeText(editRound.course || "round")}</strong> · ${editRound.date || ""}. Changes upsert by round id — date and course can be safely renamed without forking the round.`;
-      $("#btn-save").textContent = "Save changes";
-      document.title = "MMP Score Entry · Edit Round";
-    }
-
+    routeFromUrl();
     bindEvents();
-    refreshAll();
+    render();
   }
+
+  // ── URL routing: deep links win over any saved draft. ─────────────
+  function routeFromUrl() {
+    const params = new URLSearchParams(location.search);
+    const requestedId = params.get("roundId");
+    const requestedMode = params.get("mode");
+
+    const draft = loadDraft();
+
+    if (requestedId) {
+      const round = findRound(requestedId);
+      if (!round) {
+        showStatus(`Round "${requestedId}" not found — pick an option below.`, false);
+        wizard = blankWizard();
+        return;
+      }
+      // Reuse an in-flight draft for the SAME round; otherwise hydrate fresh.
+      if (draft && draft.roundId === requestedId && !requestedMode) {
+        wizard = draft;
+        return;
+      }
+      wizard = blankWizard();
+      hydrateFromRound(round);
+      if (requestedMode === "schedule") {
+        wizard.mode = "schedule";
+        wizard.step = "details";
+      } else if (round.played) {
+        wizard.mode = "edit";
+        wizard.step = "review";
+      } else {
+        wizard.mode = "score";
+        wizard.step = "details";
+      }
+      return;
+    }
+
+    if (requestedMode === "schedule") {
+      wizard = blankWizard();
+      wizard.mode = "schedule";
+      wizard.step = "details";
+      seedFreshDetails();
+      return;
+    }
+
+    // Bare visit: land on home. A recent draft shows as a resume card.
+    wizard = blankWizard();
+  }
+
+  function findRound(id) {
+    const pools = [liveData, golfData];
+    for (const src of pools) {
+      const hit = (src?.seasons || []).flatMap(s => s.rounds || []).find(r => r.id === id);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  function allRounds() {
+    const src = (liveData?.seasons?.length) ? liveData : golfData;
+    return (src?.seasons || []).flatMap(s => s.rounds || []);
+  }
+  function nextUpcomingRound() {
+    return allRounds()
+      .filter(r => !r.played)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0] || null;
+  }
+  function recentPlayedRounds(n = 5) {
+    return allRounds()
+      .filter(r => r.played)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+      .slice(0, n);
+  }
+
+  // Write a round's data into wizard state (inverse of buildRound).
+  function hydrateFromRound(round) {
+    wizard.roundId = round.id;
+    wizard.editingOriginalPlayerIds = (round.results || []).map(r => r.playerId).filter(Boolean);
+    wizard.details = {
+      date: round.date || "",
+      course: round.course || "",
+      organizer: round.organizer || "",
+      tees: (round.teeTimes || []).join(", "),
+    };
+    wizard.results = {};
+    (round.results || []).forEach(r => {
+      if (!r.playerId) return;
+      wizard.results[r.playerId] = {
+        attended: !!r.attended,
+        holesPlayed: (r.holesPlayed === 9 || r.holesPlayed === 18) ? r.holesPlayed : 18,
+        hcp: Number.isFinite(r.handicap) ? r.handicap : (prefillFor(playerById(r.playerId) || {}).hcp),
+        gross: Number.isFinite(r.gross) ? r.gross : null,
+        pars: r.pars || 0, birdies: r.birdies || 0, eagles: r.eagles || 0,
+        albatrosses: r.albatrosses || 0, holeInOnes: r.holeInOnes || 0,
+      };
+    });
+  }
+
+  function seedFreshDetails() {
+    const lastDetails = JSON.parse(localStorage.getItem(ROUND_DETAILS_KEY) || "null");
+    if (lastDetails) {
+      wizard.details.organizer = lastDetails.organizer || "";
+    }
+  }
+
+  function playerById(pid) { return players.find(p => p.id === pid); }
 
   function escapeText(s) {
     return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
   }
 
-  // Apply an existing round's per-player results onto the rendered player cards.
-  function populateScoresFromRound(round) {
-    (round.results || []).forEach(r => {
-      const card = document.querySelector(`.player-card[data-pid="${CSS.escape(r.playerId || "")}"]`);
-      if (!card) return;  // player not in roster anymore — skip silently
-      const attended = !!r.attended;
-      card.dataset.attended = attended.toString();
-      card.classList.toggle("is-dnp", !attended);
-      const tog = $('[data-action="toggle-attended"]', card);
-      tog.classList.toggle("is-on", attended);
-      tog.textContent = attended ? "Played" : "DNP";
-
-      const holes = (r.holesPlayed === 9 || r.holesPlayed === 18) ? r.holesPlayed : 18;
-      card.dataset.holes = String(holes);
-      $$('[data-action="set-holes"]', card).forEach(b => b.classList.toggle("is-on", parseInt(b.dataset.holes, 10) === holes));
-
-      if (Number.isFinite(r.handicap)) $(".hcp", card).value = r.handicap;
-      if (Number.isFinite(r.gross))    $(".gross", card).value = r.gross;
-
-      COUNT_FIELDS.forEach(f => {
-        const input = $(`input[data-key="${f.key}"]`, card);
-        const v = r[f.key];
-        if (Number.isFinite(v) && v > 0) {
-          input.value = v;
-          input.closest(".pc-count").classList.add("has-value");
-        }
-      });
-    });
+  function formatDateLong(iso) {
+    if (!iso) return "date TBD";
+    const d = new Date(iso + "T12:00:00");
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  }
+  function formatDateShort(iso) {
+    if (!iso) return "TBD";
+    const d = new Date(iso + "T12:00:00");
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   }
 
   function renderLegend() {
@@ -331,161 +455,15 @@
     }).join("");
   }
 
-  // Pre-fill each player's HCP with their live running handicap when
+  // Pre-fill a player's HCP with their live running handicap when
   // available; fall back to the static roster value. The organizer can
-  // always type over it — whatever is in the field gets snapshotted
+  // always adjust it — whatever the wizard holds gets snapshotted
   // into the round.
   function prefillFor(p) {
     const rh = runningHcp?.get(p.id);
     if (rh && Number.isFinite(rh.current)) return { hcp: rh.current, source: "running" };
     if (Number.isFinite(p.currentHandicap)) return { hcp: p.currentHandicap, source: "static" };
     return { hcp: null, source: null };
-  }
-
-  function renderPlayerCards() {
-    const root = $("#player-cards");
-    root.innerHTML = players.map(p => {
-      const pre = prefillFor(p);
-      return `
-      <div class="player-card is-dnp" data-pid="${p.id}" data-attended="false" data-holes="18">
-        <div class="pc-head">
-          <div class="avatar">${initials(p.name)}</div>
-          <div>
-            <div class="pname">${p.name}</div>
-            <div class="phint">HCP ${pre.hcp ?? "—"}${pre.source === "running" ? " · running" : ""}</div>
-          </div>
-          <div class="spacer"></div>
-          <button class="pc-toggle" type="button" data-action="toggle-attended">DNP</button>
-          <div class="pts zero" aria-label="round points">
-            <span class="lbl">Pts</span>
-            <span class="val">0</span>
-          </div>
-        </div>
-        <div class="pc-row">
-          <div class="pc-field">
-            <span class="pc-label">Holes</span>
-            <div class="pc-segmented" role="group">
-              <button type="button" data-action="set-holes" data-holes="9">9</button>
-              <button type="button" class="is-on" data-action="set-holes" data-holes="18">18</button>
-            </div>
-          </div>
-          <div class="pc-field">
-            <span class="pc-label">HCP</span>
-            <input type="number" class="hcp" min="0" max="60" step="1" inputmode="numeric" value="${pre.hcp ?? ''}" placeholder="—" />
-          </div>
-        </div>
-        <div class="pc-row three">
-          <div class="pc-field">
-            <span class="pc-label">Gross</span>
-            <input type="number" class="gross" min="20" max="200" step="1" inputmode="numeric" placeholder="—" />
-          </div>
-          <div class="pc-field">
-            <span class="pc-label">Net</span>
-            <div class="pc-net">—</div>
-          </div>
-          <div class="pc-field" style="display:flex; align-items:flex-end;">
-            <span class="phint" style="font-size:11px; color:var(--text-mute);">Net = Gross − HCP. Low Round goes to lowest net.</span>
-          </div>
-        </div>
-        <div class="pc-counts">
-          ${COUNT_FIELDS.map(f => `
-            <div class="pc-count" data-field="${f.key}">
-              <div class="lbl">${f.label}</div>
-              <input type="number" min="0" max="18" step="1" inputmode="numeric" data-key="${f.key}" placeholder="0">
-              <div class="pts-hint">×${f.pts}</div>
-            </div>
-          `).join("")}
-        </div>
-        <div class="pc-low-round">+3 Low Round</div>
-        <div class="pc-penalty"></div>
-      </div>
-    `; }).join("");
-  }
-
-  function bindEvents() {
-    const root = $("#player-cards");
-    root.addEventListener("click", (e) => {
-      const card = e.target.closest(".player-card");
-      if (!card) return;
-      if (e.target.matches('[data-action="toggle-attended"]')) {
-        const wasOn = card.dataset.attended === "true";
-        card.dataset.attended = (!wasOn).toString();
-        card.classList.toggle("is-dnp", wasOn);
-        e.target.classList.toggle("is-on", !wasOn);
-        e.target.textContent = !wasOn ? "Played" : "DNP";
-        refreshAll();
-      }
-      if (e.target.matches('[data-action="set-holes"]')) {
-        const holes = e.target.dataset.holes;
-        card.dataset.holes = holes;
-        $$('[data-action="set-holes"]', card).forEach(b => b.classList.toggle("is-on", b.dataset.holes === holes));
-        refreshAll();
-      }
-    });
-    root.addEventListener("input", (e) => {
-      if (e.target.matches('input[type="number"]')) {
-        const card = e.target.closest(".player-card");
-        // mark count cells with value
-        if (e.target.dataset.key) {
-          const cell = e.target.closest(".pc-count");
-          const v = parseInt(e.target.value, 10);
-          cell.classList.toggle("has-value", Number.isFinite(v) && v > 0);
-        }
-        // auto-mark attended if user starts typing scores
-        if ((e.target.classList.contains("gross") || e.target.dataset.key) && card.dataset.attended !== "true") {
-          card.dataset.attended = "true";
-          card.classList.remove("is-dnp");
-          const tog = $('[data-action="toggle-attended"]', card);
-          tog.classList.add("is-on"); tog.textContent = "Played";
-        }
-        refreshAll();
-      }
-    });
-    ["#f-date","#f-course","#f-tees","#f-organizer","#f-course-par","#f-course-slope","#f-course-rating"].forEach(s => {
-      $(s).addEventListener("input", refreshAll);
-      $(s).addEventListener("change", refreshAll);
-    });
-    $("#btn-save").addEventListener("click", onSave);
-    $("#btn-copy").addEventListener("click", onCopy);
-    $("#btn-download").addEventListener("click", onDownload);
-    $("#btn-clear").addEventListener("click", onClear);
-
-    // Sync triggers: drain the queue whenever it could plausibly succeed.
-    window.addEventListener("online", syncQueue);
-    setInterval(syncQueue, 30000);
-    if (window.GolfSync) {
-      refreshPending();
-      syncQueue();
-    } else {
-      window.addEventListener("golf-sync-ready", () => { refreshPending(); syncQueue(); }, { once: true });
-    }
-  }
-
-  function readCard(card) {
-    const pid = card.dataset.pid;
-    const player = players.find(p => p.id === pid);
-    const attended = card.dataset.attended === "true";
-    const holesPlayed = parseInt(card.dataset.holes, 10) || null;
-    const gross = parseInt($(".gross", card).value, 10);
-    const hcp = parseInt($(".hcp", card).value, 10);
-    const counts = {};
-    COUNT_FIELDS.forEach(f => {
-      const v = parseInt($(`input[data-key="${f.key}"]`, card).value, 10);
-      counts[f.key] = Number.isFinite(v) && v > 0 ? v : 0;
-    });
-    return {
-      playerId: pid,
-      name: player.name,
-      attended,
-      holesPlayed: attended ? holesPlayed : null,
-      gross: attended && Number.isFinite(gross) ? gross : null,
-      handicap: Number.isFinite(hcp) ? hcp : null,
-      pars: counts.pars,
-      birdies: counts.birdies,
-      eagles: counts.eagles,
-      albatrosses: counts.albatrosses,
-      holeInOnes: counts.holeInOnes,
-    };
   }
 
   // ── Course picker helpers ──────────────────────────────────────────
@@ -496,7 +474,7 @@
   }
 
   function matchedCourse() {
-    const name = $("#f-course").value.trim().toLowerCase();
+    const name = (wizard.details.course || "").trim().toLowerCase();
     if (!name) return null;
     return courses.find(c => c.name.toLowerCase() === name) || null;
   }
@@ -505,7 +483,7 @@
   // filled in. Sent as `new_course` in the payload so enter_round()
   // adds it to the course table.
   function newCourseEntry() {
-    const name = $("#f-course").value.trim();
+    const name = (wizard.details.course || "").trim();
     if (!name || matchedCourse()) return null;
     const slope = parseInt($("#f-course-slope").value, 10);
     const rating = parseFloat($("#f-course-rating").value);
@@ -528,30 +506,60 @@
   }
 
   function updateCourseUI() {
-    const name = $("#f-course").value.trim();
+    const name = (wizard.details.course || "").trim();
     const isNew = !!name && !matchedCourse();
     $("#new-course-row").hidden = !isNew;
-    $("#new-course-hint").hidden = !isNew;
+  }
+
+  // ── State → results array (roster order) for the calc engine. ─────
+  function resultRowFor(pid) {
+    const p = playerById(pid);
+    const e = wizard.results[pid];
+    if (!e) {
+      return {
+        playerId: pid, name: p?.name, attended: false, holesPlayed: null,
+        gross: null, handicap: prefillFor(p || {}).hcp,
+        pars: 0, birdies: 0, eagles: 0, albatrosses: 0, holeInOnes: 0,
+      };
+    }
+    return {
+      playerId: pid,
+      name: p?.name,
+      attended: !!e.attended,
+      holesPlayed: e.attended ? (e.holesPlayed || 18) : null,
+      gross: e.attended && Number.isFinite(e.gross) ? e.gross : null,
+      handicap: Number.isFinite(e.hcp) ? e.hcp : null,
+      pars: e.pars || 0,
+      birdies: e.birdies || 0,
+      eagles: e.eagles || 0,
+      albatrosses: e.albatrosses || 0,
+      holeInOnes: e.holeInOnes || 0,
+    };
   }
 
   function collectAll() {
-    const results = $$(".player-card").map(readCard);
+    const results = players.map(p => resultRowFor(p.id));
     return window.GolfCalc.computeRoundPoints({ results }, currentCoursePar());
   }
 
+  function attendedIds() {
+    return players.filter(p => wizard.results[p.id]?.attended).map(p => p.id);
+  }
+
   function buildRound() {
-    const date = $("#f-date").value;
-    const course = $("#f-course").value.trim();
-    const organizer = $("#f-organizer").value || null;
-    const tees = $("#f-tees").value.split(",").map(s => s.trim()).filter(Boolean);
+    const date = wizard.details.date;
+    const course = (wizard.details.course || "").trim();
+    const organizer = wizard.details.organizer || null;
+    const tees = (wizard.details.tees || "").split(",").map(s => s.trim()).filter(Boolean);
     const all = collectAll();
+    const originals = new Set(wizard.editingOriginalPlayerIds || []);
     // Persist to file shape: drop the convenience fields (net, lowRound, points) — they're derived on read.
     // Edit mode: also keep any player who was in the original round, so toggling DNP persists as attended=false rather than silently leaving the old row.
     const results = all
-      .filter(r => r.attended || r.gross != null || r.pars || r.birdies || r.eagles || r.albatrosses || r.holeInOnes || (editingOriginalPlayerIds && editingOriginalPlayerIds.has(r.playerId)))
+      .filter(r => r.attended || r.gross != null || r.pars || r.birdies || r.eagles || r.albatrosses || r.holeInOnes || originals.has(r.playerId))
       .map(({ net, lowRound, lowRoundPts, points, penalty, ...rest }) => rest);
     return {
-      id: editingRoundId || roundId(date, course),
+      id: wizard.roundId || roundId(date, course),
       date, course,
       courseId: matchedCourse()?.id ?? newCourseEntry()?.id ?? null,
       organizer,
@@ -566,39 +574,244 @@
     return `${date || "undated"}-${slug}`;
   }
 
-  function refreshAll() {
+  /* ==================================================================
+     Rendering — one active screen at a time, driven by wizard.step.
+     ================================================================== */
+
+  const STEP_SCREENS = {
+    home: "screen-home", details: "screen-details", confirm: "screen-confirm",
+    players: "screen-players", player: "screen-player", review: "screen-review",
+    done: "screen-done",
+  };
+
+  function go(step) {
+    wizard.step = step;
+    showStatus("", true);
+    saveDraft();
+    render();
+    window.scrollTo({ top: 0 });
+  }
+
+  function render() {
+    for (const [step, id] of Object.entries(STEP_SCREENS)) {
+      document.getElementById(id).classList.toggle("is-active", wizard.step === step);
+    }
+    if (wizard.step === "home")    renderHome();
+    if (wizard.step === "details") renderDetails();
+    if (wizard.step === "confirm") renderConfirm();
+    if (wizard.step === "players") renderPlayersGrid();
+    if (wizard.step === "player")  renderPlayerScreen();
+    if (wizard.step === "review")  renderReview();
+    if (wizard.step === "done")    renderDone();
+    renderProgress();
+    renderNav();
+  }
+
+  // ── Home ───────────────────────────────────────────────────────────
+  function renderHome() {
+    const resume = loadDraft();
+    const resumeEl = $("#home-resume");
+    if (resume && resume.details?.course) {
+      const entered = Object.values(resume.results || {}).filter(r => r.attended && Number.isFinite(r.gross)).length;
+      const what = resume.mode === "schedule" ? "Planning" : "Scoring";
+      resumeEl.innerHTML = `
+        <div class="resume-card">
+          <div class="resume-label">In progress</div>
+          <div class="resume-title">${what} — ${escapeText(resume.details.course)}${entered ? ` · ${entered} score${entered === 1 ? "" : "s"} entered` : ""}</div>
+          <div class="actions" style="margin-top:12px;">
+            <button class="btn primary" type="button" data-action="resume">Continue</button>
+            <button class="btn ghost" type="button" data-action="discard-draft">Start over</button>
+          </div>
+        </div>`;
+    } else {
+      resumeEl.innerHTML = "";
+    }
+
+    const upcoming = nextUpcomingRound();
+    const past = recentPlayedRounds();
+    $("#home-actions").innerHTML = `
+      ${upcoming ? `
+        <button class="btn btn-lg primary hero-btn" type="button" data-action="score-upcoming" data-round="${escapeText(upcoming.id)}">
+          <span class="hero-btn-main">Enter scores</span>
+          <span class="hero-btn-sub">${escapeText(upcoming.course || "Round")} · ${formatDateLong(upcoming.date)}</span>
+        </button>` : `
+        <button class="btn btn-lg primary hero-btn" type="button" data-action="score-new">
+          <span class="hero-btn-main">Enter scores</span>
+          <span class="hero-btn-sub">for a round played today</span>
+        </button>`}
+      <button class="btn btn-lg hero-btn" type="button" data-action="schedule-new">
+        <span class="hero-btn-main">Plan a future round</span>
+        <span class="hero-btn-sub">pick the date and course — no scores needed</span>
+      </button>
+      ${past.length ? `
+        <details class="past-rounds">
+          <summary>Fix a past round</summary>
+          ${past.map(r => `
+            <button class="btn past-round-btn" type="button" data-action="edit-round" data-round="${escapeText(r.id)}">
+              ${escapeText(r.course || "Round")} · ${formatDateShort(r.date)}
+            </button>`).join("")}
+        </details>` : ""}
+    `;
+    refreshPending();
+  }
+
+  // ── Details ────────────────────────────────────────────────────────
+  function renderDetails() {
+    $("#details-title").textContent = wizard.mode === "schedule" ? "Plan a round" : "Round details";
+    $("#f-date").value = wizard.details.date || "";
+    $("#f-course").value = wizard.details.course || "";
+    $("#f-organizer").value = wizard.details.organizer || "";
+    $("#f-tees").value = wizard.details.tees || "";
     updateCourseUI();
-    // Update each card's per-card net + points + low-round flag
+  }
+
+  // ── Confirm (schedule) ─────────────────────────────────────────────
+  function renderConfirm() {
+    const d = wizard.details;
+    const nc = newCourseEntry();
+    $("#confirm-card").innerHTML = `
+      <div class="confirm-line big">${escapeText(d.course || "—")}</div>
+      <div class="confirm-line">${formatDateLong(d.date)}</div>
+      ${d.organizer ? `<div class="confirm-line muted">Organizer: ${escapeText(d.organizer)}</div>` : ""}
+      ${(d.tees || "").trim() ? `<div class="confirm-line muted">Tee times: ${escapeText(d.tees)}</div>` : ""}
+      ${nc ? `<div class="confirm-line muted">New course — par ${nc.par}, slope ${nc.slope}, rating ${nc.rating}</div>` : ""}
+    `;
+  }
+
+  // ── Players grid ───────────────────────────────────────────────────
+  function renderPlayersGrid() {
+    $("#player-grid").innerHTML = players.map(p => {
+      const on = !!wizard.results[p.id]?.attended;
+      const pre = prefillFor(p);
+      return `
+        <button class="player-tile ${on ? "is-on" : ""}" type="button" aria-pressed="${on}" data-action="toggle-player" data-pid="${p.id}">
+          <span class="tile-check">✓</span>
+          <span class="avatar">${initials(p.name)}</span>
+          <span class="tile-name">${escapeText(p.name)}</span>
+          <span class="tile-hint">${pre.hcp != null ? `HCP ${pre.hcp}` : ""}</span>
+        </button>`;
+    }).join("");
+  }
+
+  function togglePlayer(pid) {
+    const existing = wizard.results[pid];
+    if (existing) {
+      existing.attended = !existing.attended;
+    } else {
+      const pre = prefillFor(playerById(pid) || {});
+      wizard.results[pid] = {
+        attended: true, holesPlayed: 18, hcp: pre.hcp, gross: null,
+        pars: 0, birdies: 0, eagles: 0, albatrosses: 0, holeInOnes: 0,
+      };
+    }
+    saveDraft();
+    renderPlayersGrid();
+  }
+
+  // ── Single player screen ───────────────────────────────────────────
+  function currentPid() {
+    const ids = attendedIds();
+    if (!ids.length) return null;
+    wizard.playerIndex = Math.min(Math.max(wizard.playerIndex, 0), ids.length - 1);
+    return ids[wizard.playerIndex];
+  }
+
+  function renderPlayerScreen() {
+    const pid = currentPid();
+    if (!pid) { go("players"); return; }
+    const p = playerById(pid);
+    const e = wizard.results[pid];
+    const pre = prefillFor(p);
+    const hcpSource = (e.hcp != null && e.hcp === pre.hcp && pre.source === "running") ? " (running)" : "";
+    $("#player-screen").innerHTML = `
+      <div class="player-heading">
+        <span class="avatar is-big">${initials(p.name)}</span>
+        <div>
+          <h1>${escapeText(p.name)}</h1>
+          <div class="wiz-help" style="margin:0;">Handicap ${e.hcp ?? "—"}${hcpSource}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="pc-field">
+          <span class="pc-label">Holes played</span>
+          <div class="pc-segmented is-big" role="group">
+            <button type="button" class="${e.holesPlayed === 9 ? "is-on" : ""}" data-action="set-holes" data-holes="9">9 holes</button>
+            <button type="button" class="${e.holesPlayed !== 9 ? "is-on" : ""}" data-action="set-holes" data-holes="18">18 holes</button>
+          </div>
+        </div>
+        <div class="pc-field" style="margin-top: var(--space-4);">
+          <span class="pc-label">Total strokes (gross)</span>
+          <input type="number" class="big-input" id="p-gross" min="20" max="200" step="1" inputmode="numeric" placeholder="—" value="${Number.isFinite(e.gross) ? e.gross : ""}">
+        </div>
+      </div>
+
+      <div class="card">
+        ${COUNT_FIELDS.map(f => `
+          <div class="stepper" data-key="${f.key}">
+            <div class="stepper-label">${f.label}<span class="stepper-pts">+${f.pts} each</span></div>
+            <div class="stepper-controls">
+              <button type="button" class="stepper-btn" data-action="step" data-dir="-1" aria-label="fewer ${f.label}">−</button>
+              <span class="stepper-count ${e[f.key] ? "has-value" : ""}" data-count="${f.key}">${e[f.key] || 0}</span>
+              <button type="button" class="stepper-btn" data-action="step" data-dir="1" aria-label="more ${f.label}">+</button>
+            </div>
+          </div>`).join("")}
+      </div>
+
+      <div class="points-tile" id="player-live"></div>
+
+      <details class="adjust-hcp">
+        <summary>Adjust handicap</summary>
+        <label class="field"><span>Handicap for this round</span>
+          <input type="number" id="p-hcp" min="0" max="60" step="1" inputmode="numeric" value="${e.hcp ?? ""}" placeholder="—">
+        </label>
+      </details>
+    `;
+    updatePlayerLive();
+  }
+
+  function updatePlayerLive() {
+    const pid = currentPid();
+    if (!pid) return;
     const all = collectAll();
-    all.forEach(r => {
-      const card = document.querySelector(`.player-card[data-pid="${r.playerId}"]`);
-      if (!card) return;
-      const ptsEl = $(".pts", card);
-      const valEl = $(".pts .val", card);
-      valEl.textContent = r.points || 0;
-      ptsEl.classList.toggle("zero", !r.points);
-      card.classList.toggle("is-low-round", r.lowRound);
-      card.classList.toggle("is-penalty", r.penalty > 0);
-      const lowEl = $(".pc-low-round", card);
-      if (lowEl && r.lowRound) lowEl.textContent = `+${r.lowRoundPts} Low Round${r.lowRoundPts !== 3 ? " (tie split)" : ""}`;
-      const penaltyEl = $(".pc-penalty", card);
-      if (penaltyEl) penaltyEl.textContent = r.penalty ? `−${r.penalty} Over handicap par` : "";
-      const netEl = $(".pc-net", card);
-      if (netEl) {
-        if (Number.isFinite(r.net)) {
-          netEl.textContent = r.net;
-          netEl.classList.add("is-set");
-        } else {
-          netEl.textContent = Number.isFinite(r.gross) ? "(no HCP)" : "—";
-          netEl.classList.remove("is-set");
-        }
-      }
-    });
-    // summary
+    const r = all.find(x => x.playerId === pid);
+    const el = $("#player-live");
+    if (!el || !r) return;
+    el.innerHTML = `
+      <div class="points-main"><span class="lbl">Points today</span><span class="val">${r.points || 0}</span></div>
+      <div class="points-sub">
+        ${Number.isFinite(r.net) ? `Net ${r.net} (gross − handicap)` : "Net appears once strokes are in"}
+        ${r.lowRound ? `<span class="pc-low-round is-inline">+${r.lowRoundPts} low round${r.lowRoundPts !== 3 ? " (tie)" : ""} so far</span>` : ""}
+        ${r.penalty ? `<span class="pc-penalty is-inline">−${r.penalty} over handicap par</span>` : ""}
+      </div>`;
+  }
+
+  // ── Review ─────────────────────────────────────────────────────────
+  function renderReview() {
+    $("#review-title").textContent = wizard.mode === "edit" ? "Edit the round" : "Check the round";
+    const all = collectAll();
+    const ids = attendedIds();
+    const rows = ids.map((pid, i) => {
+      const r = all.find(x => x.playerId === pid);
+      return `
+        <button class="review-row" type="button" data-action="jump-player" data-index="${i}">
+          <span class="avatar">${initials(r.name)}</span>
+          <span class="review-main">
+            <span class="review-name">${escapeText(r.name)}</span>
+            <span class="review-meta">${Number.isFinite(r.gross) ? `gross ${r.gross} · net ${Number.isFinite(r.net) ? r.net : "—"}` : "no score yet — tap to enter"}${r.lowRound ? " · low round" : ""}${r.penalty ? ` · −${r.penalty} penalty` : ""}</span>
+          </span>
+          <span class="review-pts">${r.points || 0}<span class="review-pts-lbl">pts</span></span>
+          <span class="review-chev">›</span>
+        </button>`;
+    }).join("");
+    $("#review-rows").innerHTML = rows || `<p class="wiz-help">No players yet.</p>`;
+
+    // Summary tiles
     const attended = all.filter(r => r.attended);
     const lowRoundPlayers = all.filter(r => r.lowRound);
     const totalPts = all.reduce((s, r) => s + r.points, 0);
     $("#sum-attended").textContent = attended.length;
+    $("#sum-attended-sub").textContent = `of ${players.length} players`;
     $("#sum-total-pts").textContent = totalPts;
     if (lowRoundPlayers.length) {
       $("#sum-low-round").textContent = lowRoundPlayers[0].net;
@@ -607,7 +820,256 @@
       $("#sum-low-round").textContent = "—";
       $("#sum-low-round-name").textContent = attended.length ? "no 18-hole net yet" : "—";
     }
+
+    const d = wizard.details;
+    $("#review-extras").innerHTML = `
+      <div class="review-extras">
+        <div class="review-details-line">${escapeText(d.course || "—")} · ${formatDateLong(d.date)}</div>
+        <div class="actions">
+          <button class="btn" type="button" data-action="edit-players">Add or remove players</button>
+          <button class="btn" type="button" data-action="edit-details">Change date or course</button>
+        </div>
+      </div>`;
+  }
+
+  // ── Done ───────────────────────────────────────────────────────────
+  function renderDone() {
+    const d = wizard.details;
+    $("#done-summary").textContent = wizard.mode === "schedule"
+      ? `${d.course || "Round"} is on the schedule for ${formatDateLong(d.date)}.`
+      : `${d.course || "Round"} · ${formatDateLong(d.date)} — scores are in.`;
     refreshPreview();
+  }
+
+  // ── Progress dots + sticky nav ─────────────────────────────────────
+  function stepList() {
+    return wizard.mode === "schedule"
+      ? [{ id: "details", label: "Details" }, { id: "confirm", label: "Confirm" }]
+      : [{ id: "details", label: "Details" }, { id: "players", label: "Players" }, { id: "player", label: "Scores" }, { id: "review", label: "Review" }];
+  }
+
+  function renderProgress() {
+    const bar = $("#wiz-progress");
+    if (wizard.step === "home" || wizard.step === "done") { bar.hidden = true; return; }
+    bar.hidden = false;
+    const steps = stepList();
+    const cur = steps.findIndex(s => s.id === wizard.step);
+    $("#wiz-dots").innerHTML = steps.map((s, i) =>
+      `<span class="wiz-dot ${i < cur ? "is-done" : ""} ${i === cur ? "is-current" : ""}" title="${s.label}"></span>`).join("");
+    let label = steps[cur]?.label || "";
+    if (wizard.step === "player") {
+      const ids = attendedIds();
+      label = `Player ${Math.min(wizard.playerIndex + 1, ids.length)} of ${ids.length}`;
+    }
+    $("#wiz-progress-label").textContent = `Step ${cur + 1} of ${steps.length} · ${label}`;
+  }
+
+  function renderNav() {
+    const nav = $("#wiz-nav");
+    const back = $("#btn-back");
+    const next = $("#btn-next");
+    const cfg = navConfig();
+    nav.hidden = !cfg;
+    if (!cfg) return;
+    back.hidden = !cfg.back;
+    back.textContent = cfg.backLabel || "← Back";
+    next.textContent = cfg.nextLabel;
+  }
+
+  function navConfig() {
+    switch (wizard.step) {
+      case "home": case "done": return null;
+      case "details":
+        return { back: true, nextLabel: wizard.mode === "schedule" ? "Next →" : "Next: who played →" };
+      case "confirm":
+        return { back: true, nextLabel: "Save round ✓" };
+      case "players":
+        return { back: true, nextLabel: wizard.returnTo === "review" ? "Back to review →" : "Next: scores →" };
+      case "player": {
+        const ids = attendedIds();
+        const last = wizard.playerIndex >= ids.length - 1;
+        return {
+          back: true,
+          nextLabel: wizard.returnTo === "review" ? "Done →" : (last ? "Review round →" : "Next player →"),
+        };
+      }
+      case "review":
+        return { back: wizard.mode !== "edit", nextLabel: wizard.mode === "edit" ? "Save changes ✓" : "Save round ✓" };
+    }
+  }
+
+  function onBack() {
+    switch (wizard.step) {
+      case "details": go("home"); break;
+      case "confirm": go("details"); break;
+      case "players": wizard.returnTo = null; go(wizard.mode === "edit" ? "review" : "details"); break;
+      case "player":
+        if (wizard.returnTo === "review") { wizard.returnTo = null; go("review"); break; }
+        if (wizard.playerIndex > 0) { wizard.playerIndex--; go("player"); }
+        else go("players");
+        break;
+      case "review": {
+        const ids = attendedIds();
+        wizard.playerIndex = Math.max(ids.length - 1, 0);
+        go(ids.length ? "player" : "players");
+        break;
+      }
+    }
+  }
+
+  function onNext() {
+    switch (wizard.step) {
+      case "details": {
+        if (!wizard.details.date || !(wizard.details.course || "").trim()) {
+          return showStatus("A date and course are needed first.", false);
+        }
+        if (!matchedCourse() && !newCourseEntry()) {
+          return showStatus("New course — fill in its slope and rating above.", false);
+        }
+        if (wizard.mode === "schedule") go("confirm");
+        else if (wizard.mode === "edit") go("review");
+        else go("players");
+        break;
+      }
+      case "confirm": onSave(); break;
+      case "players": {
+        if (!attendedIds().length) return showStatus("Tap at least one player who came out.", false);
+        if (wizard.returnTo === "review") { wizard.returnTo = null; go("review"); break; }
+        wizard.playerIndex = 0;
+        go("player");
+        break;
+      }
+      case "player": {
+        if (wizard.returnTo === "review") { wizard.returnTo = null; go("review"); break; }
+        const ids = attendedIds();
+        if (wizard.playerIndex < ids.length - 1) { wizard.playerIndex++; go("player"); }
+        else go("review");
+        break;
+      }
+      case "review": onSave(); break;
+    }
+  }
+
+  /* ==================================================================
+     Events
+     ================================================================== */
+  function bindEvents() {
+    // Details inputs → state.
+    $("#f-date").addEventListener("input", () => { wizard.details.date = $("#f-date").value; saveDraft(); });
+    $("#f-course").addEventListener("input", () => { wizard.details.course = $("#f-course").value; updateCourseUI(); saveDraft(); });
+    $("#f-organizer").addEventListener("change", () => { wizard.details.organizer = $("#f-organizer").value; saveDraft(); });
+    $("#f-tees").addEventListener("input", () => { wizard.details.tees = $("#f-tees").value; saveDraft(); });
+
+    // Delegated clicks: home actions, player tiles, steppers, review rows.
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-action]");
+      if (!btn) return;
+      const action = btn.dataset.action;
+
+      if (action === "resume") {
+        const draft = loadDraft();
+        if (draft) { wizard = draft; render(); window.scrollTo({ top: 0 }); }
+        return;
+      }
+      if (action === "discard-draft") { clearDraft(); renderHome(); return; }
+      if (action === "score-upcoming") {
+        const round = findRound(btn.dataset.round);
+        wizard = blankWizard();
+        if (round) hydrateFromRound(round);
+        wizard.mode = "score";
+        go("details");
+        return;
+      }
+      if (action === "score-new") {
+        wizard = blankWizard();
+        wizard.mode = "score";
+        seedFreshDetails();
+        go("details");
+        return;
+      }
+      if (action === "schedule-new") {
+        wizard = blankWizard();
+        wizard.mode = "schedule";
+        seedFreshDetails();
+        go("details");
+        return;
+      }
+      if (action === "edit-round") {
+        const round = findRound(btn.dataset.round);
+        if (!round) return showStatus("Could not load that round.", false);
+        wizard = blankWizard();
+        hydrateFromRound(round);
+        wizard.mode = "edit";
+        go("review");
+        return;
+      }
+      if (action === "toggle-player") { togglePlayer(btn.dataset.pid); return; }
+      if (action === "set-holes") {
+        const pid = currentPid();
+        if (pid) {
+          wizard.results[pid].holesPlayed = parseInt(btn.dataset.holes, 10);
+          saveDraft();
+          renderPlayerScreen();
+          renderProgress();
+        }
+        return;
+      }
+      if (action === "step") {
+        const pid = currentPid();
+        const key = btn.closest(".stepper")?.dataset.key;
+        if (pid && key) {
+          const e2 = wizard.results[pid];
+          e2[key] = Math.max(0, Math.min(18, (e2[key] || 0) + parseInt(btn.dataset.dir, 10)));
+          const countEl = $(`.stepper-count[data-count="${key}"]`);
+          if (countEl) { countEl.textContent = e2[key]; countEl.classList.toggle("has-value", e2[key] > 0); }
+          saveDraft();
+          updatePlayerLive();
+        }
+        return;
+      }
+      if (action === "jump-player") {
+        wizard.playerIndex = parseInt(btn.dataset.index, 10) || 0;
+        wizard.returnTo = "review";
+        go("player");
+        return;
+      }
+      if (action === "edit-players") { wizard.returnTo = "review"; go("players"); return; }
+      if (action === "edit-details") { go("details"); return; }
+    });
+
+    // Player-screen inputs (delegated — the screen re-renders per player).
+    document.addEventListener("input", (e) => {
+      if (e.target.id === "p-gross") {
+        const pid = currentPid();
+        if (pid) {
+          const v = parseInt(e.target.value, 10);
+          wizard.results[pid].gross = Number.isFinite(v) ? v : null;
+          saveDraft();
+          updatePlayerLive();
+        }
+      }
+      if (e.target.id === "p-hcp") {
+        const pid = currentPid();
+        if (pid) {
+          const v = parseInt(e.target.value, 10);
+          wizard.results[pid].hcp = Number.isFinite(v) ? v : null;
+          saveDraft();
+          updatePlayerLive();
+        }
+      }
+    });
+
+    $("#btn-back").addEventListener("click", onBack);
+    $("#btn-next").addEventListener("click", onNext);
+    $("#btn-copy").addEventListener("click", onCopy);
+    $("#btn-download").addEventListener("click", onDownload);
+    $("#btn-again").addEventListener("click", () => { wizard = blankWizard(); clearDraft(); render(); });
+
+    // Sync triggers: drain the queue whenever it could plausibly succeed.
+    window.addEventListener("online", syncQueue);
+    setInterval(syncQueue, 30000);
+    refreshPending();
+    syncQueue();
   }
 
   function buildUpdatedGolfJson() {
@@ -633,10 +1095,10 @@
 
   function persistRoundDetails() {
     localStorage.setItem(ROUND_DETAILS_KEY, JSON.stringify({
-      date: $("#f-date").value,
-      course: $("#f-course").value,
-      organizer: $("#f-organizer").value,
-      tees: $("#f-tees").value,
+      date: wizard.details.date,
+      course: wizard.details.course,
+      organizer: wizard.details.organizer,
+      tees: wizard.details.tees,
     }));
   }
 
@@ -678,7 +1140,10 @@
   async function onSave() {
     const round = buildRound();
     if (!round.date || !round.course) return showStatus("Date and course are required.", false);
-    if (round.results.length === 0 && !editingRoundId) return showStatus("Mark at least one player as Played, or this isn't a saveable round.", false);
+    // Scheduling a future round needs no scores; scoring/editing does.
+    if (wizard.mode !== "schedule" && round.results.length === 0 && !wizard.roundId) {
+      return showStatus("Tap at least one player who came out.", false);
+    }
     if (!window.GolfSync) return showStatus("Sync library still loading — try again in a second.", false);
 
     persistRoundDetails();
@@ -688,7 +1153,9 @@
       return showStatus(`Could not save locally: ${e.message}`, false);
     }
     saveCount++;
-    showStatus(`Saved locally (${saveCount}). Round id: ${round.id}.`, true);
+    clearDraft();
+    wizard.roundId = round.id;   // so "Enter another round" starts clean but done screen can reference it
+    go("done");
     await refreshPending();
     syncQueue();
   }
@@ -758,6 +1225,11 @@
     } else {
       el.hidden = true;
     }
+    const home = $("#home-pending");
+    if (home) {
+      home.hidden = n === 0;
+      home.textContent = n > 0 ? `${n} saved round${n === 1 ? "" : "s"} waiting to sync — they'll send automatically once you're connected.` : "";
+    }
   }
 
   // Panic-button fallbacks — preserved from the file-replacement era so the
@@ -782,26 +1254,15 @@
     showStatus("Downloaded golf.json.", true);
   }
 
-  function onClear() {
-    $$(".player-card").forEach(card => {
-      card.dataset.attended = "false";
-      card.dataset.holes = "18";
-      card.classList.add("is-dnp"); card.classList.remove("is-low-round");
-      const tog = $('[data-action="toggle-attended"]', card);
-      tog.classList.remove("is-on"); tog.textContent = "DNP";
-      $$('[data-action="set-holes"]', card).forEach(b => b.classList.toggle("is-on", b.dataset.holes === "18"));
-      $(".gross", card).value = "";
-      $$(".pc-count input", card).forEach(i => i.value = "");
-      $$(".pc-count", card).forEach(c => c.classList.remove("has-value"));
-    });
-    refreshAll();
-  }
-
   function showStatus(msg, ok) {
-    const s = $("#status");
-    s.textContent = msg;
-    s.classList.toggle("is-ok", !!ok);
-    s.classList.toggle("is-err", !ok);
+    // The sticky-nav status is hidden on the done screen, which has its
+    // own status element for the backup buttons — write to both.
+    for (const s of [$("#status"), $("#status-done")]) {
+      if (!s) continue;
+      s.textContent = msg;
+      s.classList.toggle("is-ok", !!ok && !!msg);
+      s.classList.toggle("is-err", !ok && !!msg);
+    }
   }
 
   init();
