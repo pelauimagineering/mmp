@@ -18,7 +18,6 @@ MMP Challenge Sup/                       # workspace folder ("Sup" is a typo —
 ├── INFORMATION_ARCHITECTURE.md          # design doc (not deployed)
 ├── data/findings.md                     # data analysis (not deployed)
 ├── mockup.html                          # design mockup (not deployed)
-├── admin.html                           # legacy of score-entry; do not deploy
 └── MMP Poker Final 2025-26.xlsx         # source of truth for poker (not deployed)
 ```
 
@@ -41,7 +40,7 @@ That's the whole production payload — about **140 KB** before gzip.
 
 ### What NOT to upload
 
-`admin.html`, `mockup.html`, `INFORMATION_ARCHITECTURE.md`, `data/findings.md`, `scripts/`, the `*.xlsx` source files. They're either superseded, internal, or sensitive enough that they don't belong on the public web.
+`mockup.html`, `INFORMATION_ARCHITECTURE.md`, `data/findings.md`, `scripts/`, the `*.xlsx` source files. They're either superseded, internal, or sensitive enough that they don't belong on the public web.
 
 A safe `rsync` recipe from the project root:
 
@@ -116,12 +115,13 @@ The script picks the most recently modified `MMP Poker*.xlsx` in the project roo
 
 ### Golf (during the season, multiple rounds per week)
 
-1. After the round, open `score-entry.html` (URL: `https://yoursite/score-entry.html`).
-2. The form pre-loads the next scheduled round (date, course, organizer, tee times). Fill in each player's gross score; net is computed live.
-3. Tap **Save round & download golf.json** — the browser downloads the updated file.
-4. Replace `data/golf.json` on the server (drag-drop in cPanel, or `scp data/golf.json …`).
+Open `score-entry.html` — a guided wizard designed for phones:
 
-The page works equally well on phone or laptop, including offline (it falls back to a built-in roster if `data/players.json` isn't reachable).
+- **Plan a future round**: date + course, done. No scores needed until game day.
+- **Enter scores**: pick who played, then one screen per player (gross + big − / + steppers for pars, birdies, etc.). Handicaps pre-fill from the running-handicap engine.
+- **Fix a past round**: opens on a review screen; tap a player to correct them.
+
+Saves queue locally and sync to Supabase (passphrase-gated) whenever there's signal, so the page works fully offline at the course. The live leaderboard updates itself — no file uploads.
 
 ### Adding a new player or changing handicaps
 

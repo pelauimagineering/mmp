@@ -43,7 +43,7 @@
     <div class="season-picker" id="season-picker" role="tablist" aria-label="Season"></div>
     <div class="right-rail">
       <a class="enter-scores golf-only" id="header-enter-scores" href="score-entry.html">Enter scores</a>
-      <a class="enter-scores secondary golf-only" id="header-create-round" href="admin.html">Create round</a>
+      <a class="enter-scores secondary golf-only" id="header-create-round" href="score-entry.html?mode=schedule">Plan a round</a>
       <a class="all-time-link" id="all-time-link" href="#/poker/all-time">All-time →</a>
     </div>
   </div>
@@ -845,7 +845,7 @@ function renderGolfRoundDetail(root, season, round) {
           <p>Results will appear here once entered.</p>
           <p style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
             <a class="enter-scores" href="score-entry.html?roundId=${encodeURIComponent(round.id)}">Enter scores for this round</a>
-            <a class="enter-scores secondary" href="score-entry.html?roundId=${encodeURIComponent(round.id)}">Edit round details</a>
+            <a class="enter-scores secondary" href="score-entry.html?mode=schedule&roundId=${encodeURIComponent(round.id)}">Edit round details</a>
           </p>
         </div>
       </div>
