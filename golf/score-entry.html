@@ -88,6 +88,23 @@
     </div>
   </section>
 
+  <!-- ── Edit a course (par / slope / rating) ────────────────────── -->
+  <section class="wiz-screen" id="screen-course">
+    <h1>Edit a course</h1>
+    <p class="wiz-help">Fix a course's par, slope or rating. Every past round at the course is rescored automatically.</p>
+    <div class="card">
+      <label class="field"><span>Course</span>
+        <select id="ec-course"><option value="">Choose a course…</option></select>
+      </label>
+      <div class="field-row">
+        <label class="field"><span>Par</span><input type="number" id="ec-par" min="54" max="80" step="1" inputmode="numeric"></label>
+        <label class="field"><span>Slope</span><input type="number" id="ec-slope" min="55" max="155" step="1" inputmode="numeric"></label>
+        <label class="field"><span>Rating</span><input type="number" id="ec-rating" min="55" max="80" step="0.1" inputmode="decimal"></label>
+      </div>
+      <p class="hint" id="ec-warning" hidden>Changing slope or rating shifts the handicap index of every round played here — running handicaps and future pre-fills update on the next load.</p>
+    </div>
+  </section>
+
   <!-- ── Confirm (schedule branch) ───────────────────────────────── -->
   <section class="wiz-screen" id="screen-confirm">
     <h1>Does this look right?</h1>
@@ -225,8 +242,8 @@
 
   // ── Wizard state: the single source of truth, JSON-serializable. ──
   const blankWizard = () => ({
-    mode: null,        // 'score' | 'schedule' | 'edit'
-    step: "home",      // 'home' | 'details' | 'confirm' | 'players' | 'player' | 'review' | 'done'
+    mode: null,        // 'score' | 'schedule' | 'edit' | 'course'
+    step: "home",      // 'home' | 'details' | 'confirm' | 'players' | 'player' | 'review' | 'done' | 'course'
     playerIndex: 0,
     returnTo: null,    // 'review' when a review row jumped into a player screen
     roundId: null,
@@ -363,6 +380,13 @@
       return;
     }
 
+    if (requestedMode === "course") {
+      wizard = blankWizard();
+      wizard.mode = "course";
+      wizard.step = "course";
+      return;
+    }
+
     // Bare visit: land on home. A recent draft shows as a resume card.
     wizard = blankWizard();
   }
@@ -474,9 +498,13 @@
   }
 
   function matchedCourse() {
-    const name = (wizard.details.course || "").trim().toLowerCase();
-    if (!name) return null;
-    return courses.find(c => c.name.toLowerCase() === name) || null;
+    const raw = (wizard.details.course || "").trim();
+    if (!raw) return null;
+    // Match by slug too, so "Kedron-Dells" finds "Kedron Dells" instead of
+    // being treated as a new course that would collide with its id.
+    const name = raw.toLowerCase();
+    const slug = window.GolfCalc.slugify(raw);
+    return courses.find(c => c.name.toLowerCase() === name || c.id === slug) || null;
   }
 
   // A brand-new course typed into the picker, once slope + rating are
@@ -490,7 +518,7 @@
     if (!Number.isFinite(slope) || !Number.isFinite(rating)) return null;
     const par = parseInt($("#f-course-par").value, 10);
     return {
-      id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      id: window.GolfCalc.slugify(name),
       name,
       par: Number.isFinite(par) ? par : 72,
       slope,
@@ -570,7 +598,7 @@
   }
 
   function roundId(date, course) {
-    const slug = (course || "round").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug = window.GolfCalc.slugify(course || "round") || "round";
     return `${date || "undated"}-${slug}`;
   }
 
@@ -581,7 +609,7 @@
   const STEP_SCREENS = {
     home: "screen-home", details: "screen-details", confirm: "screen-confirm",
     players: "screen-players", player: "screen-player", review: "screen-review",
-    done: "screen-done",
+    done: "screen-done", course: "screen-course",
   };
 
   function go(step) {
@@ -603,6 +631,7 @@
     if (wizard.step === "player")  renderPlayerScreen();
     if (wizard.step === "review")  renderReview();
     if (wizard.step === "done")    renderDone();
+    if (wizard.step === "course")  renderCourseEdit();
     renderProgress();
     renderNav();
   }
@@ -642,6 +671,10 @@
       <button class="btn btn-lg hero-btn" type="button" data-action="schedule-new">
         <span class="hero-btn-main">Plan a future round</span>
         <span class="hero-btn-sub">pick the date and course — no scores needed</span>
+      </button>
+      <button class="btn btn-lg hero-btn" type="button" data-action="edit-course">
+        <span class="hero-btn-main">Edit a course</span>
+        <span class="hero-btn-sub">fix par, slope or rating — rescores past rounds</span>
       </button>
       ${past.length ? `
         <details class="past-rounds">
@@ -841,6 +874,71 @@
     refreshPreview();
   }
 
+  // ── Edit course ────────────────────────────────────────────────────
+  function renderCourseEdit() {
+    const sel = $("#ec-course");
+    const current = sel.value;
+    sel.innerHTML = `<option value="">Choose a course…</option>` +
+      [...courses].sort((a, b) => a.name.localeCompare(b.name))
+        .map(c => `<option value="${escapeText(c.id)}">${escapeText(c.name)}</option>`).join("");
+    sel.value = current;
+    prefillCourseForm();
+  }
+
+  function prefillCourseForm() {
+    const c = courses.find(x => x.id === $("#ec-course").value) || null;
+    $("#ec-par").value = c ? (c.par ?? 72) : "";
+    $("#ec-slope").value = c ? (c.slope ?? "") : "";
+    $("#ec-rating").value = c ? (c.rating ?? "") : "";
+    updateCourseEditWarning();
+  }
+
+  // Slope/rating shift handicap indexes — warn before the save, not after.
+  function updateCourseEditWarning() {
+    const c = courses.find(x => x.id === $("#ec-course").value) || null;
+    const slope = parseInt($("#ec-slope").value, 10);
+    const rating = parseFloat($("#ec-rating").value);
+    $("#ec-warning").hidden = !c ||
+      ((!Number.isFinite(slope) || slope === c.slope) &&
+       (!Number.isFinite(rating) || rating === Number(c.rating)));
+  }
+
+  async function onSaveCourse() {
+    const id = $("#ec-course").value;
+    if (!id) return showStatus("Pick a course first.", false);
+    const par = parseInt($("#ec-par").value, 10);
+    const slope = parseInt($("#ec-slope").value, 10);
+    const rating = parseFloat($("#ec-rating").value);
+    if (!Number.isFinite(par) || !Number.isFinite(slope) || !Number.isFinite(rating)) {
+      return showStatus("Par, slope and rating are all needed.", false);
+    }
+    // Rare admin action — sent straight to Supabase, never queued, so an
+    // old edit can't replay over a newer one from the offline queue.
+    if (!navigator.onLine) {
+      return showStatus("Course edits need a connection — try again online.", false);
+    }
+    let pass = localStorage.getItem(PASSPHRASE_KEY) || prompt("Score-entry passphrase:");
+    if (!pass) return showStatus("Passphrase required.", false);
+    let supa;
+    try { supa = window.GolfSync.getSupabase(); }
+    catch (e) { return showStatus(e.message, false); }
+
+    showStatus("Saving…", true);
+    const { error } = await supa.rpc("update_course", {
+      p_passphrase: pass,
+      p_payload: { id, par, slope, rating },
+    });
+    if (error) {
+      if (/passphrase/i.test(error.message || "")) localStorage.removeItem(PASSPHRASE_KEY);
+      return showStatus(`Save failed: ${error.message}`, false);
+    }
+    localStorage.setItem(PASSPHRASE_KEY, pass);
+    const c = courses.find(x => x.id === id);
+    if (c) Object.assign(c, { par, slope, rating });  // keep this session's par math fresh
+    updateCourseEditWarning();
+    showStatus(`${c?.name || id} saved — past rounds rescored.`, true);
+  }
+
   // ── Progress dots + sticky nav ─────────────────────────────────────
   function stepList() {
     return wizard.mode === "schedule"
@@ -850,7 +948,7 @@
 
   function renderProgress() {
     const bar = $("#wiz-progress");
-    if (wizard.step === "home" || wizard.step === "done") { bar.hidden = true; return; }
+    if (wizard.step === "home" || wizard.step === "done" || wizard.step === "course") { bar.hidden = true; return; }
     bar.hidden = false;
     const steps = stepList();
     const cur = steps.findIndex(s => s.id === wizard.step);
@@ -895,6 +993,8 @@
       }
       case "review":
         return { back: wizard.mode !== "edit", nextLabel: wizard.mode === "edit" ? "Save changes ✓" : "Save round ✓" };
+      case "course":
+        return { back: true, nextLabel: "Save course ✓" };
     }
   }
 
@@ -902,6 +1002,7 @@
     switch (wizard.step) {
       case "details": go("home"); break;
       case "confirm": go("details"); break;
+      case "course": go("home"); break;
       case "players": wizard.returnTo = null; go(wizard.mode === "edit" ? "review" : "details"); break;
       case "player":
         if (wizard.returnTo === "review") { wizard.returnTo = null; go("review"); break; }
@@ -926,6 +1027,11 @@
         if (!matchedCourse() && !newCourseEntry()) {
           return showStatus("New course — fill in its slope and rating above.", false);
         }
+        // A slug-only match ("Kedron-Dells") saves under the canonical name.
+        const m = matchedCourse();
+        if (m && wizard.details.course.trim() !== m.name) {
+          wizard.details.course = m.name;
+        }
         if (wizard.mode === "schedule") go("confirm");
         else if (wizard.mode === "edit") go("review");
         else go("players");
@@ -947,6 +1053,7 @@
         break;
       }
       case "review": onSave(); break;
+      case "course": onSaveCourse(); break;
     }
   }
 
@@ -959,6 +1066,11 @@
     $("#f-course").addEventListener("input", () => { wizard.details.course = $("#f-course").value; updateCourseUI(); saveDraft(); });
     $("#f-organizer").addEventListener("change", () => { wizard.details.organizer = $("#f-organizer").value; saveDraft(); });
     $("#f-tees").addEventListener("input", () => { wizard.details.tees = $("#f-tees").value; saveDraft(); });
+
+    // Edit-course form.
+    $("#ec-course").addEventListener("change", prefillCourseForm);
+    $("#ec-slope").addEventListener("input", updateCourseEditWarning);
+    $("#ec-rating").addEventListener("input", updateCourseEditWarning);
 
     // Delegated clicks: home actions, player tiles, steppers, review rows.
     document.addEventListener("click", (e) => {
@@ -992,6 +1104,12 @@
         wizard.mode = "schedule";
         seedFreshDetails();
         go("details");
+        return;
+      }
+      if (action === "edit-course") {
+        wizard = blankWizard();
+        wizard.mode = "course";
+        go("course");
         return;
       }
       if (action === "edit-round") {

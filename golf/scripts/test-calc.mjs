@@ -15,6 +15,7 @@ import {
   runningHandicaps,
   computeRoundPoints,
   buildSeasonStandings,
+  slugify,
 } from '../lib/golf-calc.js';
 
 let passed = 0;
@@ -203,6 +204,16 @@ check('handicapBefore chains: event 1 uses the starting handicap', () => {
 check('netOf', () => {
   assert.equal(netOf({ gross: 100, handicap: 22 }), 78);
   assert.equal(netOf({ gross: 100, handicap: null }), null);
+});
+
+// The wizard matches typed course names against course ids via slugify, so
+// punctuation/spacing variants must collapse onto one id (the old bug let
+// "Kedron-Dells" slip past the name match and overwrite kedron-dells).
+check('slugify collapses punctuation variants onto one id', () => {
+  assert.equal(slugify('Kedron-Dells'), 'kedron-dells');
+  assert.equal(slugify('  Kedron  Dells '), 'kedron-dells');
+  assert.equal(slugify("Tam O'Shanter"), 'tam-o-shanter');
+  assert.equal(slugify(null), '');
 });
 
 console.log(`\nAll ${passed} checks passed.`);
