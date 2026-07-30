@@ -247,6 +247,9 @@ function courseOf(round) {
   return c && typeof c === 'object' ? c : null;
 }
 
-function slugName(s) {
+/** Canonical slug used for course ids, round ids and player-name keys. */
+export function slugify(s) {
   return String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
+
+const slugName = slugify;
