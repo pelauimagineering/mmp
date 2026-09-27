@@ -917,7 +917,7 @@
     if (!navigator.onLine) {
       return showStatus("Course edits need a connection — try again online.", false);
     }
-    let pass = localStorage.getItem(PASSPHRASE_KEY) || prompt("Score-entry passphrase:");
+    const pass = localStorage.getItem(PASSPHRASE_KEY) || askPassphrase("Score-entry passphrase:");
     if (!pass) return showStatus("Passphrase required.", false);
     let supa;
     try { supa = window.GolfSync.getSupabase(); }
@@ -928,11 +928,12 @@
       p_passphrase: pass,
       p_payload: { id, par, slope, rating },
     });
-    if (error) {
-      if (/passphrase/i.test(error.message || "")) localStorage.removeItem(PASSPHRASE_KEY);
-      return showStatus(`Save failed: ${error.message}`, false);
+    if (isBadPassphrase(error)) {
+      localStorage.removeItem(PASSPHRASE_KEY);
+      return showStatus("Wrong passphrase — try again.", false);
     }
-    localStorage.setItem(PASSPHRASE_KEY, pass);
+    localStorage.setItem(PASSPHRASE_KEY, pass);   // the server checks it first, so any other outcome means it was accepted
+    if (error) return showStatus(`Save failed: ${error.message}`, false);
     const c = courses.find(x => x.id === id);
     if (c) Object.assign(c, { par, slope, rating });  // keep this session's par math fresh
     updateCourseEditWarning();
@@ -1223,6 +1224,20 @@
   // ── Save flow: queue locally, sync best-effort. Always succeeds offline. ──
   const PASSPHRASE_KEY = "mmp.golf.passphrase";
 
+  // Phone keyboards love to append a space after a word; the server
+  // compares exactly, so trim before it ever leaves the device.
+  function askPassphrase(message) {
+    return (prompt(message) || "").trim() || null;
+  }
+
+  // enter_round / update_course raise SQLSTATE 28000 for a wrong phrase.
+  // Match on that code, not on the word "passphrase": PostgREST's
+  // "Could not find the function …(p_passphrase, p_payload)" errors
+  // contain it too, and used to be reported as a wrong passphrase.
+  function isBadPassphrase(error) {
+    return !!error && (error.code === "28000" || /invalid passphrase/i.test(error.message || ""));
+  }
+
   // RPC payload uses snake_case to match the SQL function signature.
   function buildRoundPayload() {
     const round = buildRound();
@@ -1292,7 +1307,7 @@
 
     let pass = localStorage.getItem(PASSPHRASE_KEY);
     if (!pass) {
-      pass = prompt("Score-entry passphrase (needed to sync):");
+      pass = askPassphrase("Score-entry passphrase (needed to sync):");
       if (!pass) {
         setSyncState("paused", "Sync paused — passphrase required.");
         return;
@@ -1309,19 +1324,22 @@
 
     for (const { id, payload } of pending) {
       const { error } = await supa.rpc("enter_round", { p_passphrase: pass, p_payload: payload });
+      if (isBadPassphrase(error)) {
+        localStorage.removeItem(PASSPHRASE_KEY);
+        setSyncState("paused", "Wrong passphrase — tap the queue chip to retry.");
+        await refreshPending();
+        return;
+      }
+      // Past the passphrase check — remember it even if this round then
+      // failed, so the next retry doesn't ask for it all over again.
+      localStorage.setItem(PASSPHRASE_KEY, pass);
       if (error) {
-        if (/passphrase/i.test(error.message || "")) {
-          localStorage.removeItem(PASSPHRASE_KEY);
-          setSyncState("paused", "Wrong passphrase — tap the queue chip to retry.");
-        } else {
-          setSyncState("paused", `Sync paused: ${error.message}. Will retry.`);
-        }
+        setSyncState("paused", `Sync paused: ${error.message}. Will retry.`);
         await refreshPending();
         return;
       }
       await window.GolfSync.queue.delete(id);
     }
-    localStorage.setItem(PASSPHRASE_KEY, pass);
     await refreshPending();
     setSyncState("synced", "All rounds synced.");
   }

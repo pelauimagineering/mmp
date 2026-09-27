@@ -14,6 +14,11 @@ Schema, RPC, and one-time seed for the live golf scoring backend.
    - `migrations/0004_final_standings.sql`
    - `migrations/0005_enter_round_recompute.sql`
    - `migrations/0006_penalty_rule.sql`
+   - `migrations/0007_limitless_penalty.sql`
+   - `migrations/0008_courses_and_season_players.sql`
+   - `migrations/0009_scoring_fixes.sql`
+   - `migrations/0010_enter_round_course.sql`
+   - `migrations/0011_course_editing.sql`
 5. Set the score-entry passphrase:
    ```sql
    insert into _secret (key, value) values ('golf_passphrase', 'YOUR-PHRASE')
@@ -47,12 +52,23 @@ drains the queue.
 The role grants in `0003_grants.sql` haven't been applied. Run that
 migration in the SQL editor and re-run the seed.
 
-**`42501: new row violates row-level security policy` when calling
-the RPC from the SPA.** The passphrase row is missing or wrong. Run:
+**"Wrong passphrase" on every attempt.** The RPC answers `28000 invalid
+passphrase` both when the phrase doesn't match and when the
+`golf_passphrase` row is missing. Check the row exists, and that it has no
+stray leading/trailing whitespace or unexpected capitals (the form trims
+what's typed, but compares case-sensitively):
+```sql
+select '[' || value || ']' from _secret where key = 'golf_passphrase';
+```
+To (re)set it:
 ```sql
 insert into _secret (key, value) values ('golf_passphrase', '<phrase>')
 on conflict (key) do update set value = excluded.value;
 ```
+
+**`Could not find the function public.update_course(…)` when saving a
+course edit.** Migration `0011_course_editing.sql` hasn't been applied.
+Run it in the SQL editor.
 
 ## Re-seeding
 
