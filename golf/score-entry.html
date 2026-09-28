@@ -174,6 +174,23 @@
     </div>
   </nav>
 
+  <!-- Passphrase entry. Replaces window.prompt(), whose text box lets
+       phone keyboards capitalise and autocorrect the phrase. -->
+  <dialog class="pass-dialog" id="pass-dialog">
+    <form method="dialog">
+      <h2>Score-entry passphrase</h2>
+      <p class="hint" id="pass-reason"></p>
+      <label class="field"><span>Passphrase</span>
+        <input type="password" id="pass-input" autocomplete="current-password"
+               autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done">
+      </label>
+      <div class="pass-actions">
+        <button class="btn ghost" type="button" id="pass-cancel">Cancel</button>
+        <button class="btn primary" value="ok">Continue</button>
+      </div>
+    </form>
+  </dialog>
+
 </main>
 
 <script>
@@ -917,7 +934,7 @@
     if (!navigator.onLine) {
       return showStatus("Course edits need a connection — try again online.", false);
     }
-    const pass = localStorage.getItem(PASSPHRASE_KEY) || askPassphrase("Score-entry passphrase:");
+    const pass = localStorage.getItem(PASSPHRASE_KEY) || await askPassphrase("Needed to save course changes.");
     if (!pass) return showStatus("Passphrase required.", false);
     let supa;
     try { supa = window.GolfSync.getSupabase(); }
@@ -1182,11 +1199,12 @@
     $("#btn-next").addEventListener("click", onNext);
     $("#btn-copy").addEventListener("click", onCopy);
     $("#btn-download").addEventListener("click", onDownload);
+    $("#pass-cancel").addEventListener("click", () => $("#pass-dialog").close("cancel"));
     $("#btn-again").addEventListener("click", () => { wizard = blankWizard(); clearDraft(); render(); });
 
     // Sync triggers: drain the queue whenever it could plausibly succeed.
-    window.addEventListener("online", syncQueue);
-    setInterval(syncQueue, 30000);
+    window.addEventListener("online", () => syncQueue());
+    setInterval(() => syncQueue({ background: true }), 30000);
     refreshPending();
     syncQueue();
   }
@@ -1224,10 +1242,26 @@
   // ── Save flow: queue locally, sync best-effort. Always succeeds offline. ──
   const PASSPHRASE_KEY = "mmp.golf.passphrase";
 
-  // Phone keyboards love to append a space after a word; the server
-  // compares exactly, so trim before it ever leaves the device.
-  function askPassphrase(message) {
-    return (prompt(message) || "").trim() || null;
+  // Resolves to the typed phrase, or null if cancelled. Concurrent callers
+  // (a save and the background sync) share one open dialog. Trimmed because
+  // phone keyboards love a trailing space and the server compares exactly.
+  let passphrasePending = null;
+  function askPassphrase(reason) {
+    if (passphrasePending) return passphrasePending;
+    const dlg = $("#pass-dialog");
+    const input = $("#pass-input");
+    $("#pass-reason").textContent = reason;
+    input.value = "";
+    passphrasePending = new Promise((resolve) => {
+      dlg.addEventListener("close", () => {
+        passphrasePending = null;
+        resolve(dlg.returnValue === "ok" ? input.value.trim() || null : null);
+      }, { once: true });
+    });
+    dlg.returnValue = "";
+    dlg.showModal();
+    input.focus();
+    return passphrasePending;
   }
 
   // enter_round / update_course raise SQLSTATE 28000 for a wrong phrase.
@@ -1293,7 +1327,9 @@
     syncQueue();
   }
 
-  async function syncQueue() {
+  // `background` syncs (the 30s timer) never open the passphrase dialog —
+  // a cancelled dialog would otherwise pop back up every 30 seconds.
+  async function syncQueue({ background = false } = {}) {
     if (!window.GolfSync) return;
     if (!navigator.onLine) {
       setSyncState("offline", "Offline — will sync when connected.");
@@ -1307,7 +1343,7 @@
 
     let pass = localStorage.getItem(PASSPHRASE_KEY);
     if (!pass) {
-      pass = askPassphrase("Score-entry passphrase (needed to sync):");
+      pass = background ? null : await askPassphrase("Needed to send saved rounds to the leaderboard.");
       if (!pass) {
         setSyncState("paused", "Sync paused — passphrase required.");
         return;
@@ -1357,7 +1393,7 @@
     if (n > 0) {
       el.textContent = `${n} pending`;
       el.hidden = false;
-      el.onclick = syncQueue;     // tap to retry
+      el.onclick = () => syncQueue();     // tap to retry
     } else {
       el.hidden = true;
     }

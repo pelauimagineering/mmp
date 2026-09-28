@@ -52,6 +52,12 @@ drains the queue.
 The role grants in `0003_grants.sql` haven't been applied. Run that
 migration in the SQL editor and re-run the seed.
 
+**Nothing saves or syncs after a quiet spell between rounds.** Free-tier
+Supabase projects pause after about a week without activity. Rounds keep
+queueing on the phone, but nothing reaches the leaderboard until someone
+restores the project from the Supabase dashboard. Once it's back, the
+queue drains on its own.
+
 **"Wrong passphrase" on every attempt.** The RPC answers `28000 invalid
 passphrase` both when the phrase doesn't match and when the
 `golf_passphrase` row is missing. Check the row exists, and that it has no
