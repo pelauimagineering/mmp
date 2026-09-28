@@ -56,7 +56,11 @@ migration in the SQL editor and re-run the seed.
 Supabase projects pause after about a week without activity. Rounds keep
 queueing on the phone, but nothing reaches the leaderboard until someone
 restores the project from the Supabase dashboard. Once it's back, the
-queue drains on its own.
+queue drains on its own. The **Supabase keep-alive** GitHub Action
+(`.github/workflows/supabase-keepalive.yml`) pings the database every
+three days to prevent this, and fails (emailing the repo owner) if the
+project is already paused. Run it by hand from the Actions tab after
+restoring the project to confirm it's reachable again.
 
 **"Wrong passphrase" on every attempt.** The RPC answers `28000 invalid
 passphrase` both when the phrase doesn't match and when the

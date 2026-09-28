@@ -1,0 +1,51 @@
+# Keeps the free-tier Supabase project awake. Free projects pause after
+# about a week without activity, and golf rounds are only entered monthly,
+# so the score-entry page kept finding the database paused.
+#
+# Every three days this runs one tiny read through the public REST API,
+# the same request the leaderboard makes. The URL and publishable key are
+# read from golf/supabase-config.js, which already ships them to every
+# browser, so no repository secrets are needed.
+#
+# If the project is already paused the request fails and so does this
+# job, which makes GitHub email the repo owner: restore the project from
+# the Supabase dashboard.
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "17 9 */3 * *"   # 09:17 UTC every third day
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: golf/supabase-config.js
+          sparse-checkout-cone-mode: false
+
+      - name: Query the database
+        run: |
+          cfg=golf/supabase-config.js
+          url=$(sed -nE "s/.*SUPABASE_URL *= *'([^']+)'.*/\1/p" "$cfg")
+          key=$(sed -nE "s/.*SUPABASE_ANON_KEY *= *'([^']+)'.*/\1/p" "$cfg")
+          if [ -z "$url" ] || [ -z "$key" ]; then
+            echo "::error::Could not read SUPABASE_URL / SUPABASE_ANON_KEY from $cfg"
+            exit 1
+          fi
+          status=$(curl -sS -o body.txt -w '%{http_code}' --max-time 60 \
+            "$url/rest/v1/players?select=id&limit=1" \
+            -H "apikey: $key" -H "Authorization: Bearer $key") || status=000
+          echo "HTTP $status"
+          if [ "$status" != "200" ]; then
+            head -c 500 body.txt 2>/dev/null; echo
+            echo "::error::Supabase answered HTTP $status. The project may be paused; restore it from the Supabase dashboard."
+            exit 1
+          fi
