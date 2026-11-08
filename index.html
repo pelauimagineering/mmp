@@ -256,7 +256,7 @@
 </footer>
 
 <script type="module">
-  import { buildCupHistory, titlesBy } from '/golf/lib/champions.js';
+  import { buildCupHistory, titlesBy, nameResolverFrom } from '/golf/lib/champions.js';
 
   // Featured sport defaults to whichever is in season — golf May–Oct,
   // poker Nov–Apr — matching the convention used by the golf SPA.
@@ -330,15 +330,23 @@
     return tryFetch('/golf/data/golf.json');
   };
 
-  const [poker, golf, record] = await Promise.all([
+  const [poker, golf, record, roster] = await Promise.all([
     tryFetch('/golf/data/poker.json'),
     loadGolfLive(),
     tryFetch('/golf/data/champions.json'),
+    tryFetch('/golf/data/players.json'),
   ]);
+
+  // A renamed player's history follows them (Dee, née Darren): recorded
+  // names are rewritten to the roster's current name. See players.json.
+  const resolveName = nameResolverFrom(roster?.players);
+  for (const s of poker?.seasons || []) {
+    for (const e of s.events || []) if (e.host) e.host = resolveName(e.host);
+  }
 
   // Cups won come from the official record (the engraved plates), plus any
   // complete season since. See golf/lib/champions.js.
-  const history = buildCupHistory({ record, golf, poker });
+  const history = buildCupHistory({ record, golf, poker, resolveName });
 
   const renderCups = (sport, head, list) => {
     const champs = titlesBy(history, sport);

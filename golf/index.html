@@ -216,7 +216,21 @@ async function fetchJson(path) {
 // can differ from the points table: poker 2023-24 went to Kerwin, and the
 // 2022-23 cup was shared. Rebuilt on demand because DATA.golf refreshes live.
 function cupHistory() {
-  return window.Champions.buildCupHistory({ record: DATA.champions, golf: DATA.golf, poker: DATA.poker });
+  return window.Champions.buildCupHistory({ record: DATA.champions, golf: DATA.golf, poker: DATA.poker, resolveName: DATA.resolveName });
+}
+
+// A renamed player's history follows them (Dee, née Darren): rewrite the
+// names recorded in the poker data — results, hosts, final standings — to
+// the roster's current name. Golf identity rides on stable playerIds, so
+// only its display names would ever need this; none do today.
+function canonicalizePokerNames(poker, resolve) {
+  for (const s of poker?.seasons || []) {
+    for (const e of s.events || []) {
+      if (e.host) e.host = resolve(e.host);
+      for (const r of e.results || []) r.name = resolve(r.name);
+    }
+    for (const p of s.finalStandings || []) p.name = resolve(p.name);
+  }
 }
 
 // Champion line for a finished season: the points leader, unless the record
@@ -238,6 +252,12 @@ async function loadAll() {
     loadGolfLive(),
     fetchJson("data/champions.json"),
   ]);
+  // Name aliases always come from the static roster file — the Supabase
+  // roster (golf only) may replace DATA.players below and carries none.
+  const roster = (players && players.players) || [];
+  DATA.resolveName = window.Champions.nameResolverFrom(roster);
+  DATA.aliasesByName = new Map(roster.filter(p => (p.aliases || []).length).map(p => [p.name, p.aliases]));
+  canonicalizePokerNames(poker, DATA.resolveName);
   DATA.poker = poker;
   DATA.champions = champions;
   // An RLS-blocked or unseeded Supabase returns a truthy-but-empty
@@ -1004,13 +1024,24 @@ function renderGolfRoundDetail(root, season, round) {
 
 // ============================ Player profile ============================
 function renderPlayerView(root, sport, playerId) {
-  const seasons = buildPlayerProfile(sport, playerId);
+  let seasons = buildPlayerProfile(sport, playerId);
+  if (!seasons && DATA.aliasesByName) {
+    // An old link may use a former name (#/poker/player/darren): follow it.
+    for (const [name, aliases] of DATA.aliasesByName) {
+      if (aliases.some(a => slug(a) === playerId)) {
+        seasons = buildPlayerProfile(sport, slug(name));
+        break;
+      }
+    }
+  }
   if (!seasons) {
     root.innerHTML = `<div class="empty"><div class="center"><h1>No record found</h1><p>No ${sport} appearances on file for that player.</p></div></div>`;
     return;
   }
   const playerName = seasons[0].events[0]?.result?.name || "Player";
   const cfg = SPORT_CONFIG[sport];
+  const aliases = DATA.aliasesByName?.get(playerName) || [];
+  const aliasLine = aliases.length ? ` · née ${aliases.join(", ")}` : "";
 
   let careerHtml = "";
   if (sport === "poker") {
@@ -1087,7 +1118,7 @@ function renderPlayerView(root, sport, playerId) {
       <div class="avatar is-large">${initials(playerName)}</div>
       <div>
         <h1 style="margin:0; font-size:30px;">${escapeHtml(playerName)}</h1>
-        <div class="muted small">${seasons.length} ${SPORT_CONFIG[sport].label} season${seasons.length===1?'':'s'} on record${escapeHtml(hcpLine)}</div>
+        <div class="muted small">${seasons.length} ${SPORT_CONFIG[sport].label} season${seasons.length===1?'':'s'} on record${escapeHtml(aliasLine)}${escapeHtml(hcpLine)}</div>
       </div>
     </div>
     ${careerHtml}

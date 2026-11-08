@@ -5,7 +5,8 @@
     "season": "id, label, events[], skippedMonths[], finalStandings[]",
     "event": "id, month, year, host, played, results[], totals. Scheduled (played:false) events may also carry: date (ISO, the night it will be held), time (24h 'HH:MM' start).",
     "terminology": "Poker events use 'host'. Golf rounds use 'organizer'.",
-    "scheduling": "Upcoming games are prepared by hand here (or kept by scripts/build_poker.py when rebuilding from xlsx): add an event with played:false, empty results, and the date/time/host once known."
+    "scheduling": "Upcoming games are prepared by hand here (or kept by scripts/build_poker.py when rebuilding from xlsx): add an event with played:false, empty results, and the date/time/host once known.",
+    "names": "results[].name and host are the names as recorded at the time. The apps rewrite them to each player's current name via the aliases in players.json (Dee, n\u00e9e Darren), so a renamed player's history follows them."
   },
   "seasons": [
     {

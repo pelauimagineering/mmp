@@ -23,6 +23,24 @@ host. First one in: **Sun Nov 15, 2026 · 4:00 PM · hosted by Dee**.
   hand-maintained scheduling — it keeps seasons and unplayed events the
   xlsx doesn't have, and `date`/`time` on events it does.
 
+Player name aliases — Darren's history follows Dee.
+
+- **golf/data/players.json**: the roster entry is now Dee (id `dee`,
+  poker only) with `aliases: ["Darren"]`. An alias lists a player's
+  former names.
+- **golf/lib/champions.js**: new `nameResolverFrom(players)` maps any
+  recorded name to the player's current one; `buildCupHistory` takes an
+  optional `resolveName` so engraved and standings names follow it
+  (the 2013–14 poker plate now counts as Dee's cup). Data files keep
+  the names as recorded — resolution happens at display/aggregation.
+- **Golf/poker app**: poker results, hosts, and final standings are
+  rewritten to current names at load, so standings, profiles, event
+  pages, and the all-time table merge Darren's record into Dee's. The
+  profile header notes "née Darren", and old `#/poker/player/darren`
+  links land on Dee's profile.
+- **Home page**: cups-won cards, roll of honour, and "hosted by" lines
+  resolve aliases the same way.
+
 ## 2026-11-08 · `claude/admin-password-access-g9d2dk`
 
 MMP Cup champions back to 2008, from the engraved history plates.

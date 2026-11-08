@@ -7,6 +7,17 @@
 // in from the live season data, but only once a season is complete — a
 // mid-season leader is not a champion.
 
+// Players can change names (the roster lists former names in `aliases`,
+// e.g. Dee, née Darren). The resolver maps any recorded name to the
+// player's current one, so their history follows them.
+export function nameResolverFrom(players) {
+  const map = new Map();
+  for (const p of players || []) {
+    for (const alias of p.aliases || []) map.set(alias, p.name);
+  }
+  return (name) => map.get(name) ?? name;
+}
+
 const pad2 = (n) => String(n % 100).padStart(2, '0');
 
 function cupYearFromStart(year) {
@@ -36,15 +47,18 @@ const rankOneNames = (season) =>
   (season?.finalStandings || []).filter((p) => p.rank === 1).map((p) => p.name);
 
 // → [{ id, label, golf: { names, note }, poker: { names, note } }], oldest first.
-export function buildCupHistory({ record, golf, poker, todayISO } = {}) {
+// `resolveName` (optional, e.g. from nameResolverFrom) rewrites engraved and
+// standings names to each player's current name.
+export function buildCupHistory({ record, golf, poker, todayISO, resolveName } = {}) {
+  const resolve = resolveName || ((n) => n);
   const years = new Map();
   for (const y of record?.cupYears || []) {
     years.set(y.id, {
       id: y.id,
       label: y.label,
       official: true,
-      golf: { names: y.golf || [], note: y.golfNote || null },
-      poker: { names: y.poker || [], note: y.pokerNote || null },
+      golf: { names: (y.golf || []).map(resolve), note: y.golfNote || null },
+      poker: { names: (y.poker || []).map(resolve), note: y.pokerNote || null },
     });
   }
   for (const [sport, data] of [['golf', golf], ['poker', poker]]) {
@@ -55,7 +69,7 @@ export function buildCupHistory({ record, golf, poker, todayISO } = {}) {
       years.set(cup.id, entry);
       if (entry.official || entry[sport]) continue;   // the plates always win
       const done = isSeasonComplete(sport, season, todayISO);
-      const names = done ? rankOneNames(season) : [];
+      const names = done ? rankOneNames(season).map(resolve) : [];
       entry[sport] = { names, note: names.length ? null : 'In progress' };
     }
   }

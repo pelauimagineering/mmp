@@ -5,7 +5,7 @@
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildCupHistory, titlesBy, championsOf, cupYearOf, isSeasonComplete } from '../lib/champions.js';
+import { buildCupHistory, titlesBy, championsOf, cupYearOf, isSeasonComplete, nameResolverFrom } from '../lib/champions.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url), 'utf8'));
 const record = load('champions.json');
@@ -31,8 +31,8 @@ check('18 cup years, 2008-09 through 2025-26', () => {
   assert.equal(record.cupYears[0].id, '2008-09');
   assert.equal(record.cupYears.at(-1).id, '2025-26');
 });
-check('every champion is on the roster', () => {
-  const roster = new Set(load('players.json').players.map((p) => p.name));
+check('every champion is on the roster, by current name or alias', () => {
+  const roster = new Set(load('players.json').players.flatMap((p) => [p.name, ...(p.aliases || [])]));
   for (const y of record.cupYears) {
     for (const n of [...y.golf, ...y.poker]) assert.ok(roster.has(n), `${y.id}: ${n}`);
   }
@@ -91,6 +91,23 @@ check('poker cups from the plates, shared cup counted for both', () => {
 check('lastWin is the cup-year label', () => {
   assert.equal(titlesBy(base, 'golf').lastWin.get('Junior'), '2025–26');
   assert.equal(titlesBy(base, 'poker').lastWin.get('Tony'), '2010–11');
+});
+
+console.log('nameResolverFrom (Dee, née Darren)');
+const resolveName = nameResolverFrom(load('players.json').players);
+check('an alias resolves to the current name; other names pass through', () => {
+  assert.equal(resolveName('Darren'), 'Dee');
+  assert.equal(resolveName('Harish'), 'Harish');
+});
+check('the engraved 2013-14 poker cup follows Dee', () => {
+  const h = buildCupHistory({ record, golf: { seasons: [] }, poker, todayISO: TODAY, resolveName });
+  assert.deepEqual(championsOf(h, 'poker', { id: '2013-14' }), ['Dee']);
+  const ranked = titlesBy(h, 'poker').ranked;
+  assert.ok(ranked.some(([n, c]) => n === 'Dee' && c === 1));
+  assert.ok(!ranked.some(([n]) => n === 'Darren'));
+});
+check('without a resolver the engraved name stands', () => {
+  assert.deepEqual(championsOf(base, 'poker', { id: '2013-14' }), ['Darren']);
 });
 
 console.log(`\n${passed} checks passed`);
