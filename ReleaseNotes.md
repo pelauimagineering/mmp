@@ -1,5 +1,46 @@
 # Release notes
 
+## 2026-11-08 · `claude/determined-brown-b0ihrx`
+
+Upcoming poker game nights can now be prepared ahead of time, like golf
+rounds: a scheduled event carries a specific date, a start time, and a
+host. First one in: **Sun Nov 15, 2026 · 4:00 PM · hosted by Dee**.
+
+- **golf/data/poker.json**: new `_schema` block, and a new 2026–27 season
+  whose Nov event is scheduled (`played: false`) with `date` (ISO) and
+  `time` (24h `"HH:MM"`) fields alongside the existing `host`.
+- **Golf/poker app**: a poker season with nothing played yet shows a
+  schedule page (date, start time, host) instead of "No data yet"; the
+  schedule strip's upcoming cards show the date and time; an unplayed
+  event's detail page is an "Upcoming event" hero like golf's; and a
+  completed season's "Next Season" KPI now reads the next scheduled game
+  from the data instead of a hardcoded "Nov 2026".
+- **Home page**: the poker standings card gains a "Next game" block
+  (date / host / start time) mirroring golf's "Next round", and scheduled
+  poker nights appear in the Latest strip. A played event with no
+  recorded host now reads "TBD" instead of "null" there.
+- **scripts/build_poker.py**: rebuilding from the xlsx no longer wipes
+  hand-maintained scheduling — it keeps seasons and unplayed events the
+  xlsx doesn't have, and `date`/`time` on events it does.
+
+Player name aliases — Darren's history follows Dee.
+
+- **golf/data/players.json**: the roster entry is now Dee (id `dee`,
+  poker only) with `aliases: ["Darren"]`. An alias lists a player's
+  former names.
+- **golf/lib/champions.js**: new `nameResolverFrom(players)` maps any
+  recorded name to the player's current one; `buildCupHistory` takes an
+  optional `resolveName` so engraved and standings names follow it
+  (the 2013–14 poker plate now counts as Dee's cup). Data files keep
+  the names as recorded — resolution happens at display/aggregation.
+- **Golf/poker app**: poker results, hosts, and final standings are
+  rewritten to current names at load, so standings, profiles, event
+  pages, and the all-time table merge Darren's record into Dee's. The
+  profile header notes "née Darren", and old `#/poker/player/darren`
+  links land on Dee's profile.
+- **Home page**: cups-won cards, roll of honour, and "hosted by" lines
+  resolve aliases the same way.
+
 ## 2026-11-08 · `claude/admin-password-access-g9d2dk`
 
 MMP Cup champions back to 2008, from the engraved history plates.

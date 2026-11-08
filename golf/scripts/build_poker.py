@@ -11,6 +11,9 @@ The script:
   - normalizes tie/runner-up cells (handles stray whitespace)
   - flags placeholder events as played: false
   - derives finalStandings from the last played event of each season
+  - keeps hand-maintained scheduling from the existing data/poker.json:
+    whole seasons the xlsx doesn't have yet, unplayed events it doesn't
+    list, and date/time fields on events it does
 """
 from __future__ import annotations
 import json, re, sys
@@ -138,6 +141,44 @@ def build_season(sheet_name: str, events: list[dict]) -> dict:
     }
 
 
+def merge_previous(seasons: list[dict], prev: dict | None) -> list[dict]:
+    """Carry hand-maintained scheduling over from the previous poker.json.
+
+    The xlsx is the record of what was PLAYED; upcoming game nights are
+    prepared by hand in data/poker.json (date, time, host). A rebuild must
+    not wipe them, so keep: whole seasons the xlsx doesn't have yet,
+    unplayed events it doesn't list, and date/time (plus a missing host)
+    on events it does.
+    """
+    if not prev:
+        return seasons
+    by_id = {s["id"]: s for s in seasons}
+    month_pos = {m: i for i, m in enumerate(MONTH_ORDER)}
+    for ps in prev.get("seasons", []):
+        ns = by_id.get(ps["id"])
+        if ns is None:  # season scheduled by hand, not in the xlsx yet
+            seasons.append(ps)
+            continue
+        prev_events = {e["id"]: e for e in ps.get("events", [])}
+        for e in ns["events"]:
+            pe = prev_events.get(e["id"])
+            if not pe:
+                continue
+            for k in ("date", "time"):
+                if k in pe and k not in e:
+                    e[k] = pe[k]
+            if not e.get("host") and pe.get("host"):
+                e["host"] = pe["host"]
+        new_ids = {e["id"] for e in ns["events"]}
+        extra = [e for e in ps.get("events", [])
+                 if e["id"] not in new_ids and not e.get("played")]
+        if extra:
+            ns["events"] = sorted(ns["events"] + extra,
+                                  key=lambda e: month_pos.get(e["month"], 99))
+    seasons.sort(key=lambda s: s["id"], reverse=True)  # newest season first
+    return seasons
+
+
 def main(argv):
     src = Path(argv[1]) if len(argv) > 1 else (DEFAULT_INPUTS[0] if DEFAULT_INPUTS else None)
     if not src or not src.exists():
@@ -148,8 +189,16 @@ def main(argv):
     sheets.sort(reverse=True)  # newest season first
     seasons = [build_season(n, parse_sheet(wb[n])) for n in sheets]
 
+    prev = json.loads(OUT.read_text()) if OUT.exists() else None
+    seasons = merge_previous(seasons, prev)
+
+    out = {"sport": "poker", "source": src.name}
+    if prev and "_schema" in prev:
+        out["_schema"] = prev["_schema"]
+    out["seasons"] = seasons
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({"sport": "poker", "source": src.name, "seasons": seasons}, indent=2))
+    OUT.write_text(json.dumps(out, indent=2))
     # Summary
     for s in seasons:
         played = sum(1 for e in s["events"] if e["played"])

@@ -1,7 +1,33 @@
 {
   "sport": "poker",
   "source": "MMP Poker Final 2025-26.xlsx",
+  "_schema": {
+    "season": "id, label, events[], skippedMonths[], finalStandings[]",
+    "event": "id, month, year, host, played, results[], totals. Scheduled (played:false) events may also carry: date (ISO, the night it will be held), time (24h 'HH:MM' start).",
+    "terminology": "Poker events use 'host'. Golf rounds use 'organizer'.",
+    "scheduling": "Upcoming games are prepared by hand here (or kept by scripts/build_poker.py when rebuilding from xlsx): add an event with played:false, empty results, and the date/time/host once known.",
+    "names": "results[].name and host are the names as recorded at the time. The apps rewrite them to each player's current name via the aliases in players.json (Dee, n\u00e9e Darren), so a renamed player's history follows them."
+  },
   "seasons": [
+    {
+      "id": "2026-27",
+      "label": "2026\u201327",
+      "events": [
+        {
+          "id": "2026-27-nov",
+          "month": "Nov",
+          "year": 2026,
+          "date": "2026-11-15",
+          "time": "16:00",
+          "host": "Dee",
+          "played": false,
+          "results": [],
+          "totals": null
+        }
+      ],
+      "skippedMonths": [],
+      "finalStandings": []
+    },
     {
       "id": "2025-26",
       "label": "2025\u201326",
