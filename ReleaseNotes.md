@@ -1,5 +1,24 @@
 # Release notes
 
+## 2026-11-08 · `claude/admin-password-access-g9d2dk`
+
+MMP Cup champions back to 2008, from the engraved history plates.
+
+- **golf/data/champions.json** (new): the official winner of golf and poker
+  for every cup year from 2008–09 to 2025–26. A cup year opens with the
+  summer golf season and closes with the winter poker season. Notes record
+  2018–19 poker (not awarded) and 2019–20 poker (cancelled, COVID-19).
+- **golf/lib/champions.js** (new): merges that record with live season data.
+  The record always wins. Cup years after it are filled from seasons that
+  are complete, so a mid-season leader is never counted as a champion.
+  Tests: `node golf/scripts/test-champions.mjs`.
+- **Home page**: "All-time, by name" now counts every cup since 2008 for both
+  sports (the golf card used to show only the 2026 Links Cup). A shared cup
+  counts for each winner. New "Roll of honour" table lists every cup year.
+- **Golf/poker app**: season champion labels and the all-time Titles column
+  follow the record. Poker 2023–24 shows Kerwin (Seymour led on points), and
+  2022–23 shows Neave / Harish as a shared cup.
+
 ## 2026-05-23 · `claude/issue-10-edit-rounds`
 
 Round editing (Issue #10) — every round (upcoming, in-progress, or played)

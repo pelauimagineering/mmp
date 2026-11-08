@@ -21,12 +21,14 @@ Seymour holds the all-time lead by 12.5 over Neave; both broke 50 in 2025-26. No
 
 ## Season Winners
 
+Points leaders from the season spreadsheets. The official cup winners for every year since 2008 are in `champions.json`, which is what the site shows as champions.
+
 | Season | Winner | Points | Notes |
 |---|---|---|---|
 | **2025–26** | **Harish** | 55.0 | Came from 4th to 1st in the final event |
 | 2024–25 | Junior | 63.0 | Sat out 2023-24, returned to win outright |
-| 2023–24 | Seymour | 41.0 | Three played events (no Nov/Dec/Apr) |
-| 2022–23 | Neave | 52.5 | Tied with Harish on points; Neave took it on tiebreak |
+| 2023–24 | Seymour | 41.0 | Three played events (no Nov/Dec/Apr). Top on points, but the cup plates name **Kerwin** as champion (see `champions.json`) |
+| 2022–23 | Neave | 52.5 | Tied with Harish on points; Neave took it on tiebreak. The cup plates record it as **shared** by Neave and Harish |
 
 No repeat winners across the 4 tracked seasons. The trophy has rotated every year.
 

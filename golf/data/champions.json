@@ -1,0 +1,27 @@
+{
+  "_comment": "Official MMP Cup winners, one entry per cup year, from the engraved history plates. A cup year's golf champion comes from the summer it opens with (2025-26 golf = summer 2025), and its poker champion from the winter season that follows. This record wins over anything computed from season data; lib/champions.js fills in later cup years from complete seasons in golf.json / Supabase and poker.json. Names match players.json (Jaswant = Jas). An empty list with a note means no cup was awarded.",
+  "source": "MMP Cup winner history plates (email from Neave, Nov 6 2026)",
+  "_notes": [
+    "2023-24 poker: the plates name Kerwin; poker.json's 2023-24 points standings (from the season spreadsheet) have Seymour top on 41 to Kerwin's 31. The plates are the official record."
+  ],
+  "cupYears": [
+    { "id": "2008-09", "label": "2008–09", "golf": ["Kerwin"],  "poker": ["Tony"] },
+    { "id": "2009-10", "label": "2009–10", "golf": ["Junior"],  "poker": ["Harish"] },
+    { "id": "2010-11", "label": "2010–11", "golf": ["Tony"],    "poker": ["Tony"] },
+    { "id": "2011-12", "label": "2011–12", "golf": ["Harish"],  "poker": ["Seymour"] },
+    { "id": "2012-13", "label": "2012–13", "golf": ["Junior"],  "poker": ["Junior"] },
+    { "id": "2013-14", "label": "2013–14", "golf": ["Kerwin"],  "poker": ["Darren"] },
+    { "id": "2014-15", "label": "2014–15", "golf": ["Kerwin"],  "poker": ["Junior"] },
+    { "id": "2015-16", "label": "2015–16", "golf": ["Junior"],  "poker": ["Harish"] },
+    { "id": "2016-17", "label": "2016–17", "golf": ["Kerwin"],  "poker": ["Chris"] },
+    { "id": "2017-18", "label": "2017–18", "golf": ["Jas"],     "poker": ["Junior"] },
+    { "id": "2018-19", "label": "2018–19", "golf": ["Junior"],  "poker": [], "pokerNote": "Not awarded" },
+    { "id": "2019-20", "label": "2019–20", "golf": ["Seymour"], "poker": [], "pokerNote": "Cancelled — COVID-19" },
+    { "id": "2020-21", "label": "2020–21", "golf": ["Junior"],  "poker": ["Chris"] },
+    { "id": "2021-22", "label": "2021–22", "golf": ["Junior"],  "poker": ["Harish"] },
+    { "id": "2022-23", "label": "2022–23", "golf": ["Kerwin"],  "poker": ["Neave", "Harish"] },
+    { "id": "2023-24", "label": "2023–24", "golf": ["Jas"],     "poker": ["Kerwin"] },
+    { "id": "2024-25", "label": "2024–25", "golf": ["Jas"],     "poker": ["Junior"] },
+    { "id": "2025-26", "label": "2025–26", "golf": ["Junior"],  "poker": ["Harish"] }
+  ]
+}

@@ -21,8 +21,10 @@
   // use them.
   import * as GolfData from './lib/golf-data.js';
   import * as GolfCalc from './lib/golf-calc.js';
+  import * as Champions from './lib/champions.js';
   window.GolfData = GolfData;
   window.GolfCalc = GolfCalc;
+  window.Champions = Champions;
   window.dispatchEvent(new Event('golf-data-ready'));
 </script>
 </head>
@@ -72,7 +74,7 @@
      #/<sport>/all-time                  → all-time leaderboard
    ==================================================================== */
 
-const DATA = { poker: null, golf: null, players: [], loaded: false };
+const DATA = { poker: null, golf: null, players: [], champions: null, loaded: false };
 const SPORTS = ["poker", "golf"];
 
 // ---------- Sport configs (so views can be parameterized) ----------
@@ -188,13 +190,35 @@ async function fetchJson(path) {
   }
 }
 
+// ---------- Champions ----------
+// The engraved plates (data/champions.json) are the official record, and
+// can differ from the points table: poker 2023-24 went to Kerwin, and the
+// 2022-23 cup was shared. Rebuilt on demand because DATA.golf refreshes live.
+function cupHistory() {
+  return window.Champions.buildCupHistory({ record: DATA.champions, golf: DATA.golf, poker: DATA.poker });
+}
+
+// Champion line for a finished season: the points leader, unless the record
+// says otherwise. → { name, foot } where foot replaces the stats line, or null.
+function crownedChampion(sport, season, leader) {
+  const names = window.Champions.championsOf(cupHistory(), sport, season);
+  if (!names || (names.length === 1 && names[0] === leader?.name)) return null;
+  const shared = names.length > 1 && names.includes(leader?.name);
+  return {
+    name: names.join(" / "),
+    foot: shared ? "Shared cup" : "Per the MMP Cup record",
+  };
+}
+
 async function loadAll() {
-  const [poker, players, golfFromSupabase] = await Promise.all([
+  const [poker, players, golfFromSupabase, champions] = await Promise.all([
     fetchJson("data/poker.json"),
     fetchJson("data/players.json"),
     loadGolfLive(),
+    fetchJson("data/champions.json"),
   ]);
   DATA.poker = poker;
+  DATA.champions = champions;
   // An RLS-blocked or unseeded Supabase returns a truthy-but-empty
   // {seasons: []} shape, not an error — fall back to the static JSON
   // in that case instead of rendering a blank leaderboard.
@@ -317,6 +341,14 @@ function golfSeasonRunningHandicaps(season) {
 }
 
 function buildAllTime(sport) {
+  const list = buildAllTimeCareer(sport);
+  // Titles come from the cup record, not each season's points leader.
+  const titles = new Map(window.Champions.titlesBy(cupHistory(), sport).ranked);
+  for (const p of list) p.titles = titles.get(p.name) || 0;
+  return list;
+}
+
+function buildAllTimeCareer(sport) {
   const data = DATA[sport];
   if (!data || !data.seasons) return [];
   const map = new Map();
@@ -331,7 +363,6 @@ function buildAllTime(sport) {
         cur.runnerUps += p.runnerUp || 0;
         cur.ties += p.tie || 0;
         cur.apps += p.appearance || 0;
-        if (p.rank === 1) cur.titles++;
         map.set(p.name, cur);
       }
     }
@@ -355,7 +386,6 @@ function buildAllTime(sport) {
         cur.holeInOnes += p.holeInOnes || 0;
         cur.lowRounds += p.lowRounds || 0;
         cur.total += p.totalPoints || 0;
-        if (p.rank === 1) cur.titles++;
         map.set(p.name, cur);
       }
     }
@@ -484,11 +514,15 @@ function renderPokerSeasonView(root, season) {
   const standings = buildPokerSeasonStandings(season);
   const playedEvents = season.events.filter(e => e.played);
   const lastEvent = playedEvents[playedEvents.length - 1];
-  const finalEvent = season.events.find(e => !e.played);
+  // A season with a recorded champion is over, even if its data still
+  // lists an event that never happened (2023-24 had no April night).
+  const decided = !!window.Champions.championsOf(cupHistory(), "poker", season);
+  const finalEvent = decided ? null : season.events.find(e => !e.played);
   const champion = standings[0];
 
   const lastEventWinner = (lastEvent.results || []).slice().sort((a,b) => (b.eventTotal || 0) - (a.eventTotal || 0))[0];
   const seasonComplete = !finalEvent && lastEvent;
+  const crowned = seasonComplete ? crownedChampion("poker", season, champion) : null;
 
   root.innerHTML = `
     <section>
@@ -500,8 +534,9 @@ function renderPokerSeasonView(root, season) {
       <div class="kpis" style="margin-top:18px;">
         <div class="kpi">
           <div class="kpi-label">${seasonComplete ? "Season Champion" : "Current Leader"}</div>
-          <div class="kpi-value">${escapeHtml(champion.name)} <span class="units">${fmt(champion.ytd)} pts</span></div>
-          <div class="kpi-foot">${champion.win} W · ${champion.runnerUp} RU · ${champion.appearance} appearances</div>
+          ${crowned ? `<div class="kpi-value">${escapeHtml(crowned.name)}</div>
+          <div class="kpi-foot">${crowned.foot}</div>` : `<div class="kpi-value">${escapeHtml(champion.name)} <span class="units">${fmt(champion.ytd)} pts</span></div>
+          <div class="kpi-foot">${champion.win} W · ${champion.runnerUp} RU · ${champion.appearance} appearances</div>`}
         </div>
         <div class="kpi">
           <div class="kpi-label">Last Event Winner</div>
@@ -601,6 +636,7 @@ function renderGolfSeasonView(root, season) {
   const roundWinner = lastRoundAnnotated.slice().sort((a,b) => b.points - a.points)[0];
   const lowRoundEntry = lastRoundAnnotated.find(r => r.lowRound);
   const leader = standings[0];
+  const crowned = seasonComplete ? crownedChampion("golf", season, leader) : null;
 
   root.innerHTML = `
     <section>
@@ -612,8 +648,9 @@ function renderGolfSeasonView(root, season) {
       <div class="kpis" style="margin-top:18px;">
         <div class="kpi">
           <div class="kpi-label">${seasonComplete ? "Champion" : "Cup Leader"}</div>
-          <div class="kpi-value">${escapeHtml(leader?.name || "—")} <span class="units">${fmt(leader?.totalPoints)} pts</span></div>
-          <div class="kpi-foot">${leader?.attended || 0} round${(leader?.attended||0)===1?'':'s'} · ${leader?.birdies || 0} birdies${leader?.eagles ? ` · ${leader.eagles} eagles` : ''}${leader?.lowRounds ? ` · ${leader.lowRounds}× low round` : ''}</div>
+          ${crowned ? `<div class="kpi-value">${escapeHtml(crowned.name)}</div>
+          <div class="kpi-foot">${crowned.foot}</div>` : `<div class="kpi-value">${escapeHtml(leader?.name || "—")} <span class="units">${fmt(leader?.totalPoints)} pts</span></div>
+          <div class="kpi-foot">${leader?.attended || 0} round${(leader?.attended||0)===1?'':'s'} · ${leader?.birdies || 0} birdies${leader?.eagles ? ` · ${leader.eagles} eagles` : ''}${leader?.lowRounds ? ` · ${leader.lowRounds}× low round` : ''}</div>`}
         </div>
         <div class="kpi">
           <div class="kpi-label">Last Round Winner</div>
@@ -731,8 +768,12 @@ function renderSeasonStorylines(sport, season, standings) {
   if (sport === "poker") {
     const champion = standings[0];
     const t2 = standings.filter(s => s.rank === 2);
-    if (champion) items.push({
-      label: champion.rank === 1 && season.events.every(e => e.played || e.skipped) ? "Champion" : "Leader",
+    const complete = season.events.every(e => e.played || e.skipped) ||
+      !!window.Champions.championsOf(cupHistory(), "poker", season);
+    const crowned = complete ? crownedChampion("poker", season, champion) : null;
+    if (crowned) items.push({ label: "Champion", headline: crowned.name, body: crowned.foot });
+    else if (champion) items.push({
+      label: champion.rank === 1 && complete ? "Champion" : "Leader",
       headline: `${champion.name} · ${fmt(champion.ytd)} pts`,
       body: `${champion.win} wins · ${champion.runnerUp} runner-ups · ${champion.appearance} events played`,
     });
@@ -743,8 +784,11 @@ function renderSeasonStorylines(sport, season, standings) {
     });
   } else {
     const leader = standings[0];
-    if (leader) items.push({
-      label: season.rounds?.every(r => r.played) ? "Champion" : "Cup Leader",
+    const complete = season.rounds?.every(r => r.played);
+    const crowned = complete ? crownedChampion("golf", season, leader) : null;
+    if (crowned) items.push({ label: "Champion", headline: crowned.name, body: crowned.foot });
+    else if (leader) items.push({
+      label: complete ? "Champion" : "Cup Leader",
       headline: `${leader.name} · ${fmt(leader.totalPoints)} pts`,
       body: `${leader.attended} round${leader.attended===1?'':'s'} · ${leader.birdies} birdie${leader.birdies===1?'':'s'}${leader.eagles ? ` · ${leader.eagles} eagle${leader.eagles===1?'':'s'}` : ''}${leader.lowRounds ? ` · ${leader.lowRounds}× low round` : ''}`,
     });
