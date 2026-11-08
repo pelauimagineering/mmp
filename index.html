@@ -129,6 +129,18 @@
   .standings-card .upcoming dt { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); align-self: center; }
   .standings-card .upcoming dd { font-family: var(--font-display); font-size: var(--text-md); font-weight: 500; margin: 0; }
 
+  .honours { max-width: 1200px; margin: 0 auto; padding: var(--space-7) var(--space-6); border-top: 1px solid var(--rule); }
+  .honours h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-2xl); margin: 0 0 var(--space-2); }
+  .honours .sub { font-family: var(--font-display); font-style: italic; color: var(--ink-2); margin: 0 0 var(--space-4); }
+  .honours table { width: 100%; border-collapse: collapse; background: var(--bg-raised); border: 1px solid var(--rule); border-radius: var(--radius-lg); overflow: hidden; }
+  .honours th, .honours td { padding: var(--space-2) var(--space-4); text-align: left; border-bottom: 1px solid var(--rule); }
+  .honours tr:last-child td { border-bottom: 0; }
+  .honours th { font-family: var(--font-ui); font-size: var(--text-2xs); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .honours td { font-family: var(--font-display); font-size: var(--text-md); font-weight: 500; }
+  .honours td.year { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 400; color: var(--ink-3); white-space: nowrap; width: 1%; }
+  .honours td .note { font-style: italic; font-weight: 400; color: var(--ink-3); }
+  @media (max-width: 480px) { .honours th, .honours td { padding: var(--space-2) var(--space-3); } }
+
   .latest { padding: var(--space-7) var(--space-6); max-width: 1200px; margin: 0 auto; border-top: 1px solid var(--rule); }
   .latest h2 { font-family: var(--font-display); font-weight: 600; font-size: var(--text-2xl); margin: 0 0 var(--space-4); }
   .latest-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
@@ -152,6 +164,7 @@
     <a href="/golf/">Golf</a>
     <a href="https://poker.pelau.com/">Poker</a>
     <a href="#standings">Standings</a>
+    <a href="#honours">Champions</a>
     <a href="#latest">Latest</a>
   </div>
 </nav>
@@ -202,12 +215,21 @@
       <ul class="player-list" id="poker-standings-list"></ul>
     </div>
     <div class="standings-card" id="golf-standings">
-      <span class="t-eyebrow">Golf · 2026 Links Cup</span>
+      <span class="t-eyebrow">Golf · cups won</span>
       <h3 id="golf-standings-head">Loading…</h3>
       <ul class="player-list" id="golf-standings-list"></ul>
       <dl class="upcoming" id="golf-upcoming" hidden></dl>
     </div>
   </div>
+</section>
+
+<section class="honours" id="honours">
+  <h2>Roll of honour</h2>
+  <p class="sub">Every MMP Cup since 2008: golf each summer, poker through the winter.</p>
+  <table>
+    <thead><tr><th>Cup year</th><th>Golf</th><th>Poker</th></tr></thead>
+    <tbody id="honours-body"><tr><td class="year">Loading…</td><td></td><td></td></tr></tbody>
+  </table>
 </section>
 
 <section class="latest" id="latest">
@@ -233,6 +255,8 @@
 </footer>
 
 <script type="module">
+  import { buildCupHistory, titlesBy } from '/golf/lib/champions.js';
+
   // Featured sport defaults to whichever is in season — golf May–Oct,
   // poker Nov–Apr — matching the convention used by the golf SPA.
   // Drives the [data-in-season] attribute that orders doors + standings.
@@ -257,19 +281,6 @@
     } catch {
       return null;
     }
-  };
-
-  const championsByName = (seasons) => {
-    const cups = new Map();
-    const lastWin = new Map();
-    for (const s of seasons) {
-      const champ = (s.finalStandings || []).find((p) => p.rank === 1);
-      if (!champ) continue;
-      cups.set(champ.name, (cups.get(champ.name) || 0) + 1);
-      lastWin.set(champ.name, s.label);
-    }
-    const ranked = [...cups.entries()].sort((a, b) => b[1] - a[1]);
-    return { ranked, lastWin };
   };
 
   const renderLeaderRows = ({ ranked, lastWin }) => ranked.map(([name, count], i) => `
@@ -310,58 +321,54 @@
     return tryFetch('/golf/data/golf.json');
   };
 
-  const [poker, golf] = await Promise.all([
+  const [poker, golf, record] = await Promise.all([
     tryFetch('/golf/data/poker.json'),
     loadGolfLive(),
+    tryFetch('/golf/data/champions.json'),
   ]);
 
-  // ── Poker standings: count rank-1 finishes per player across all seasons ──
-  const pokerHead = document.getElementById('poker-standings-head');
-  const pokerList = document.getElementById('poker-standings-list');
-  if (poker && Array.isArray(poker.seasons) && poker.seasons.length) {
-    const champs = championsByName(poker.seasons);
+  // Cups won come from the official record (the engraved plates), plus any
+  // complete season since. See golf/lib/champions.js.
+  const history = buildCupHistory({ record, golf, poker });
+
+  const renderCups = (sport, head, list) => {
+    const champs = titlesBy(history, sport);
     if (champs.ranked.length) {
       const [topName, topCups] = champs.ranked[0];
-      pokerHead.textContent = `${topName} · ${topCups}`;
-      pokerList.innerHTML = renderLeaderRows(champs);
+      head.textContent = `${topName} · ${topCups}`;
+      list.innerHTML = renderLeaderRows(champs);
     } else {
-      pokerHead.textContent = 'No champions yet';
-      pokerList.innerHTML = '';
+      head.textContent = 'Data unavailable';
     }
-  } else {
-    pokerHead.textContent = 'Data unavailable';
+  };
+  renderCups('poker', document.getElementById('poker-standings-head'), document.getElementById('poker-standings-list'));
+  renderCups('golf', document.getElementById('golf-standings-head'), document.getElementById('golf-standings-list'));
+
+  // Next golf round, if one is scheduled in the current season.
+  const golfSeason = golf?.seasons?.[golf.seasons.length - 1];
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const nextRound = (golfSeason?.rounds || []).find((r) => !r.played && r.date && r.date >= todayISO);
+  if (nextRound) {
+    const golfUpcoming = document.getElementById('golf-upcoming');
+    golfUpcoming.hidden = false;
+    golfUpcoming.innerHTML = `
+      <dt>Next round</dt><dd>${fmtDate(nextRound.date)}</dd>
+      <dt>Course</dt><dd>${nextRound.course || 'TBD'}</dd>
+      <dt>Organizer</dt><dd>${nextRound.organizer || 'TBD'}</dd>
+      <dt>Tee times</dt><dd>${(nextRound.teeTimes || []).join(' · ') || 'TBD'}</dd>
+    `;
   }
 
-  // ── Golf standings: empty state pointing to the next round when no season is complete ──
-  const golfHead = document.getElementById('golf-standings-head');
-  const golfList = document.getElementById('golf-standings-list');
-  const golfUpcoming = document.getElementById('golf-upcoming');
-  if (golf && Array.isArray(golf.seasons) && golf.seasons.length) {
-    const champs = championsByName(golf.seasons);
-    if (champs.ranked.length) {
-      const [topName, topCups] = champs.ranked[0];
-      golfHead.textContent = `${topName} · ${topCups}`;
-      golfList.innerHTML = renderLeaderRows(champs);
-    } else {
-      const season = golf.seasons[golf.seasons.length - 1];
-      const next = (season.rounds || []).find((r) => !r.played);
-      if (next) {
-        golfHead.textContent = `${season.label} Links Cup`;
-        golfList.innerHTML = `<li class="empty">First round tees off ${fmtDate(next.date)}. Leaderboard wakes when the first card is entered.</li>`;
-        golfUpcoming.hidden = false;
-        golfUpcoming.innerHTML = `
-          <dt>Course</dt><dd>${next.course || 'TBD'}</dd>
-          <dt>Organizer</dt><dd>${next.organizer || 'TBD'}</dd>
-          <dt>Tee times</dt><dd>${(next.teeTimes || []).join(' · ') || 'TBD'}</dd>
-        `;
-      } else {
-        golfHead.textContent = `${season.label} season`;
-        golfList.innerHTML = `<li class="empty">Schedule pending.</li>`;
-      }
-    }
-  } else {
-    golfHead.textContent = 'Data unavailable';
-  }
+  // ── Roll of honour: newest cup year first ──
+  const honourCell = ({ names, note }) =>
+    names.length ? names.join(' &amp; ') + (names.length > 1 ? ' <span class="note">(shared)</span>' : '')
+                 : `<span class="note">${note || '—'}</span>`;
+  const honoursBody = document.getElementById('honours-body');
+  honoursBody.innerHTML = history.length
+    ? history.slice().reverse().map((y) => `
+        <tr><td class="year">${y.label}</td><td>${honourCell(y.golf)}</td><td>${honourCell(y.poker)}</td></tr>
+      `).join('')
+    : `<tr><td class="year">Data unavailable</td><td></td><td></td></tr>`;
 
   // ── Latest: most recently played event from each sport, plus next golf round ──
   // Poker events store { month: "Mar", year: 2025 } rather than a real date;
