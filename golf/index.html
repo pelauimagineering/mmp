@@ -161,6 +161,27 @@ function formatDateLong(iso) {
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
+// "16:00" -> "4:00 PM" (poker events store a 24h start time)
+function formatTime(hhmm) {
+  if (!hhmm) return "";
+  const [h, m] = String(hhmm).split(":").map(Number);
+  if (!Number.isFinite(h)) return hhmm;
+  const h12 = ((h + 11) % 12) + 1;
+  return `${h12}:${String(m || 0).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+}
+// The next scheduled poker game night: the first unplayed event of the
+// earliest season that isn't already decided (a decided season may still
+// list an event that never happened, e.g. April 2024).
+function nextScheduledPokerEvent() {
+  const history = cupHistory();
+  const seasons = (DATA.poker?.seasons || []).slice().sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  for (const s of seasons) {
+    if (window.Champions.championsOf(history, "poker", s)) continue;
+    const e = (s.events || []).find(ev => !ev.played && !ev.skipped);
+    if (e) return { season: s, event: e };
+  }
+  return null;
+}
 function sparkSvg(values) {
   if (!values || !values.length) return "";
   const w = 80, h = 22, pad = 2;
@@ -543,11 +564,14 @@ function renderPokerSeasonView(root, season) {
           <div class="kpi-value">${escapeHtml(lastEventWinner?.name || "—")} <span class="units">${fmt(lastEventWinner?.eventTotal)} pts</span></div>
           <div class="kpi-foot">${lastEvent.month} ${lastEvent.year} · Host: ${escapeHtml(lastEvent.host || "—")}</div>
         </div>
-        <div class="kpi">
+        ${(() => {
+          const nextUp = finalEvent || nextScheduledPokerEvent()?.event;
+          return `<div class="kpi">
           <div class="kpi-label">${finalEvent ? "Next Event" : "Next Season"}</div>
-          <div class="kpi-value">${finalEvent ? `${escapeHtml(finalEvent.month)} ${finalEvent.year}` : "Nov 2026"} <span class="units">${finalEvent ? "upcoming" : ""}</span></div>
-          <div class="kpi-foot">${finalEvent ? `Host: ${escapeHtml(finalEvent.host || "TBD")}` : "Host rotation continues"}</div>
-        </div>
+          <div class="kpi-value">${nextUp ? (nextUp.date ? formatDateShort(nextUp.date) : `${escapeHtml(nextUp.month)} ${nextUp.year}`) : "TBD"} <span class="units">${nextUp ? (nextUp.time ? formatTime(nextUp.time) : "upcoming") : ""}</span></div>
+          <div class="kpi-foot">${nextUp ? `Host: ${escapeHtml(nextUp.host || "TBD")}` : "Host rotation continues"}</div>
+        </div>`;
+        })()}
       </div>
     </section>
 
@@ -609,6 +633,7 @@ function renderPokerScheduleStrip(season) {
       <div class="event-month">${e.month} ${e.year}</div>
       <div class="event-winner">Upcoming</div>
       <div class="event-host">Host: ${escapeHtml(e.host || "TBD")}</div>
+      <div class="muted small">${e.date ? `${formatDateShort(e.date)}${e.time ? ` · ${formatTime(e.time)}` : ""}` : "Date TBD"}</div>
     </a>`;
     const winner = (e.results || []).slice().sort((a,b)=> (b.eventTotal||0) - (a.eventTotal||0))[0];
     const isActive = (i === playedEvents.length - 1) || (i === season.events.indexOf(playedEvents[lastIdx]));
@@ -834,6 +859,21 @@ function renderEventView(root, sport, eventId) {
 }
 
 function renderPokerEventDetail(root, season, event) {
+  if (!event.played) {
+    root.innerHTML = `
+      <div class="breadcrumb"><a href="#/poker/${escapeHtml(season.id)}">${escapeHtml(season.label)}</a> · ${escapeHtml(event.month)} ${event.year}</div>
+      <div class="empty">
+        <div class="center">
+          <div class="upper">Upcoming event</div>
+          <h1>${escapeHtml(event.month)} ${event.year}${event.date ? ` · ${formatDateLong(event.date)}` : ""}</h1>
+          <p>Host: <strong>${escapeHtml(event.host || "TBD")}</strong>${event.time ? ` · Cards in the air at <strong>${formatTime(event.time)}</strong>` : ""}.</p>
+          <p>Results will appear here once the night is played.</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   const results = (event.results || []).slice().sort((a,b) => (b.eventTotal||0) - (a.eventTotal||0));
   const winner = results[0];
   const totalPts = (event.totals?.eventTotal) ?? results.reduce((s,r) => s + (r.eventTotal||0), 0);
@@ -1164,6 +1204,31 @@ function renderAllTimeView(root, sport) {
 
 // ============================ Empty state ============================
 function renderEmptyState(root, sport, season) {
+  if (sport === "poker" && (season?.events || []).length) {
+    // Poker season scheduled but nothing played yet: show the game nights.
+    const events = season.events;
+    const upcoming = events.find(e => !e.played && !e.skipped) || events[0];
+    const scheduleRows = events.map(e => `
+        <div class="sched-row${e.skipped ? " tbd" : ""}">
+          <span class="label">${escapeHtml(e.month)} ${e.year}</span>
+          <span class="sub">${e.skipped ? "No game" : `${e.date ? `${formatDateLong(e.date)}${e.time ? ` · ${formatTime(e.time)}` : ""}` : "Date TBD"} · Host: ${escapeHtml(e.host || "TBD")}`}</span>
+        </div>`).join("");
+
+    root.innerHTML = `
+      <div class="empty">
+        <div class="center">
+          <div class="upper">${escapeHtml(season.label)} MMP Poker Season</div>
+          <h1>${upcoming ? `${escapeHtml(upcoming.month)} ${upcoming.year}${upcoming.date ? ` · ${formatDateLong(upcoming.date)}` : ""}` : "First game night TBD"}</h1>
+          <p>${upcoming ? `Hosted by <strong>${escapeHtml(upcoming.host || "TBD")}</strong>${upcoming.time ? ` · Cards in the air at <strong>${formatTime(upcoming.time)}</strong>` : ""}.` : ""} Standings wake up the moment the first night is played.</p>
+        </div>
+        <div class="schedule">
+          <div class="sched-head">Schedule</div>
+          ${scheduleRows}
+        </div>
+      </div>
+    `;
+    return;
+  }
   if (sport !== "golf") {
     root.innerHTML = `<div class="empty"><div class="center"><h1>No data yet</h1><p>Once results are entered, this page comes alive.</p></div></div>`;
     return;

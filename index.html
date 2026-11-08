@@ -213,6 +213,7 @@
       <span class="t-eyebrow">Poker · cups won</span>
       <h3 id="poker-standings-head">Loading…</h3>
       <ul class="player-list" id="poker-standings-list"></ul>
+      <dl class="upcoming" id="poker-upcoming" hidden></dl>
     </div>
     <div class="standings-card" id="golf-standings">
       <span class="t-eyebrow">Golf · cups won</span>
@@ -271,6 +272,14 @@
     if (!iso) return '';
     const d = new Date(iso + 'T00:00:00');
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // "16:00" -> "4:00 PM" (poker events store a 24h start time)
+  const fmtTime = (hhmm) => {
+    if (!hhmm) return '';
+    const [h, m] = String(hhmm).split(':').map(Number);
+    if (!Number.isFinite(h)) return hhmm;
+    return `${((h + 11) % 12) + 1}:${String(m || 0).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
   };
 
   const tryFetch = async (url) => {
@@ -359,6 +368,21 @@
     `;
   }
 
+  // Next poker game night, if one is scheduled (seasons are newest first).
+  const nextGame = (poker?.seasons || [])
+    .flatMap((s) => s.events || [])
+    .filter((e) => !e.played && !e.skipped && e.date && e.date >= todayISO)
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  if (nextGame) {
+    const pokerUpcoming = document.getElementById('poker-upcoming');
+    pokerUpcoming.hidden = false;
+    pokerUpcoming.innerHTML = `
+      <dt>Next game</dt><dd>${fmtDate(nextGame.date)}</dd>
+      <dt>Host</dt><dd>${nextGame.host || 'TBD'}</dd>
+      <dt>Cards fly</dt><dd>${fmtTime(nextGame.time) || 'TBD'}</dd>
+    `;
+  }
+
   // ── Roll of honour: newest cup year first ──
   const honourCell = ({ names, note }) =>
     names.length ? names.join(' &amp; ') + (names.length > 1 ? ' <span class="note">(shared)</span>' : '')
@@ -378,11 +402,17 @@
 
   for (const s of poker?.seasons || []) {
     for (const e of s.events || []) {
-      if (!e.played) continue;
+      if (!e.played) {
+        if (e.date && e.date >= todayISO) {
+          const when = fmtTime(e.time) ? `${fmtDate(e.date)} at ${fmtTime(e.time)}` : fmtDate(e.date);
+          latest.push({ date: e.date, what: `Upcoming · Poker night on ${when} (${e.host || 'TBD'})` });
+        }
+        continue;
+      }
       const monthIdx = MONTHS[e.month];
       if (!monthIdx || !e.year) continue;
       const date = `${e.year}-${String(monthIdx).padStart(2, '0')}-${POKER_EVENT_DAY}`;
-      latest.push({ date, what: `Poker · ${e.month} ${e.year} hosted by ${e.host}` });
+      latest.push({ date, what: `Poker · ${e.month} ${e.year} hosted by ${e.host || 'TBD'}` });
     }
   }
   for (const s of golf?.seasons || []) {
