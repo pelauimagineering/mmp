@@ -10,7 +10,7 @@ When designing for any MMP property (Poker app, Golf/Challenge Cup app, mmp.pela
 
 2. **Always link `tokens.css` then `components.css`.** Set the page theme on `<body>` with `theme-felt` (poker, dark) or `theme-links` (golf + homepage, light). All color and spacing must come from CSS custom properties — never hard-code hex.
 
-3. **Voice.** Sound like the guys at the table. First names, light banter, `Fraunces` italic for the lede. Never "User 4," never "Click here to forfeit." See the voice card on `index.html` for do/don't pairs.
+3. **Voice.** Sound like the crew at the table. First names, light banter, `Fraunces` italic for the lede. Never "User 4," never "Click here to forfeit." See the voice card on `index.html` for do/don't pairs.
 
 4. **Type rules.**
    - Display headings: `var(--font-display)` (Fraunces), 600 weight, italic for emphasis.

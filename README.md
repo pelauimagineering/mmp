@@ -1,7 +1,7 @@
-# MMP — Bound by Brotherhood
+# MMP — Bound by Friendship
 
 The MMP Challenge Cup web property. One trophy, two games,
-guys, since 2008.
+one crew, since 2008.
 
 This monorepo ships **three deployable surfaces** under one shared design system:
 
