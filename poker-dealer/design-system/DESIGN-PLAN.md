@@ -39,6 +39,9 @@ A. Tabs (Table | Players | Video)      B. Table, then drawers (chosen)
                                        └───────────────┘
 ```
 
+(After the critique the drawing changed in two ways: shown hands moved onto
+the board panel, and the two slides sit side by side. See `pages/game.md`.)
+
 A hides who is dealing and who has folded behind a tab switch, and tabs
 compete with the dealer's button for the bottom edge. B keeps a one-line
 summary of each drawer visible ("7 seated · Dee deals") so the answer is
@@ -81,15 +84,15 @@ two-column layout by simply opening the drawers in a side column.
 | Join Game | Game: "Join the game" in the hand area |
 | Community cards, phase | Board + street track |
 | Blind timer, blinds, "blinds will increase" | Clock strip (and TV side rail) |
-| Timer pause / resume / reset (dealer) | Clock strip buttons (dealer only) |
+| Timer pause / resume / reset (dealer) | Pause / resume on the clock strip; "Restart the blind clock" in the menu |
 | Hold to peek | Hold the hand (touch, mouse, Space) |
-| Slide to show / slide to fold | `SlideToConfirm` × 2 |
-| Dealer: shuffle, deal, flip | Dealer dock: next-step button + shuffle |
+| Slide to show / slide to fold | `SlideToConfirm` × 2, side by side |
+| Dealer: shuffle, deal, flip | Dealer dock: Shuffle + Deal between hands, then the next street; finishing the hand is a slide |
 | Players list with D / SB / BB / folded / broke | Players drawer |
 | Click a player to make them dealer; random dealer | Players drawer: "Make dealer" per row, "Pick a dealer at random" |
-| Dealer drag-to-reorder | Players drawer: drag (pointer) plus move up / down buttons |
-| Dealer broke toggle | Players drawer: "Out of chips" toggle per row |
-| Revealed hands | Shown hands drawer (and TV bottom row) |
+| Dealer drag-to-reorder | Players drawer → Arrange seats: move up / down buttons (plus drag with a mouse) |
+| Dealer broke toggle | Players drawer → Arrange seats: Out / Back in per row |
+| Revealed hands | Shown hands on the board panel (and TV bottom row) |
 | Show Video toggle | Video drawer (TV: Video button) |
 | Reset Game (phrase + confirm) | Menu → dialog |
 | Logout (name) | Menu |

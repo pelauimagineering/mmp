@@ -13,7 +13,7 @@ const STREET_NOTICE = {
 function describeError(message) {
   const text = message.message || '';
   if (/at least 2 active players/i.test(text)) return 'You need at least 2 players with chips to deal.';
-  if (/only the dealer/i.test(text)) return `${text}. The button may have moved: check who is dealing.`;
+  if (/only the dealer/i.test(text)) return 'Only the dealer can do that. The button may have moved: check who is dealing.';
   if (/while cards are dealt/i.test(text)) return 'The dealer can only change between hands.';
   if (/already revealed/i.test(text)) return 'Your cards are already shown.';
   if (/already folded/i.test(text)) return 'You already folded this hand.';
@@ -75,7 +75,7 @@ export function useTable({ mode, token = null, demo = null, userId = null, enabl
           break;
         }
         case 'cards-dealt':
-          notify('Dealt. Hold your cards to peek.');
+          notify('Dealt');
           break;
         case 'community-revealed':
           notify(STREET_NOTICE[message.phase] ?? 'The board changed');

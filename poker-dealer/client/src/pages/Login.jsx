@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Tv } from 'lucide-react';
 import { boot } from '../lib/boot.js';
 import { DEMO_SEATED, DEMO_USERS } from '../lib/demo.js';
@@ -41,10 +41,17 @@ export default function Login() {
   const chosen = crew.users.find((user) => user.id === userId) ?? null;
   const alreadySeated = chosen !== null && crew.seated.includes(chosen.id);
 
+  const nameField = useRef(null);
   const choose = (user) => {
     setUserId(user.id);
     setDisplayName(user.display_name);
   };
+  // Bring the name field above the docked button once a name is picked.
+  useEffect(() => {
+    if (userId === null) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    nameField.current?.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+  }, [userId]);
 
   const onSubmit = (event) => {
     if (boot.demo) {
@@ -59,7 +66,7 @@ export default function Login() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-safe pt-safe">
       <header className="flex items-center justify-between py-3">
-        <a href="https://mmp.pelau.com/" className="inline-flex min-h-11 items-center rounded-control">
+        <a href="https://mmp.pelau.com/" className="inline-flex min-h-11 items-center rounded-control text-heading">
           <Brand />
         </a>
         <a
@@ -74,7 +81,7 @@ export default function Login() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-display font-bold">Who’s sitting down?</h1>
-            <p className="mt-1 text-body text-chalk-dim">Your phone holds your cards. The chips stay on the table.</p>
+            <p className="mt-2 text-body text-chalk-dim">Your phone holds your cards. The chips stay on the table.</p>
           </div>
           <div aria-hidden="true" className="flex flex-none pr-1 [--card-w:44px]">
             <PlayingCard card={{ rank: 'A', suit: 'spades' }} faceUp className="-rotate-6" />
@@ -87,7 +94,7 @@ export default function Login() {
             <legend className="text-lead font-semibold">Pick your name</legend>
 
             {crew.phase === 'loading' ? (
-              <div aria-busy="true" className="mt-3 grid grid-cols-2 gap-2 min-[480px]:grid-cols-3">
+              <div aria-busy="true" className="mt-3 grid grid-cols-2 gap-2">
                 <p className="sr-only">Loading the crew…</p>
                 {Array.from({ length: 9 }, (_, index) => (
                   <div key={index} className="h-12 rounded-control bg-table" />
@@ -111,7 +118,7 @@ export default function Login() {
             ) : null}
 
             {crew.phase === 'ready' && crew.users.length > 0 ? (
-              <div className="mt-3 grid grid-cols-2 gap-2 min-[480px]:grid-cols-3">
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 {crew.users.map((user) => {
                   const seated = crew.seated.includes(user.id);
                   const selected = user.id === userId;
@@ -140,7 +147,7 @@ export default function Login() {
                       </span>
                       {seated ? (
                         <span className={cx('flex-none text-caption font-semibold', selected ? 'text-brass-ink' : 'text-chalk-dim')}>
-                          Seated
+                          At the table
                         </span>
                       ) : null}
                     </label>
@@ -151,7 +158,7 @@ export default function Login() {
           </fieldset>
 
           {chosen ? (
-            <div className="mt-5">
+            <div ref={nameField} className="mt-5">
               <label htmlFor="displayName" className="block text-lead font-semibold">
                 Name at the table
               </label>
@@ -169,12 +176,6 @@ export default function Login() {
                 placeholder="e.g. Big Slick…"
               />
               <p className="mt-2 text-caption text-chalk-dim">This is how the others see you. Change it if you like.</p>
-              {alreadySeated ? (
-                <p role="status" className="mt-3 rounded-control bg-warn px-3 py-2 text-body font-semibold text-brass-ink">
-                  {chosen.display_name} is already seated on another device. Sitting down here opens a second screen for the
-                  same seat.
-                </p>
-              ) : null}
             </div>
           ) : null}
 
@@ -204,6 +205,12 @@ export default function Login() {
 
       {/* The next step is always the one brass button, docked in the thumb zone. */}
       <div className="sticky bottom-0 z-20 -mx-4 border-t border-line bg-rail px-4 pt-3 pb-safe">
+        {alreadySeated ? (
+          <p role="status" className="mb-3 rounded-control bg-warn px-3 py-2 text-body font-semibold text-brass-ink">
+            {chosen.display_name} is already at the table on another device. Sitting down here opens a second screen for the
+            same seat.
+          </p>
+        ) : null}
         <Button type="submit" form="seat-form" tone="primary" busy={submitting} disabled={!chosen} className="w-full">
           {submitting ? 'Taking your seat…' : chosen ? `Take a seat as ${displayName.trim() || chosen.display_name}` : 'Pick your name to sit down'}
         </Button>

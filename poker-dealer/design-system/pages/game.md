@@ -11,19 +11,21 @@ The hand loop fits one screen with no scrolling (target: 390 × 664 visible).
 
 ```
 ┌──────────────────────────────────┐
-│ MMP Poker      ● Live     ⋯ menu │  top bar (rail), 52px
-│ Blinds 2 / 4        5:42  ⏸ ↻    │  clock strip
+│ MMP Poker           ● Live   ☰   │  top bar (rail)
+│ Blinds   Until blinds go up  [⏸] │  clock strip: 28px numbers
+│ 2/4      5:42                    │
 ├──────────────────────────────────┤
 │ Pre-flop · Flop · Turn · River   │  street track
 │ [A♠] [K♥] [7♦] [ ] [ ]           │  board on the table felt
+│ 7 still in · 1 folded            │
+│ Shown hands: Tony [K♦][10♦]      │  only once someone shows
 ├──────────────────────────────────┤
 │ Your hand          Hold to peek  │
+│ (SB) You're the small blind, 2   │  your own seat markers
 │        [▒▒]  [▒▒]                │
-│ [ ▸ Slide to show ]              │
-│ [ ▸ Slide to fold ]              │
+│ [✕ Slide to fold][👁 Slide to show]│  side by side
 ├──────────────────────────────────┤
-│ ▸ Players · 7 · Dee deals        │  disclosures (collapsed by default)
-│ ▸ Shown hands · 2                │
+│ ▸ Players · 8 seated · Dee deals │  disclosures (collapsed)
 │ ▸ Video table                    │
 ├──────────────────────────────────┤
 │ [        Turn the flop        ]  │  dealer dock (rail), dealer only
@@ -34,24 +36,34 @@ The hand loop fits one screen with no scrolling (target: 390 × 664 visible).
 - Disclosures sit below the fold line by design: everything above them is the
   per-hand loop. Their headers summarise their content so most hands never
   need them opened.
-- The dealer's next step is the single brass button, docked to the bottom
-  thumb zone. Its label is always the next step: "Deal", "Turn the flop",
-  "Turn the turn card", "Turn the river", "Finish the hand".
-- Shuffle and the clock controls are secondary: shuffle sits beside the dock
-  button; pause and reset sit on the clock strip.
+- The dealer's next step is the single brass control, docked to the bottom
+  thumb zone: "Deal", "Turn the flop", "Turn the turn card", "Turn the river".
+  Finishing the hand clears the board and every shown hand, so it is a slide
+  ("Slide to finish the hand"), not a tap. The dock locks for 800ms after each
+  street so a double tap cannot turn two cards.
+- Shuffle appears beside "Deal" between hands only. Pause / resume sits on the
+  clock strip; restarting the clock is in the menu (it cannot be undone).
+- Shown hands are part of the hand loop, so they sit on the board panel rather
+  than in a drawer. Your own shown hand is not repeated there: it is already
+  face up under "Your hand".
+- Measured: the hand loop ends at 573px and the dealer dock starts at 591px on
+  a 390 × 664 screen.
 - Before you have joined, the hand area is replaced by a single "Join the
   game" action.
 
 ## Desktop (1024px and up)
 
 Two columns inside a 1200px frame, nothing scrolls at 1440 × 900:
-left (flexible) = board, your hand, dealer step; right (360px) = players,
-shown hands, video. Disclosures are open by default on desktop.
+left (flexible) = board with shown hands, your hand; right (360px) = players
+and video. Disclosures are open by default on desktop.
 
 ## Page-specific rules
 
 - Hole cards are face down until held. Holding anywhere on the cards peeks;
   releasing hides. Keyboard: hold Space on the hand.
-- Card size here: board `clamp(52px, 16.5vw, 96px)`, hand `clamp(84px, 26vw, 132px)`.
+- Card size here: board fills the panel width up to 96px (112px on desktop);
+  hand `clamp(72px, min(24vw, 13dvh), 120px)` so short phones get shorter cards.
+- In "Arrange seats" (dealer, between hands) each row keeps to one line:
+  name, markers, then Out / Back in and the two move arrows.
 - Destructive, table-wide actions (reset the game, log out) live in the menu,
   never on the main surface.

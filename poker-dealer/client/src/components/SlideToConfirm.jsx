@@ -17,7 +17,7 @@ const TONES = {
  *
  * Keyboard: focus the knob, then Arrow Right (four steps) or End.
  */
-export function SlideToConfirm({ label, tone = 'brass', onConfirm }) {
+export function SlideToConfirm({ label, tone = 'brass', icon: Icon = ChevronsRight, onConfirm, onTimeout }) {
   const trackRef = useRef(null);
   const drag = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -30,9 +30,10 @@ export function SlideToConfirm({ label, tone = 'brass', onConfirm }) {
     const id = setTimeout(() => {
       setSending(false);
       setProgress(0);
+      onTimeout?.();
     }, 3000);
     return () => clearTimeout(id);
-  }, [sending]);
+  }, [sending, onTimeout]);
 
   const confirm = () => {
     setProgress(1);
@@ -102,8 +103,8 @@ export function SlideToConfirm({ label, tone = 'brass', onConfirm }) {
       />
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center pl-10 text-lead font-semibold text-chalk"
-        style={{ opacity: Math.max(0.25, 1 - progress * 1.2) }}
+        className="absolute inset-0 flex items-center justify-center pr-2 pl-12 text-body font-semibold whitespace-nowrap text-chalk"
+        style={{ opacity: Math.max(0.6, 1 - progress * 0.5) }}
       >
         {sending ? 'Sending…' : label}
       </span>
@@ -130,7 +131,7 @@ export function SlideToConfirm({ label, tone = 'brass', onConfirm }) {
         {sending ? (
           <LoaderCircle aria-hidden="true" className="size-5 animate-spin" />
         ) : (
-          <ChevronsRight aria-hidden="true" className="size-6" />
+          <Icon aria-hidden="true" className="size-6" />
         )}
       </button>
     </div>

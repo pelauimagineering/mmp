@@ -44,6 +44,8 @@
   --text-body--line-height: 1.5rem;
   --text-lead: 1.125rem;
   --text-lead--line-height: 1.625rem;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.75rem;
   --text-title: 1.375rem;
   --text-title--line-height: 1.75rem;
   --text-display: 1.875rem;
@@ -65,7 +67,7 @@
     to { transform: rotateY(0deg); opacity: 1; }
   }
   @keyframes notice-in {
-    from { transform: translateY(8px); opacity: 0; }
+    from { transform: translateY(-8px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
   @keyframes spin {
@@ -95,6 +97,18 @@
 
   h1, h2, h3 {
     text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  input, textarea {
+    caret-color: var(--color-brass);
+  }
+
+  * {
+    scrollbar-color: var(--color-line-strong) transparent;
   }
 
   button, a, summary, [role='slider'] {
@@ -178,9 +192,10 @@
 
   .playing-card--back {
     background-color: var(--color-card-back);
-    background-image:
-      repeating-linear-gradient(45deg, rgb(251 248 239 / 0.14) 0 1px, transparent 1px calc(var(--w) * 0.11)),
-      repeating-linear-gradient(-45deg, rgb(251 248 239 / 0.14) 0 1px, transparent 1px calc(var(--w) * 0.11));
+    /* Diamond lattice drawn as one SVG tile, scaled with the card. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M0 0L10 10M10 0L0 10' stroke='%23fbf8ef' stroke-opacity='.2' stroke-width='.5'/%3E%3C/svg%3E");
+    background-size: calc(var(--w) * 0.16) calc(var(--w) * 0.16);
+    background-position: center;
     border: calc(var(--w) * 0.055) solid var(--color-card);
   }
 

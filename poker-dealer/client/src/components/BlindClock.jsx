@@ -13,11 +13,8 @@ export const CLOCK_TONE_TEXT = {
 /** The digits of the blind clock. Fixed-width so the countdown does not jitter. */
 export function ClockDigits({ clock, className }) {
   return (
-    <span
-      role="timer"
-      aria-label={`${formatClock(clock.seconds)} on the blind clock. ${clock.label}.`}
-      className={cx('font-mono font-bold tabular leading-none', CLOCK_TONE_TEXT[clock.tone], className)}
-    >
+    <span role="timer" className={cx('font-mono font-bold tabular leading-none', CLOCK_TONE_TEXT[clock.tone], className)}>
+      <span className="sr-only">Blind clock </span>
       {clock.tone === 'expired' ? '0:00' : formatClock(clock.seconds)}
     </span>
   );

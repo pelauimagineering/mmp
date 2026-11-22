@@ -116,10 +116,11 @@ Scale (rem, 16px root). Nothing in the product is smaller than `caption`.
 |---|---|---|
 | `caption` | 14 / 20 | Helper text, timestamps |
 | `body` | 16 / 24 | Default UI text, player names |
-| `lead` | 18 / 26 | Section titles, button labels |
+| `lead` | 18 / 26 | Button labels, player names |
+| `heading` | 20 / 28 | Section titles ("Your hand", "Players") |
 | `title` | 22 / 28 | Page and dialog titles (Besley 600) |
 | `display` | 30 / 34 | Login heading (Besley 700) |
-| `clock` | 28–40, fluid | Blind clock on the phone |
+| `clock` | 28 | Blind clock and blinds on the phone (labels at `body`) |
 | `tv-*` | `clamp()` on `vh`/`vw` | Community board: clock, blinds, names |
 
 Rules: sentence case everywhere. Numerals use `tabular-nums`. Headings use
@@ -149,10 +150,10 @@ Rules: sentence case everywhere. Numerals use `tabular-nums`. Headings use
 | `BlindClock` | Mono digits. States: idle, running, under 60s (`warn` + "1 minute left"), under 30s (`danger-text`), paused ("Paused"), expired ("Blinds go up next hand"). State is always spelled out, never colour alone. |
 | `SeatChip` | 28px disc: D (ivory disc, ink letter), SB (blue), BB (brass). With accessible names. |
 | `Button` | `primary` (brass), `secondary` (outlined chalk), `quiet` (text), `danger` (red fill). 48px tall. One primary per view. Pending state shows a spinner and disables. |
-| `SlideToConfirm` | 56px track, drag the knob to the end (95%). Keyboard: arrow keys or Enter on the knob. Used for show (brass) and fold (danger): the two actions you cannot take back. |
+| `SlideToConfirm` | 52px track with a 44px knob; drag to the end (95%). Keyboard: Arrow Right four times, or End. Used for the actions nobody can take back: fold (danger, cross icon, left), show (brass, eye icon, right) and the dealer's "finish the hand". Fold and show differ by position and icon, not only colour. |
 | `Disclosure` | Collapsible section: 48px header row with title, a one-line summary of what is inside, and a chevron. Open state is remembered per device. |
-| `ConnectionPill` | Live · Reconnecting… · Offline, with a "Sync now" action when not live. Always in the top bar. |
-| `Notice` | One transient message at a time, top centre, `aria-live="polite"`; errors are `role="alert"` and say what to do next. |
+| `ConnectionPill` + banner | Live · Reconnecting… · Offline, always in the top bar. When not live, a full-width banner adds the sentence and "Sync now"; on the TV the board, clock and seats also dim so stale cards never look current. |
+| `Notice` | One transient message at a time, top centre just under the header so it never covers a control; `aria-live="polite"`; errors are `role="alert"` and say what to do next. |
 | `Dialog` | Native `<dialog>` for reset and other confirmations. |
 
 ---

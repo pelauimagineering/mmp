@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, LogOut, Menu, Pause, Play, RefreshCw, RotateCcw, Shuffle, Tv } from 'lucide-react';
+import { ArrowDown, ArrowUp, Eye, LogOut, Menu, Pause, Play, RefreshCw, RotateCcw, Shuffle, TimerReset, Tv, X } from 'lucide-react';
 import { boot } from '../lib/boot.js';
 import { cardName } from '../lib/cards.js';
 import { DEMO_SCENARIOS, DEMO_USER } from '../lib/demo.js';
@@ -18,6 +18,7 @@ import {
   Disclosure,
   IconButton,
   Notice,
+  SeatChip,
   SeatChips,
   cx,
 } from '../components/ui.jsx';
@@ -26,7 +27,6 @@ const NEXT_STEP = {
   'pre-flop': 'Turn the flop',
   flop: 'Turn the turn card',
   turn: 'Turn the river',
-  river: 'Finish the hand',
 };
 
 function useSession() {
@@ -74,6 +74,16 @@ export default function Game() {
     const id = setTimeout(() => setBusy(false), 2500);
     return () => clearTimeout(id);
   }, [busy]);
+  // ...and for a beat after the street changes, so a second tap that lands
+  // just after the table answers cannot turn another card or end the hand.
+  const [settling, setSettling] = useState(false);
+  useEffect(() => {
+    setSettling(true);
+    const id = setTimeout(() => setSettling(false), 800);
+    return () => clearTimeout(id);
+  }, [state?.phase, state?.cardsDealt]);
+  const dockLocked = busy || settling;
+
   const act = useCallback(
     (type, data) => {
       if (send(type, data)) setBusy(true);
@@ -89,6 +99,8 @@ export default function Game() {
   const holeCards = state?.holeCards ?? [];
   const revealedHands = state?.revealedHands ?? [];
   const iHaveShown = revealedHands.some((hand) => hand.userId === user?.id);
+  // Your own shown hand is already face up in "Your hand"; the board lists everyone else's.
+  const othersShown = revealedHands.filter((hand) => hand.userId !== user?.id);
   const wideScreen = useMemo(() => window.matchMedia('(min-width: 1024px)').matches, []);
 
   const logout = async () => {
@@ -103,6 +115,8 @@ export default function Game() {
     }
   };
 
+  const slideTimedOut = useCallback(() => notify('No answer from the table. Try that again.', 'error', 5000), [notify]);
+
   const foldedCount = players.filter((player) => player.hasFolded).length;
   const boardStatus = !state
     ? 'Finding the table…'
@@ -115,7 +129,7 @@ export default function Game() {
           : 'Waiting for a dealer';
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-[1200px] flex-col">
+    <div className="mx-auto flex min-h-dvh w-full max-w-[1200px] flex-col [--notice-top:7.75rem] lg:[--notice-top:4.75rem]">
       <a
         href="#table"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-control focus:bg-chalk focus:px-3 focus:py-2 focus:text-card-ink"
@@ -125,7 +139,7 @@ export default function Game() {
 
       <header className="sticky top-0 z-10 bg-rail pt-safe lg:rounded-b-panel">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 px-safe lg:grid-cols-[auto_minmax(0,1fr)_auto_auto] lg:gap-x-6">
-          <h1 className="py-2">
+          <h1 className="py-2 text-heading">
             <Brand />
           </h1>
           <ConnectionPill status={status} />
@@ -134,38 +148,38 @@ export default function Game() {
           </IconButton>
 
           <div className="col-span-full row-start-2 flex items-center gap-4 border-t border-line py-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:justify-center lg:gap-8 lg:border-t-0">
-            <p className="flex flex-col">
-              <span className="text-caption text-chalk-dim">Blinds</span>
-              <BlindsValue blinds={state?.blinds} className="text-title" />
+            <p className="flex flex-col gap-0.5">
+              <span className="text-body leading-5 text-chalk-dim">Blinds</span>
+              <BlindsValue blinds={state?.blinds} className="text-[1.75rem]" />
             </p>
-            <p className="flex flex-1 flex-col lg:flex-none">
-              <span className={cx('text-caption', clock.tone === 'running' || clock.tone === 'idle' ? 'text-chalk-dim' : CLOCK_TONE_TEXT[clock.tone])}>
+            <p className="flex min-w-0 flex-1 flex-col gap-0.5 lg:flex-none">
+              <span
+                className={cx(
+                  'truncate text-body leading-5',
+                  clock.tone === 'running' || clock.tone === 'idle' ? 'text-chalk-dim' : cx('font-semibold', CLOCK_TONE_TEXT[clock.tone]),
+                )}
+              >
                 {clock.label}
               </span>
-              <ClockDigits clock={clock} className="text-title" />
+              <ClockDigits clock={clock} className="text-[1.75rem]" />
             </p>
-            {iAmDealer && (state.timerState?.isRunning || state.timerState?.isPaused || state.timerState?.blindsWillIncrease) ? (
-              <div className="flex gap-1">
-                {state.timerState.isPaused ? (
-                  <IconButton label="Resume the clock" onClick={() => act('resume-timer')} disabled={busy}>
-                    <Play aria-hidden="true" className="size-5" />
-                  </IconButton>
-                ) : (
-                  <IconButton label="Pause the clock" onClick={() => act('pause-timer')} disabled={busy || !state.timerState.isRunning}>
-                    <Pause aria-hidden="true" className="size-5" />
-                  </IconButton>
-                )}
-                <IconButton label="Restart the clock" onClick={() => act('reset-timer')} disabled={busy}>
-                  <RotateCcw aria-hidden="true" className="size-5" />
+            {iAmDealer && (state.timerState?.isRunning || state.timerState?.isPaused) ? (
+              state.timerState.isPaused ? (
+                <IconButton label="Resume the clock" onClick={() => act('resume-timer')} disabled={busy} className="border border-line-strong">
+                  <Play aria-hidden="true" className="size-5" />
                 </IconButton>
-              </div>
+              ) : (
+                <IconButton label="Pause the clock" onClick={() => act('pause-timer')} disabled={busy} className="border border-line-strong">
+                  <Pause aria-hidden="true" className="size-5" />
+                </IconButton>
+              )
             ) : null}
           </div>
         </div>
         <ConnectionBanner status={status} onSync={table.syncNow} />
       </header>
 
-      <main id="table" className="flex-1 px-safe pt-3 pb-4 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:pt-6">
+      <main id="table" className="flex-1 px-safe pt-2 pb-4 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:pt-6">
         <div>
           <section aria-label="The board" className="rounded-panel bg-table px-3 pt-2 pb-3 lg:px-6 lg:pb-5">
             <StreetTrack phase={state?.phase} />
@@ -173,16 +187,16 @@ export default function Game() {
               cards={state?.communityCards ?? []}
               className="mt-3 [--card-w:clamp(48px,calc((100vw-3.5rem)/5.48),96px)] lg:[--card-w:112px]"
             />
-            <p className="mt-2 text-center text-body text-chalk-dim">{boardStatus}</p>
+            <p className="mt-2 text-center text-body text-chalk">{boardStatus}</p>
 
-            {revealedHands.length > 0 ? (
+            {othersShown.length > 0 ? (
               <div className="mt-2 border-t border-line pt-2">
-                <h2 className="text-body font-semibold">Shown hands</h2>
+                <h2 className="text-lead font-semibold">Shown hands</h2>
                 <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-2 [--card-w:40px] lg:[--card-w:52px]">
-                  {revealedHands.map((hand) => (
+                  {othersShown.map((hand) => (
                     <li key={hand.userId} className="flex items-center gap-2">
                       <span translate="no" className="max-w-[9ch] truncate text-body font-semibold">
-                        {hand.userId === user?.id ? 'You' : hand.playerName}
+                        {hand.playerName}
                       </span>
                       <span className="flex gap-1">
                         {hand.cards.map((card, index) => (
@@ -207,6 +221,8 @@ export default function Game() {
             busy={busy}
             act={act}
             send={send}
+            blinds={state?.blinds}
+            onSlideTimeout={slideTimedOut}
           />
         </div>
 
@@ -241,22 +257,29 @@ export default function Game() {
       {iAmDealer ? (
         <div className="sticky bottom-0 z-20 border-t border-line bg-rail px-safe pt-3 pb-safe lg:rounded-t-panel">
           <div className="mx-auto flex max-w-xl gap-3">
-            <Button
-              onClick={() => act('shuffle-deck')}
-              disabled={cardsDealt || busy}
-              aria-label="Shuffle the deck"
-              className="flex-none px-4"
-            >
-              <Shuffle aria-hidden="true" className="size-5" />
-              Shuffle
-            </Button>
-            {cardsDealt ? (
-              <Button tone="primary" className="flex-1" disabled={busy} onClick={() => act('flip-community-card')}>
-                {NEXT_STEP[state.phase] ?? 'Turn the next card'}
-              </Button>
+            {!cardsDealt ? (
+              <>
+                <Button onClick={() => act('shuffle-deck')} disabled={dockLocked} className="flex-none px-4">
+                  <Shuffle aria-hidden="true" className="size-5" />
+                  Shuffle
+                </Button>
+                <Button tone="primary" className="flex-1" disabled={dockLocked} onClick={() => act('deal-cards')}>
+                  Deal
+                </Button>
+              </>
+            ) : state.phase === 'river' ? (
+              // Finishing clears the board and every shown hand, so it takes a slide, not a tap.
+              <div className="flex-1">
+                <SlideToConfirm
+                  key={settling ? 'settling' : 'ready'}
+                  label="Slide to finish the hand"
+                  onConfirm={() => (settling ? false : send('flip-community-card'))}
+                  onTimeout={slideTimedOut}
+                />
+              </div>
             ) : (
-              <Button tone="primary" className="flex-1" disabled={busy} onClick={() => act('deal-cards')}>
-                Deal
+              <Button tone="primary" className="flex-1" disabled={dockLocked} onClick={() => act('flip-community-card')}>
+                {NEXT_STEP[state.phase] ?? 'Turn the next card'}
               </Button>
             )}
           </div>
@@ -280,8 +303,23 @@ export default function Game() {
           <MenuItem icon={Tv} href={boot.demo ? '/community?demo=flop' : '/community'} target="_blank">
             Open the board for the TV
           </MenuItem>
+          {iAmDealer && state?.timerState && (state.timerState.isRunning || state.timerState.isPaused || state.timerState.blindsWillIncrease) ? (
+            <MenuItem
+              icon={TimerReset}
+              onClick={() => {
+                setMenuOpen(false);
+                if (send('reset-timer')) notify('Clock restarted at 7:00');
+              }}
+            >
+              Restart the blind clock
+            </MenuItem>
+          ) : null}
           <MenuItem href="https://mmp.pelau.com/golf/">Switch to golf</MenuItem>
           <MenuItem href="https://mmp.pelau.com/">MMP home</MenuItem>
+          <MenuItem icon={LogOut} onClick={logout}>
+            Log out
+          </MenuItem>
+          <li aria-hidden="true" className="my-2 border-t border-line" />
           <MenuItem
             danger
             icon={RotateCcw}
@@ -291,9 +329,6 @@ export default function Game() {
             }}
           >
             Reset the game…
-          </MenuItem>
-          <MenuItem icon={LogOut} onClick={logout}>
-            Log out
           </MenuItem>
         </ul>
 
@@ -360,7 +395,7 @@ function MenuItem({ icon: Icon, href, target, danger = false, onClick, children 
 }
 
 /** Your two cards, the peek gesture, and the two slides. */
-function Hand({ ready, me, dealer, cardsDealt, holeCards, shown, playerCount, busy, act, send }) {
+function Hand({ ready, me, dealer, cardsDealt, holeCards, shown, playerCount, busy, act, send, blinds, onSlideTimeout }) {
   const [peeking, setPeeking] = useState(false);
   const hasCards = holeCards.length > 0;
   const folded = Boolean(me?.hasFolded);
@@ -405,25 +440,45 @@ function Hand({ ready, me, dealer, cardsDealt, holeCards, shown, playerCount, bu
         <Button className="mt-3 w-full" disabled={busy || playerCount === 0} onClick={() => act('choose-dealer')}>
           Pick a dealer at random
         </Button>
-        <p className="mt-2 text-caption text-chalk-dim">Or open Players and choose someone.</p>
+        <p className="mt-2 text-caption text-chalk-dim">Or open Players below and choose someone.</p>
       </>
     );
   } else if (!hasCards) {
     empty = (
       <p className="text-body">
-        {me.isDealer ? 'You have the button. Deal when everyone’s ready.' : `No cards yet. ${dealer.name} deals next.`}
+        {me.isDealer ? 'Deal when everyone’s ready.' : `No cards yet. ${dealer.name} deals next.`}
       </p>
     );
   }
 
   return (
-    <section aria-labelledby="hand-title" className="mt-4">
+    <section aria-labelledby="hand-title" className="mt-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="hand-title" className="text-lead font-semibold">
+        <h2 id="hand-title" className="text-heading font-semibold">
           Your hand
         </h2>
         {hint ? <p className="text-body text-chalk-dim">{hint}</p> : null}
       </div>
+      {/* Your own seat markers, so "do I post?" never needs the Players drawer. */}
+      {me && (me.isDealer || me.isSmallBlind || me.isBigBlind) ? (
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-body">
+          {me.isDealer ? (
+            <span className="inline-flex items-center gap-1.5">
+              <SeatChip kind="dealer" /> You have the button
+            </span>
+          ) : null}
+          {me.isSmallBlind ? (
+            <span className="inline-flex items-center gap-1.5">
+              <SeatChip kind="small" /> You’re the small blind, {blinds?.small ?? 1}
+            </span>
+          ) : null}
+          {me.isBigBlind ? (
+            <span className="inline-flex items-center gap-1.5">
+              <SeatChip kind="big" /> You’re the big blind, {blinds?.big ?? 2}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
 
       {empty ? (
         <div className="mt-2 rounded-panel border border-dashed border-line-strong p-4">{empty}</div>
@@ -455,7 +510,7 @@ function Hand({ ready, me, dealer, cardsDealt, holeCards, shown, playerCount, bu
             onBlur={() => setPeeking(false)}
             className={cx(
               'mx-auto mt-2 flex justify-center gap-3 rounded-panel p-1 select-none [-webkit-touch-callout:none]',
-              '[--card-w:clamp(84px,24vw,120px)] disabled:cursor-default',
+              '[--card-w:clamp(72px,min(24vw,13dvh),120px)] disabled:cursor-default',
               folded && !faceUp && 'opacity-60',
             )}
           >
@@ -464,9 +519,18 @@ function Hand({ ready, me, dealer, cardsDealt, holeCards, shown, playerCount, bu
             ))}
           </button>
 
-          <div className="mx-auto mt-3 flex max-w-md flex-col gap-2">
-            {!shown ? <SlideToConfirm label="Slide to show" onConfirm={() => send('show-my-cards')} /> : null}
-            {!folded ? <SlideToConfirm label="Slide to fold" tone="danger" onConfirm={() => send('fold-hand')} /> : null}
+          {/* Fold on the left with a cross, show on the right with an eye: told apart by place and shape, not only colour. */}
+          <div className="mx-auto mt-3 grid max-w-md grid-cols-2 gap-3">
+            <div>
+              {!folded ? (
+                <SlideToConfirm label="Slide to fold" tone="danger" icon={X} onConfirm={() => send('fold-hand')} onTimeout={onSlideTimeout} />
+              ) : null}
+            </div>
+            <div>
+              {!shown ? (
+                <SlideToConfirm label="Slide to show" icon={Eye} onConfirm={() => send('show-my-cards')} onTimeout={onSlideTimeout} />
+              ) : null}
+            </div>
           </div>
         </>
       )}
@@ -507,6 +571,11 @@ function Players({ players, userId, iAmDealer, cardsDealt, busy, act }) {
         </div>
       ) : null}
 
+      {editing ? (
+        <p className="mb-1 text-caption text-chalk-dim">
+          Move seats with the arrows (or drag on a computer). “Out” sits a player out until they have chips again.
+        </p>
+      ) : null}
       <ol>
         {players.map((player, index) => (
           <li
@@ -523,23 +592,23 @@ function Players({ players, userId, iAmDealer, cardsDealt, busy, act }) {
               if (dragFrom.current !== null) move(dragFrom.current, index);
               dragFrom.current = null;
             }}
-            className={cx('flex min-h-12 flex-wrap items-center gap-x-2 border-b border-line py-1 last:border-b-0', editing && 'cursor-grab')}
+            className={cx('flex min-h-12 items-center gap-x-2 border-b border-line py-1 last:border-b-0', editing && 'cursor-grab')}
           >
             <span className="w-5 flex-none text-right font-mono text-body text-chalk-dim tabular">{index + 1}</span>
             <span
               translate="no"
               className={cx(
-                'max-w-[14ch] min-w-[5ch] truncate text-lead font-semibold',
+                'min-w-[4ch] truncate text-lead font-semibold',
                 (player.hasFolded || player.isBroke) && 'text-chalk-dim',
                 player.hasFolded && 'line-through',
               )}
             >
               {player.name}
             </span>
-            {player.id === userId ? <span className="flex-none text-body text-chalk-dim">you</span> : null}
+            {player.id === userId ? <span className="flex-none text-body text-chalk-dim">(you)</span> : null}
             <SeatChips player={player} />
             {player.hasFolded ? <span className="flex-none text-body text-chalk-dim">Folded</span> : null}
-            {player.isBroke ? <span className="flex-none text-body text-chalk-dim">Out of chips</span> : null}
+            {player.isBroke && !editing ? <span className="flex-none text-body text-chalk-dim">Out of chips</span> : null}
 
             <span className="ml-auto flex flex-none items-center gap-1">
               {editing ? (
@@ -547,11 +616,12 @@ function Players({ players, userId, iAmDealer, cardsDealt, busy, act }) {
                   <button
                     type="button"
                     aria-pressed={player.isBroke}
+                    aria-label={player.isBroke ? `Mark ${player.name} back in` : `Mark ${player.name} out of chips`}
                     disabled={busy}
                     onClick={() => act('toggle-player-broke', { playerId: player.id })}
-                    className="min-h-11 rounded-control border border-line-strong px-2 text-caption font-semibold hover:bg-raised disabled:opacity-55"
+                    className="min-h-11 rounded-control border border-line-strong px-3 text-body font-semibold hover:bg-raised disabled:opacity-55"
                   >
-                    {player.isBroke ? 'Back in' : 'Out of chips'}
+                    {player.isBroke ? 'Back in' : 'Out'}
                   </button>
                   <IconButton label={`Move ${player.name} up`} disabled={busy || index === 0} onClick={() => move(index, index - 1)}>
                     <ArrowUp aria-hidden="true" className="size-5" />
@@ -570,7 +640,7 @@ function Players({ players, userId, iAmDealer, cardsDealt, busy, act }) {
                   disabled={busy}
                   aria-label={`Make ${player.name} the dealer`}
                   onClick={() => act('select-dealer', { playerId: player.id })}
-                  className="min-h-11 rounded-control px-2 text-body font-semibold text-chalk underline decoration-line-strong underline-offset-4 hover:decoration-chalk disabled:opacity-55"
+                  className="min-h-11 rounded-control border border-line-strong px-3 text-body font-semibold text-chalk hover:bg-raised disabled:opacity-55"
                 >
                   Make dealer
                 </button>
@@ -645,6 +715,7 @@ function ResetDialog({ open, onClose, notify }) {
         <label htmlFor="reset-phrase" className="mt-4 block text-lead font-semibold">
           Challenge phrase
         </label>
+        <p id="reset-hint" className="text-caption text-chalk-dim">The phrase the crew agreed on, so nobody resets the table by accident.</p>
         <input
           id="reset-phrase"
           ref={inputRef}
@@ -656,7 +727,7 @@ function ResetDialog({ open, onClose, notify }) {
           value={phrase}
           onChange={(event) => setPhrase(event.target.value)}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? 'reset-error' : undefined}
+          aria-describedby={error ? 'reset-error reset-hint' : 'reset-hint'}
           className="mt-2 block min-h-12 w-full rounded-control border border-line-strong bg-felt px-3 text-lead text-chalk"
         />
         {error ? (
@@ -669,7 +740,7 @@ function ResetDialog({ open, onClose, notify }) {
             Keep playing
           </Button>
           <Button type="submit" tone="danger" className="flex-1" busy={working}>
-            Reset the game
+            Reset
           </Button>
         </div>
       </form>

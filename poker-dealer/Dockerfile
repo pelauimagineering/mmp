@@ -18,7 +18,7 @@ COPY views/ ./views/
 COPY database/ ./database/
 COPY scripts/ ./scripts/
 COPY client/ ./client/
-COPY vite.config.js ./
+COPY vite.config.mjs ./
 
 # Build the React client into public/app, then drop the build tools
 RUN npm run build && npm prune --omit=dev

@@ -21,6 +21,9 @@ export default function Community() {
   const revealedHands = state?.revealedHands ?? [];
   const dealer = players.find((player) => player.isDealer);
   const cardsDealt = Boolean(state?.cardsDealt);
+  // When the connection drops, the board is dimmed so it never looks authoritative while stale.
+  const stale = status === 'reconnecting' || status === 'offline';
+  const staleClass = stale ? 'opacity-45' : '';
 
   const boardCaption = !state
     ? 'Finding the table…'
@@ -38,16 +41,16 @@ export default function Community() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col lg:h-dvh lg:overflow-hidden">
+    <div className="flex min-h-dvh flex-col [--notice-top:4.5rem] lg:h-dvh lg:overflow-hidden">
       <header className="flex flex-wrap items-center gap-x-6 gap-y-1 bg-rail px-safe pt-safe lg:flex-nowrap">
-        <h1 className="py-2 lg:py-3">
-          <Brand className="lg:text-title" />
+        <h1 className="py-2 text-heading lg:py-3 lg:text-title">
+          <Brand />
           <span className="sr-only"> community board</span>
         </h1>
         <StreetTrack
           phase={state?.phase}
           size="tv"
-          className="order-last basis-full pb-2 text-caption lg:order-none lg:max-w-2xl lg:basis-auto lg:flex-1 lg:pb-0 lg:text-[clamp(1rem,2vh,1.375rem)]"
+          className="order-last basis-full pb-2 text-caption lg:order-none lg:max-w-2xl lg:basis-auto lg:flex-1 lg:pb-0 lg:text-[clamp(1.125rem,2.4vh,1.5rem)]"
         />
         <div className="ml-auto flex items-center gap-2">
           <ConnectionPill status={status} />
@@ -62,14 +65,14 @@ export default function Community() {
           </button>
         </div>
       </header>
-      <ConnectionBanner status={status} onSync={table.syncNow} />
+      <ConnectionBanner status={status} onSync={table.syncNow} audience="tv" />
 
       <main
         className={cx(
           'grid min-h-0 flex-1 gap-3 p-3 lg:gap-4 lg:p-4',
           videoOn
             ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]'
-            : 'lg:grid-cols-[minmax(0,1fr)_clamp(260px,24vw,420px)]',
+            : 'lg:grid-cols-[minmax(0,1fr)_clamp(250px,22vw,400px)]',
         )}
       >
         {videoStarted ? (
@@ -81,13 +84,16 @@ export default function Community() {
         ) : null}
 
         <div className={cx('grid min-h-0 gap-3 lg:gap-4', videoOn ? 'lg:grid-rows-[auto_minmax(0,1fr)_auto]' : 'lg:grid-rows-[minmax(0,1fr)_auto]')}>
-          {videoOn ? <ClockPanel state={state} clock={clock} compact /> : null}
+          {videoOn ? <ClockPanel state={state} clock={clock} compact className={staleClass} /> : null}
 
           <section
             aria-label="The board"
-            className="flex min-h-0 flex-col items-center justify-center rounded-panel bg-table p-3 [container-type:size] max-lg:aspect-[2/1]"
+            className={cx(
+              'flex min-h-0 flex-col items-center justify-center rounded-panel bg-table p-3 transition-opacity duration-200 [container-type:size] max-lg:aspect-[2/1]',
+              staleClass,
+            )}
           >
-            <Board cards={state?.communityCards ?? []} className="[--card-w:min(16.5cqw,58cqh)]" />
+            <Board cards={state?.communityCards ?? []} className="[--card-w:min(17cqw,60cqh)]" />
             {boardCaption ? (
               <p className="mt-[3cqh] text-center text-[clamp(1rem,5cqh,2rem)] leading-tight font-semibold text-chalk">{boardCaption}</p>
             ) : null}
@@ -96,8 +102,14 @@ export default function Community() {
           <section
             aria-labelledby="shown-title"
             className={cx(
-              'rounded-panel border border-line px-4 py-3',
-              videoOn ? '[--card-w:clamp(36px,3.2vw,56px)]' : '[--card-w:clamp(40px,4.6vw,76px)]',
+              'rounded-panel border border-line px-4 py-3 transition-opacity duration-200',
+              staleClass,
+              // Cards shrink as more hands are shown so the row never wraps off the screen.
+              videoOn || revealedHands.length > 6
+                ? '[--card-w:clamp(32px,2.9vw,52px)]'
+                : revealedHands.length > 4
+                  ? '[--card-w:clamp(36px,3.6vw,60px)]'
+                  : '[--card-w:clamp(40px,4.8vw,80px)]',
             )}
           >
             <h2 id="shown-title" className="text-[clamp(1rem,2.2vh,1.375rem)] font-semibold">
@@ -131,8 +143,8 @@ export default function Community() {
 
         {!videoOn ? (
           <aside className="flex min-h-0 flex-col gap-3 lg:gap-4">
-            <ClockPanel state={state} clock={clock} />
-            <Seats players={players} cardsDealt={cardsDealt} />
+            <ClockPanel state={state} clock={clock} className={staleClass} />
+            <Seats players={players} cardsDealt={cardsDealt} className={staleClass} />
           </aside>
         ) : null}
       </main>
@@ -142,7 +154,7 @@ export default function Community() {
   );
 }
 
-function ClockPanel({ state, clock, compact = false }) {
+function ClockPanel({ state, clock, compact = false, className }) {
   const blinds = state?.blinds ?? { small: 1, big: 2 };
   const next = blinds.small < MAX_SMALL_BLIND ? { small: blinds.small * 2, big: blinds.big * 2 } : null;
   const labelTone = clock.tone === 'running' || clock.tone === 'idle' ? 'text-chalk-dim' : CLOCK_TONE_TEXT[clock.tone];
@@ -151,7 +163,8 @@ function ClockPanel({ state, clock, compact = false }) {
     <section
       aria-label="Blinds and clock"
       className={cx(
-        'flex-none rounded-panel border border-line px-4 py-3',
+        'flex-none rounded-panel border border-line px-4 py-3 transition-opacity duration-200',
+        className,
         compact ? 'flex flex-wrap items-end justify-between gap-x-8 gap-y-2' : 'flex flex-col gap-[2vh]',
       )}
     >
@@ -180,10 +193,13 @@ function ClockPanel({ state, clock, compact = false }) {
   );
 }
 
-function Seats({ players, cardsDealt }) {
+function Seats({ players, cardsDealt, className }) {
   const inHand = players.filter((player) => !player.hasFolded && !player.isBroke).length;
   return (
-    <section aria-labelledby="seats-title" className="flex min-h-0 flex-1 flex-col rounded-panel border border-line px-4 py-3">
+    <section
+      aria-labelledby="seats-title"
+      className={cx('flex min-h-0 flex-1 flex-col rounded-panel border border-line px-4 py-3 transition-opacity duration-200', className)}
+    >
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="seats-title" className="text-[clamp(1rem,2.2vh,1.375rem)] font-semibold">
           Seats
@@ -197,20 +213,29 @@ function Seats({ players, cardsDealt }) {
       {players.length === 0 ? (
         <p className="mt-2 text-[clamp(1rem,2.2vh,1.375rem)] text-chalk-dim">Nobody is seated yet.</p>
       ) : (
-        <ol className="mt-1 min-h-0 flex-1 overflow-y-auto lg:overflow-hidden">
+        <ol
+          className={cx(
+            'mt-1 min-h-0 flex-1 overflow-y-auto',
+            // A full table (9 or 10) goes to two columns so every seat stays on screen.
+            players.length > 8 && 'lg:grid lg:auto-rows-min lg:grid-cols-2 lg:gap-x-4',
+          )}
+        >
           {players.map((player) => {
             const out = player.hasFolded || player.isBroke;
             return (
               <li
                 key={player.id}
-                className="flex min-h-[2.1em] items-center gap-2 border-b border-line text-[clamp(1.125rem,2.5vh,1.625rem)] last:border-b-0"
+                className={cx(
+                  'flex min-h-[2em] items-center gap-2 border-b border-line',
+                  players.length > 8 ? 'text-[clamp(1rem,2.2vh,1.375rem)]' : 'text-[clamp(1.125rem,2.5vh,1.625rem)] last:border-b-0',
+                )}
               >
                 <span translate="no" className={cx('min-w-0 truncate font-semibold', out && 'text-chalk-dim', player.hasFolded && 'line-through')}>
                   {player.name}
                 </span>
                 <SeatChips player={player} />
-                {player.hasFolded ? <span className="ml-auto flex-none text-[0.8em] text-chalk-dim">Folded</span> : null}
-                {player.isBroke ? <span className="ml-auto flex-none text-[0.8em] text-chalk-dim">Out of chips</span> : null}
+                {player.hasFolded ? <span className="ml-auto flex-none text-[max(1rem,0.85em)] text-chalk-dim">Folded</span> : null}
+                {player.isBroke ? <span className="ml-auto flex-none text-[max(1rem,0.85em)] text-chalk-dim">Out of chips</span> : null}
               </li>
             );
           })}

@@ -23,12 +23,19 @@ Inherits `../MASTER.md`. Only differences are listed.
 ```
 
 - Grid: bar (auto) over a body of two columns, board column `minmax(0, 1fr)`
-  and a side rail of `clamp(260px, 24vw, 420px)`. The board column is two rows:
+  and a side rail of `clamp(250px, 22vw, 400px)`. The board column is two rows:
   board (1fr) and shown hands (auto, reserved height so the board does not
   jump when the first hand is shown).
-- Card width on the board: `min(15vw, 30vh)` so five cards always fit both ways.
-- Video is optional. When shown it takes the lower half of the side rail (the
-  seat list collapses to a single line), so the board never shrinks.
+- Card width on the board: `min(17cqw, 60cqh)` of the board panel, so five cards always fit both ways.
+- Video is optional and off by default. When shown it takes the left of the
+  screen at a size worth watching, and the right column stacks a compact
+  clock, the board and the shown hands (the seat list gives way). The board's
+  cards size themselves from their panel with container units, so they always
+  fit.
+- A full table (9 or 10 seats) switches the seat list to two columns; shown
+  hands shrink their cards as more hands are shown. Nothing is clipped.
+- When the connection drops, a banner says the board may be behind and the
+  board, clock and seats dim until it is live again.
 - Type: clock `clamp(48px, 9vh, 120px)`, blinds `clamp(32px, 6vh, 80px)`,
   names `clamp(18px, 2.4vh, 28px)`. Nothing under 16px on this page.
 - Under 1024px (someone opens it on a phone) the same blocks stack and the

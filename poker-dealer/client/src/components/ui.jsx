@@ -62,8 +62,8 @@ export function BrandMark({ className }) {
 
 export function Brand({ className }) {
   return (
-    <span translate="no" className={cx('inline-flex flex-none items-center gap-2 font-display text-lead font-bold text-chalk', className)}>
-      <BrandMark className="size-7 text-brass" />
+    <span translate="no" className={cx('inline-flex flex-none items-center gap-2 font-display font-bold text-chalk', className)}>
+      <BrandMark className="size-[1.5em] text-brass" />
       MMP&nbsp;Poker
     </span>
   );
@@ -89,7 +89,7 @@ export function ConnectionPill({ status, onSync, className }) {
         )}
       >
         {live ? (
-          <span aria-hidden="true" className="size-2.5 rounded-full bg-brass" />
+          <span aria-hidden="true" className="size-2.5 rounded-full bg-chalk" />
         ) : status === 'offline' ? (
           <WifiOff aria-hidden="true" className="size-4" />
         ) : (
@@ -107,15 +107,19 @@ export function ConnectionPill({ status, onSync, className }) {
 }
 
 /** Banner shown under the top bar while the table is unreachable. */
-export function ConnectionBanner({ status, onSync }) {
+export function ConnectionBanner({ status, onSync, audience = 'player' }) {
   if (status === 'live' || status === 'connecting') return null;
+  const tv = audience === 'tv';
+  const copy = tv
+    ? status === 'offline'
+      ? 'Offline. This board may be behind the table.'
+      : 'Reconnecting… this board may be behind the table.'
+    : status === 'offline'
+      ? 'You’re offline. The table will catch up when you’re back.'
+      : 'Reconnecting… your cards are safe.';
   return (
     <div role="status" className="flex items-center justify-between gap-3 bg-warn px-4 py-2 text-brass-ink">
-      <p className="text-body font-semibold">
-        {status === 'offline'
-          ? 'You’re offline. The table will catch up when you’re back.'
-          : 'Reconnecting… your cards are safe.'}
-      </p>
+      <p className={cx('font-semibold', tv ? 'text-[clamp(1.125rem,2.8vh,1.75rem)] leading-tight' : 'text-body')}>{copy}</p>
       <button
         type="button"
         onClick={onSync}
@@ -138,7 +142,7 @@ export function Notice({ notice, onDismiss }) {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(env(safe-area-inset-bottom)+5.75rem)]"
+      className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-[calc(env(safe-area-inset-top)+var(--notice-top,4rem))]"
     >
       {notice ? (
         <div
@@ -203,15 +207,15 @@ export function Disclosure({ id, title, summary, defaultOpen = false, keepMounte
 
   return (
     <section className="border-t border-line">
-      <h2>
+      <h2 className="text-heading">
         <button
           type="button"
           aria-expanded={open}
           aria-controls={panelId}
           onClick={toggle}
-          className="flex min-h-13 w-full items-center gap-3 py-2 text-left hover:text-white"
+          className="flex min-h-12 w-full items-center gap-3 py-2 text-left hover:text-white"
         >
-          <span className="flex-none text-lead font-semibold">{title}</span>
+          <span className="flex-none text-heading font-semibold">{title}</span>
           <span className="min-w-0 flex-1 truncate text-right text-body text-chalk-dim">{summary}</span>
           <ChevronDown
             aria-hidden="true"
@@ -279,7 +283,7 @@ export function SeatChip({ kind, className }) {
     <span
       title={chip.name}
       className={cx(
-        'inline-flex size-[1.75em] min-h-7 min-w-7 flex-none items-center justify-center rounded-full text-[0.8125em] leading-none font-bold',
+        'inline-flex size-[1.75em] min-h-7 min-w-7 flex-none items-center justify-center rounded-full text-[max(0.875rem,0.8125em)] leading-none font-bold',
         chip.className,
         className,
       )}
