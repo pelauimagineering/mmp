@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const express = require('express');
 const http = require('http');
+const fs = require('fs');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const auth = require('./auth');
@@ -40,7 +41,15 @@ if (!jwtValidation.valid) {
 }
 
 // Serve static files
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+    index: false,
+    setHeaders(res, filePath) {
+        // Vite fingerprints everything under /app/assets, so it can be cached hard.
+        if (filePath.includes(`${path.sep}app${path.sep}assets${path.sep}`)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    }
+}));
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -51,19 +60,70 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ---------------------------------------------------------------------------
+// React client shell
+//
+// Every page is the same Vite-built bundle (public/app). The server decides
+// which page to mount and hands it boot data (page, user, video token) as
+// JSON embedded in the shell.
+// ---------------------------------------------------------------------------
+const MANIFEST_PATH = path.join(__dirname, '..', 'public', 'app', '.vite', 'manifest.json');
+let cachedAssets = null;
+
+function getClientAssets() {
+    if (cachedAssets && process.env.NODE_ENV === 'production') {
+        return cachedAssets;
+    }
+    try {
+        const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
+        const entry = Object.values(manifest).find((chunk) => chunk.isEntry);
+        cachedAssets = {
+            js: `/app/${entry.file}`,
+            css: (entry.css || []).map((file) => `/app/${file}`)
+        };
+        return cachedAssets;
+    } catch (error) {
+        return null;
+    }
+}
+
+const PAGE_TITLES = {
+    login: 'Take a seat · MMP Poker',
+    game: 'Your seat · MMP Poker',
+    community: 'The board · MMP Poker'
+};
+
+function renderApp(res, page, boot = {}) {
+    const assets = getClientAssets();
+    if (!assets) {
+        console.error('Client bundle missing. Run "npm run build" in poker-dealer/.');
+        return res.status(503).send('The poker client has not been built yet. Run "npm run build" and reload.');
+    }
+
+    // Embedded as JSON inside a <script>; escape "<" so no value can close the tag.
+    const bootJson = JSON.stringify({ page, ...boot }).replace(/</g, '\\u003c');
+
+    res.set('Cache-Control', 'no-store');
+    res.render('app', { title: PAGE_TITLES[page], assets, bootJson });
+}
+
+// Sample-data mode for design work: /?demo=1, /game?demo=flop, /community?demo=showdown
+function isDemo(req) {
+    return typeof req.query.demo === 'string' && req.query.demo.length > 0;
+}
+
 // Serve login page as default
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
+    renderApp(res, 'login', { demo: isDemo(req) ? req.query.demo : null });
 });
 
 // Serve game page (requires authentication)
 app.get('/game', (req, res) => {
-    const token = req.cookies.sessionToken;
-
-    console.log('GET /game - Cookie present:', !!token);
-    if (token) {
-        console.log('Token:', token.substring(0, 8) + '...');
+    if (isDemo(req)) {
+        return renderApp(res, 'game', { demo: req.query.demo });
     }
+
+    const token = req.cookies.sessionToken;
 
     if (!token) {
         console.log('No session token, redirecting to login');
@@ -76,40 +136,34 @@ app.get('/game', (req, res) => {
             return res.redirect('/');
         }
 
-        console.log('Session valid, rendering game.ejs for user:', session.display_name);
-
+        // Video is optional: without a token for this player the table still
+        // works and the video drawer explains why it is unavailable.
         const jwtToken = jwtConfig.getJwtForUser(session.user_name);
 
-        if (!jwtToken) {
-            console.error('No JWT configured for user:', session.user_name);
-            return res.status(500).send('Video conferencing not configured for your account. Please contact support.');
-        }
-
-        res.render('game', {
-            jwtToken: jwtToken,
-            userName: session.display_name,
-            userId: session.user_id
+        renderApp(res, 'game', {
+            jwtToken: jwtToken || null,
+            user: {
+                id: session.user_id,
+                display_name: session.display_name,
+                user_name: session.user_name
+            }
         });
     });
 });
 
 // Serve public community cards display (no authentication required)
 app.get('/community', (req, res) => {
-    const jwtToken = jwtConfig.getCommunityJwt();
-
-    if (!jwtToken) {
-        console.error('No JWT_COMMUNITY environment variable configured');
-        return res.status(500).send('Video conferencing not configured. Please contact support.');
-    }
-
-    res.render('community', { jwtToken: jwtToken });
+    renderApp(res, 'community', {
+        jwtToken: jwtConfig.getCommunityJwt() || null,
+        demo: isDemo(req) ? req.query.demo : null
+    });
 });
 
 // Create HTTP server
 const server = http.createServer(app);
 
 // Initialize WebSocket server
-initWebSocketServer(server);
+const wss = initWebSocketServer(server);
 
 // Cleanup expired sessions periodically (every hour)
 setInterval(() => {
@@ -158,23 +212,32 @@ function startServer() {
     });
 }
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
-    server.close(() => {
-        console.log('HTTP server closed');
-        const db = require('./db');
-        db.close();
-        process.exit(0);
-    });
-});
+// Graceful shutdown.
+// server.close() only stops new connections; it waits forever for open
+// WebSockets. Close them explicitly so players' phones notice straight away
+// and reconnect to the new instance instead of idling on a dead one.
+let shuttingDown = false;
+function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`${signal} received: closing sockets and HTTP server`);
 
-process.on('SIGINT', () => {
-    console.log('\nSIGINT signal received: closing HTTP server');
-    server.close(() => {
-        console.log('HTTP server closed');
-        const db = require('./db');
-        db.close();
+    for (const client of wss.clients) {
+        try { client.close(1001, 'Server restarting'); } catch (error) { /* already gone */ }
+    }
+
+    const finish = () => {
+        try { db.close(); } catch (error) { /* already closed */ }
         process.exit(0);
-    });
-});
+    };
+
+    server.close(finish);
+    // Don't hang on a socket that never completes its close handshake.
+    setTimeout(() => {
+        for (const client of wss.clients) client.terminate();
+        finish();
+    }, 2000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

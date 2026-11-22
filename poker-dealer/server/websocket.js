@@ -2,8 +2,74 @@ const WebSocket = require('ws');
 const auth = require('./auth');
 const { GameManager } = require('./game-manager');
 
-const clients = new Map(); // userId -> WebSocket
+// userId -> Set<WebSocket>. A player can hold several sockets at once (phone
+// and laptop, or a reconnect that overlaps the socket it replaces). Keying a
+// single socket per user meant the old socket's late 'close' event evicted the
+// new one, which then silently stopped receiving game state.
+const clients = new Map();
 const publicClients = new Set(); // WebSocket connections for public views
+
+const HEARTBEAT_INTERVAL_MS = 25000;
+
+// Monotonic counter stamped on every state payload so a client can tell a
+// fresh snapshot from a stale or out-of-order one.
+let stateVersion = Date.now(); // seeded from the clock so it keeps rising across restarts
+
+function addClient(userId, ws) {
+    if (!clients.has(userId)) {
+        clients.set(userId, new Set());
+    }
+    clients.get(userId).add(ws);
+}
+
+function removeClient(userId, ws) {
+    const sockets = clients.get(userId);
+    if (!sockets) return;
+    sockets.delete(ws);
+    if (sockets.size === 0) {
+        clients.delete(userId);
+    }
+}
+
+function countAuthenticatedSockets() {
+    let count = 0;
+    for (const sockets of clients.values()) count += sockets.size;
+    return count;
+}
+
+function safeSend(ws, payload) {
+    if (ws.readyState !== WebSocket.OPEN) return false;
+    try {
+        ws.send(typeof payload === 'string' ? payload : JSON.stringify(payload));
+        return true;
+    } catch (error) {
+        console.error('WebSocket send failed:', error.message);
+        return false;
+    }
+}
+
+function stamp(state) {
+    state.version = stateVersion;
+    state.serverTime = Date.now();
+    return state;
+}
+
+function playerStateFor(userId) {
+    return stamp(gameManager.getGameState(userId));
+}
+
+function communityState() {
+    const gameState = gameManager.getGameState(); // full state including revealed hands
+    return stamp({
+        communityCards: gameState.communityCards,
+        phase: gameState.phase,
+        cardsDealt: gameState.cardsDealt,
+        revealedHands: gameState.revealedHands,
+        timerState: gameState.timerState,
+        blinds: gameState.blinds, // Issue #27: Include blinds for community display
+        players: gameState.players // seat order, dealer and blinds for the shared board
+    });
+}
 
 let gameManager = null;
 let timerCheckInterval = null;
@@ -21,10 +87,16 @@ function initWebSocketServer(server) {
         let userId = null;
         let userName = null;
 
+        ws.isAlive = true;
+        ws.on('pong', () => { ws.isAlive = true; });
+
         ws.on('message', (message) => {
+            ws.isAlive = true;
             try {
                 const data = JSON.parse(message);
-                console.log('Received message:', data.type);
+                if (data.type !== 'ping' && data.type !== 'get-state' && data.type !== 'get-community-state') {
+                    console.log('Received message:', data.type);
+                }
 
                 handleMessage(ws, data, (newUserId, newUserName) => {
                     userId = newUserId;
@@ -32,21 +104,21 @@ function initWebSocketServer(server) {
                 });
             } catch (error) {
                 console.error('Error handling message:', error);
-                ws.send(JSON.stringify({
+                safeSend(ws, {
                     type: 'error',
                     message: error.message
-                }));
+                });
             }
         });
 
         ws.on('close', () => {
             console.log(`WebSocket connection closed for user: ${userName || 'public'}`);
 
+            // Remove only this socket; the same user may have a newer one open.
             if (userId) {
-                clients.delete(userId);
-            } else {
-                publicClients.delete(ws);
+                removeClient(userId, ws);
             }
+            publicClients.delete(ws);
         });
 
         ws.on('error', (error) => {
@@ -55,6 +127,20 @@ function initWebSocketServer(server) {
     });
 
     console.log('WebSocket server initialized');
+
+    // Heartbeat: drop sockets that stopped answering (phone asleep, network
+    // switched) so they don't linger as half-open connections.
+    const heartbeat = setInterval(() => {
+        for (const ws of wss.clients) {
+            if (ws.isAlive === false) {
+                ws.terminate();
+                continue;
+            }
+            ws.isAlive = false;
+            try { ws.ping(); } catch (error) { /* socket already closing */ }
+        }
+    }, HEARTBEAT_INTERVAL_MS);
+    wss.on('close', () => clearInterval(heartbeat));
 
     // Start timer check interval
     startTimerCheckInterval();
@@ -85,46 +171,26 @@ function startTimerCheckInterval() {
 function handleMessage(ws, data, setUser) {
     const { type, token } = data;
 
+    // Application-level heartbeat. Lets the browser detect a dead socket
+    // (it cannot see protocol-level ping frames).
+    if (type === 'ping') {
+        safeSend(ws, { type: 'pong', serverTime: Date.now(), version: stateVersion });
+        return;
+    }
+
     // Handle public authentication for community display
     if (type === 'auth-public') {
         console.log('Public WebSocket connection established');
         publicClients.add(ws);
 
-        // Send initial community state including revealed hands
-        const gameState = gameManager.getGameState(); // Get full state including revealed hands
-        const communityState = {
-            communityCards: gameState.communityCards,
-            phase: gameState.phase,
-            cardsDealt: gameState.cardsDealt,
-            revealedHands: gameState.revealedHands,
-            timerState: gameState.timerState,
-            blinds: gameState.blinds // Issue #27: Include blinds for community display
-        };
-
-        ws.send(JSON.stringify({
-            type: 'community-state',
-            data: communityState
-        }));
+        safeSend(ws, { type: 'community-state', data: communityState() });
 
         return;
     }
 
     // Handle public community state request
     if (type === 'get-community-state') {
-        const gameState = gameManager.getGameState(); // Get full state including revealed hands
-        const communityState = {
-            communityCards: gameState.communityCards,
-            phase: gameState.phase,
-            cardsDealt: gameState.cardsDealt,
-            revealedHands: gameState.revealedHands,
-            timerState: gameState.timerState,
-            blinds: gameState.blinds // Issue #27: Include blinds for community display
-        };
-
-        ws.send(JSON.stringify({
-            type: 'community-state',
-            data: communityState
-        }));
+        safeSend(ws, { type: 'community-state', data: communityState() });
 
         return;
     }
@@ -135,6 +201,7 @@ function handleMessage(ws, data, setUser) {
             if (err || !session) {
                 ws.send(JSON.stringify({
                     type: 'error',
+                    code: 'session-expired',
                     message: 'Invalid or expired session'
                 }));
                 return;
@@ -144,7 +211,7 @@ function handleMessage(ws, data, setUser) {
             const userName = session.display_name;
 
             setUser(userId, userName);
-            clients.set(userId, ws);
+            addClient(userId, ws);
 
             console.log(`User authenticated via WebSocket: ${userName} (${userId})`);
 
@@ -159,11 +226,7 @@ function handleMessage(ws, data, setUser) {
             }));
 
             // Send current game state
-            const gameState = gameManager.getGameState(userId);
-            ws.send(JSON.stringify({
-                type: 'game-state',
-                data: gameState
-            }));
+            safeSend(ws, { type: 'game-state', data: playerStateFor(userId) });
         });
 
         return;
@@ -174,6 +237,7 @@ function handleMessage(ws, data, setUser) {
         if (err || !session) {
             ws.send(JSON.stringify({
                 type: 'error',
+                code: 'session-expired',
                 message: 'Not authenticated'
             }));
             return;
@@ -237,11 +301,10 @@ function handleMessage(ws, data, setUser) {
                 break;
 
             case 'get-state':
-                const gameState = gameManager.getGameState(userId);
-                ws.send(JSON.stringify({
-                    type: 'game-state',
-                    data: gameState
-                }));
+                // A socket that authenticated before a reconnect race is
+                // always (re)registered here, so a resync also repairs routing.
+                addClient(userId, ws);
+                safeSend(ws, { type: 'game-state', data: playerStateFor(userId) });
                 break;
 
             default:
@@ -667,46 +730,30 @@ function handleResetTimer(userId, ws) {
 }
 
 function broadcastGameState() {
-    console.log(`Broadcasting game state to ${clients.size} authenticated clients and ${publicClients.size} public clients`);
+    stateVersion++;
+    console.log(`Broadcasting game state v${stateVersion} to ${countAuthenticatedSockets()} authenticated and ${publicClients.size} public sockets`);
 
-    // Broadcast to authenticated clients with their specific game state
-    for (const [userId, client] of clients.entries()) {
-        if (client.readyState === WebSocket.OPEN) {
-            const gameState = gameManager.getGameState(userId);
-            client.send(JSON.stringify({
-                type: 'game-state',
-                data: gameState
-            }));
+    // Authenticated clients each get their own view (their hole cards only)
+    for (const [userId, sockets] of clients.entries()) {
+        const payload = JSON.stringify({ type: 'game-state', data: playerStateFor(userId) });
+        for (const client of sockets) {
+            safeSend(client, payload);
         }
     }
 
-    // Broadcast community cards and revealed hands to public clients
-    const gameState = gameManager.getGameState(); // Get full state including revealed hands
-    const communityState = {
-        communityCards: gameState.communityCards,
-        phase: gameState.phase,
-        cardsDealt: gameState.cardsDealt,
-        revealedHands: gameState.revealedHands,
-        timerState: gameState.timerState,
-        blinds: gameState.blinds // Issue #27: Include blinds for community display
-    };
-
+    // Public clients get the board, shown hands, seats and the clock
+    const publicPayload = JSON.stringify({ type: 'community-state', data: communityState() });
     for (const client of publicClients) {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'community-state',
-                data: communityState
-            }));
-        }
+        safeSend(client, publicPayload);
     }
 }
 
 function broadcast(message) {
     const messageStr = JSON.stringify(message);
 
-    for (const [userId, client] of clients.entries()) {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(messageStr);
+    for (const sockets of clients.values()) {
+        for (const client of sockets) {
+            safeSend(client, messageStr);
         }
     }
 }
