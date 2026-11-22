@@ -79,7 +79,11 @@ function getClientAssets() {
         const entry = Object.values(manifest).find((chunk) => chunk.isEntry);
         cachedAssets = {
             js: `/app/${entry.file}`,
-            css: (entry.css || []).map((file) => `/app/${file}`)
+            css: (entry.css || []).map((file) => `/app/${file}`),
+            // Preload the Latin UI and display fonts so text doesn't reflow after first paint.
+            fonts: (entry.assets || [])
+                .filter((file) => /(atkinson-hyperlegible-next|besley)-latin-wght-normal/.test(file))
+                .map((file) => `/app/${file}`)
         };
         return cachedAssets;
     } catch (error) {

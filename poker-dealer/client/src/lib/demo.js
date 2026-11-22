@@ -40,6 +40,7 @@ export const DEMO_SCENARIOS = [
   ['showdown', 'Showdown'],
   ['dealer', 'You deal'],
   ['blindsup', 'Blinds going up'],
+  ['fulltable', 'Full table, long names'],
 ];
 
 const SUITS = ['spades', 'hearts', 'diamonds', 'clubs'];
@@ -53,6 +54,7 @@ const BOARD = ['As', 'Kh', '7d', '7c', '2s'].map(card);
 const HANDS = {
   9: ['Qs', 'Qd'], 1: ['Ac', 'Jc'], 2: ['9h', '8h'], 3: ['4d', '4s'],
   5: ['Kd', '10d'], 7: ['Ah', '5h'], 8: ['Jd', '9s'], 10: ['6c', '6h'],
+  6: ['3c', '3h'], 4: ['8s', '5d'],
 };
 
 const PHASE_VISIBLE = { 'pre-flop': 0, flop: 3, turn: 4, river: 5 };
@@ -119,6 +121,19 @@ function buildScenario(name) {
     case 'blindsup':
       t.dealerIndex = 6;
       t.timer = { startedAt: null, pausedRemaining: null, blindsWillIncrease: true };
+      break;
+    case 'fulltable':
+      // Stress case: ten seats, a long display name, seven hands shown.
+      t.players = [
+        ...CREW.slice(0, 7),
+        { id: 10, name: 'Lorenzo' },
+        { id: 6, name: 'Seymour “Big Slick” Alexander-Whitfield' },
+        { id: 4, name: 'Chris' },
+      ];
+      dealFixed('river');
+      t.folded = new Set([2, 3]);
+      t.revealed = new Set([9, 5, 1, 7, 8, 10, 6]);
+      t.blinds = { small: 16, big: 32 };
       break;
     case 'flop':
     default:

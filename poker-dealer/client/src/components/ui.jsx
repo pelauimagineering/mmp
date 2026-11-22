@@ -50,6 +50,17 @@ export function IconButton({ label, className, children, ...rest }) {
   );
 }
 
+export function SkipLink({ href, children }) {
+  return (
+    <a
+      href={href}
+      className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-control focus:bg-chalk focus:px-3 focus:py-2 focus:font-semibold focus:text-card-ink"
+    >
+      {children}
+    </a>
+  );
+}
+
 export function BrandMark({ className }) {
   return (
     <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" aria-hidden="true" className={className}>
@@ -257,7 +268,7 @@ export function Dialog({ open, onClose, title, children, className }) {
     >
       <div className="p-5">
         <div className="mb-4 flex items-start justify-between gap-3">
-          <h2 id={titleId} className="font-display text-title font-semibold">
+          <h2 id={titleId} className="min-w-0 font-display text-title font-semibold break-words">
             {title}
           </h2>
           <IconButton label="Close" onClick={onClose} className="-mt-2 -mr-2">

@@ -9,7 +9,8 @@
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <% assets.css.forEach(function (href) { %><link rel="stylesheet" href="<%= href %>">
+    <% assets.fonts.forEach(function (href) { %><link rel="preload" as="font" type="font/woff2" crossorigin href="<%= href %>">
+    <% }) %><% assets.css.forEach(function (href) { %><link rel="stylesheet" href="<%= href %>">
     <% }) %>
     <script type="module" src="<%= assets.js %>"></script>
 </head>

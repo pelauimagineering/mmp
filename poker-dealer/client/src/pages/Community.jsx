@@ -6,7 +6,7 @@ import { useTable } from '../lib/useTable.js';
 import { BlindsValue, CLOCK_TONE_TEXT, ClockDigits } from '../components/BlindClock.jsx';
 import { Board, PlayingCard, StreetTrack } from '../components/cards.jsx';
 import { VideoRoom } from '../components/VideoRoom.jsx';
-import { Brand, ConnectionBanner, ConnectionPill, Notice, SeatChips, cx } from '../components/ui.jsx';
+import { Brand, ConnectionBanner, ConnectionPill, Notice, SeatChips, SkipLink, cx } from '../components/ui.jsx';
 
 const MAX_SMALL_BLIND = 64;
 
@@ -42,7 +42,8 @@ export default function Community() {
 
   return (
     <div className="flex min-h-dvh flex-col [--notice-top:4.5rem] lg:h-dvh lg:overflow-hidden">
-      <header className="flex flex-wrap items-center gap-x-6 gap-y-1 bg-rail px-safe pt-safe lg:flex-nowrap">
+      <SkipLink href="#board">Skip to the board</SkipLink>
+      <header className="flex flex-wrap items-center gap-x-2 gap-y-1 bg-rail px-safe pt-safe lg:flex-nowrap lg:gap-x-6">
         <h1 className="py-2 text-heading lg:py-3 lg:text-title">
           <Brand />
           <span className="sr-only"> community board</span>
@@ -61,15 +62,17 @@ export default function Community() {
             className="inline-flex min-h-11 items-center gap-2 rounded-control border border-line-strong px-3 text-body font-semibold hover:bg-raised"
           >
             {videoOn ? <VideoOff aria-hidden="true" className="size-5" /> : <Video aria-hidden="true" className="size-5" />}
-            {videoOn ? 'Hide video' : 'Show video'}
+            <span className="max-[479px]:sr-only">{videoOn ? 'Hide video' : 'Show video'}</span>
           </button>
         </div>
       </header>
       <ConnectionBanner status={status} onSync={table.syncNow} audience="tv" />
 
       <main
+        id="board"
+        tabIndex={-1}
         className={cx(
-          'grid min-h-0 flex-1 gap-3 p-3 lg:gap-4 lg:p-4',
+          'grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-3 p-3 lg:gap-4 lg:p-4',
           videoOn
             ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]'
             : 'lg:grid-cols-[minmax(0,1fr)_clamp(250px,22vw,400px)]',
@@ -83,7 +86,7 @@ export default function Community() {
           />
         ) : null}
 
-        <div className={cx('grid min-h-0 gap-3 lg:gap-4', videoOn ? 'lg:grid-rows-[auto_minmax(0,1fr)_auto]' : 'lg:grid-rows-[minmax(0,1fr)_auto]')}>
+        <div className={cx('grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] gap-3 lg:gap-4', videoOn ? 'lg:grid-rows-[auto_minmax(0,1fr)_auto]' : 'lg:grid-rows-[minmax(0,1fr)_auto]')}>
           {videoOn ? <ClockPanel state={state} clock={clock} compact className={staleClass} /> : null}
 
           <section
@@ -142,7 +145,7 @@ export default function Community() {
         </div>
 
         {!videoOn ? (
-          <aside className="flex min-h-0 flex-col gap-3 lg:gap-4">
+          <aside className="flex min-h-0 min-w-0 flex-col gap-3 lg:gap-4">
             <ClockPanel state={state} clock={clock} className={staleClass} />
             <Seats players={players} cardsDealt={cardsDealt} className={staleClass} />
           </aside>

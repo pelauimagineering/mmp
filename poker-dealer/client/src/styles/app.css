@@ -81,6 +81,9 @@
     background: var(--color-felt);
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    /* Sticky header and bottom dock must not hide whatever keyboard focus lands on. */
+    scroll-padding-top: 8rem;
+    scroll-padding-bottom: 6rem;
   }
 
   body {

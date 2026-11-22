@@ -3,7 +3,7 @@ import { Tv } from 'lucide-react';
 import { boot } from '../lib/boot.js';
 import { DEMO_SEATED, DEMO_USERS } from '../lib/demo.js';
 import { PlayingCard } from '../components/cards.jsx';
-import { Brand, Button, cx } from '../components/ui.jsx';
+import { Brand, Button, SkipLink, cx } from '../components/ui.jsx';
 
 function useCrew() {
   const [crew, setCrew] = useState({ phase: 'loading', users: [], seated: [] });
@@ -37,12 +37,15 @@ export default function Login() {
   const [userId, setUserId] = useState(null);
   const [displayName, setDisplayName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const gridRef = useRef(null);
 
   const chosen = crew.users.find((user) => user.id === userId) ?? null;
   const alreadySeated = chosen !== null && crew.seated.includes(chosen.id);
 
   const nameField = useRef(null);
   const choose = (user) => {
+    setFormError(null);
     setUserId(user.id);
     setDisplayName(user.display_name);
   };
@@ -54,6 +57,19 @@ export default function Login() {
   }, [userId]);
 
   const onSubmit = (event) => {
+    // The button stays enabled; a missing choice is explained next to the field.
+    if (!chosen) {
+      event.preventDefault();
+      setFormError('Pick your name to sit down.');
+      gridRef.current?.querySelector('input')?.focus();
+      return;
+    }
+    if (!displayName.trim()) {
+      event.preventDefault();
+      setFormError('Add the name you want shown at the table.');
+      document.getElementById('displayName')?.focus();
+      return;
+    }
     if (boot.demo) {
       event.preventDefault();
       window.location.assign('/game?demo=lobby');
@@ -65,6 +81,7 @@ export default function Login() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-safe pt-safe">
+      <SkipLink href="#seat-form">Skip to the names</SkipLink>
       <header className="flex items-center justify-between py-3">
         <a href="https://mmp.pelau.com/" className="inline-flex min-h-11 items-center rounded-control text-heading">
           <Brand />
@@ -89,7 +106,7 @@ export default function Login() {
           </div>
         </div>
 
-        <form id="seat-form" method="post" action="/api/auth/login" onSubmit={onSubmit} className="mt-6">
+        <form id="seat-form" method="post" action="/api/auth/login" onSubmit={onSubmit} noValidate className="mt-6">
           <fieldset>
             <legend className="text-lead font-semibold">Pick your name</legend>
 
@@ -118,7 +135,7 @@ export default function Login() {
             ) : null}
 
             {crew.phase === 'ready' && crew.users.length > 0 ? (
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div ref={gridRef} className="mt-3 grid grid-cols-2 gap-2">
                 {crew.users.map((user) => {
                   const seated = crew.seated.includes(user.id);
                   const selected = user.id === userId;
@@ -154,6 +171,11 @@ export default function Login() {
                   );
                 })}
               </div>
+            ) : null}
+            {formError ? (
+              <p role="alert" className="mt-3 text-body font-semibold text-danger-text">
+                {formError}
+              </p>
             ) : null}
           </fieldset>
 
@@ -211,8 +233,10 @@ export default function Login() {
             same seat.
           </p>
         ) : null}
-        <Button type="submit" form="seat-form" tone="primary" busy={submitting} disabled={!chosen} className="w-full">
-          {submitting ? 'Taking your seat…' : chosen ? `Take a seat as ${displayName.trim() || chosen.display_name}` : 'Pick your name to sit down'}
+        <Button type="submit" form="seat-form" tone="primary" busy={submitting} className="w-full">
+          <span className="truncate">
+            {submitting ? 'Taking your seat…' : chosen ? `Take a seat as ${displayName.trim() || chosen.display_name}` : 'Take a seat'}
+          </span>
         </Button>
       </div>
     </div>

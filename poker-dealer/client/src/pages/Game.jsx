@@ -20,6 +20,7 @@ import {
   Notice,
   SeatChip,
   SeatChips,
+  SkipLink,
   cx,
 } from '../components/ui.jsx';
 
@@ -64,6 +65,7 @@ export default function Game() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   // Lock the dealer's buttons from a tap until the table answers, so a double
   // tap can never turn two streets.
@@ -130,12 +132,7 @@ export default function Game() {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[1200px] flex-col [--notice-top:7.75rem] lg:[--notice-top:4.75rem]">
-      <a
-        href="#table"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-control focus:bg-chalk focus:px-3 focus:py-2 focus:text-card-ink"
-      >
-        Skip to the table
-      </a>
+      <SkipLink href="#table">Skip to the table</SkipLink>
 
       <header className="sticky top-0 z-10 bg-rail pt-safe lg:rounded-b-panel">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 px-safe lg:grid-cols-[auto_minmax(0,1fr)_auto_auto] lg:gap-x-6">
@@ -179,7 +176,7 @@ export default function Game() {
         <ConnectionBanner status={status} onSync={table.syncNow} />
       </header>
 
-      <main id="table" className="flex-1 px-safe pt-2 pb-4 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:pt-6">
+      <main id="table" tabIndex={-1} className="flex-1 px-safe pt-2 pb-4 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8 lg:pt-6">
         <div>
           <section aria-label="The board" className="rounded-panel bg-table px-3 pt-2 pb-3 lg:px-6 lg:pb-5">
             <StreetTrack phase={state?.phase} />
@@ -316,8 +313,14 @@ export default function Game() {
           ) : null}
           <MenuItem href="https://mmp.pelau.com/golf/">Switch to golf</MenuItem>
           <MenuItem href="https://mmp.pelau.com/">MMP home</MenuItem>
-          <MenuItem icon={LogOut} onClick={logout}>
-            Log out
+          <MenuItem
+            icon={LogOut}
+            onClick={() => {
+              setMenuOpen(false);
+              setLogoutOpen(true);
+            }}
+          >
+            Log out…
           </MenuItem>
           <li aria-hidden="true" className="my-2 border-t border-line" />
           <MenuItem
@@ -361,6 +364,21 @@ export default function Game() {
         >
           Made with 💕 in the 6ix
         </button>
+      </Dialog>
+
+      <Dialog open={logoutOpen} onClose={() => setLogoutOpen(false)} title="Leave the table?">
+        <p className="text-body text-chalk-dim">
+          Logging out gives up your seat{cardsDealt && me ? ' and your cards in this hand' : ''}. You can take a seat again from the
+          start screen.
+        </p>
+        <div className="mt-5 flex gap-3">
+          <Button className="flex-1" onClick={() => setLogoutOpen(false)}>
+            Stay
+          </Button>
+          <Button tone="danger" className="flex-1" onClick={logout}>
+            Log out
+          </Button>
+        </div>
       </Dialog>
 
       <ResetDialog open={resetOpen} onClose={() => setResetOpen(false)} notify={notify} />
@@ -598,7 +616,7 @@ function Players({ players, userId, iAmDealer, cardsDealt, busy, act }) {
             <span
               translate="no"
               className={cx(
-                'min-w-[4ch] truncate text-lead font-semibold',
+                'min-w-[3ch] truncate text-lead font-semibold',
                 (player.hasFolded || player.isBroke) && 'text-chalk-dim',
                 player.hasFolded && 'line-through',
               )}
