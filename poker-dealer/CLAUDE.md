@@ -12,7 +12,10 @@ A digital card dealer for in-person Texas Hold'em poker sessions. Players join v
 # Development
 npm install          # Install dependencies
 npm run db:init      # Initialize SQLite database (first time setup)
+npm run build        # Build the React client into public/app (required before start)
+npm run build:watch  # Rebuild the client on every change
 npm start            # Start server (http://localhost:3000)
+npm test             # Sync regression tests (real server, scratch DB)
 npm run start:reset  # Start with clean state (clears game + sessions)
 npm run dev          # Development mode with watch
 
@@ -32,23 +35,29 @@ docker-compose exec poker-dealer node scripts/init-db.js  # Init DB in container
 - `server/db.js` - SQLite operations (users, sessions, game_state)
 - `server/auth.js` - Session-based authentication
 
-### Client-Side (Vanilla JS)
-- `public/js/game.js` - Main game UI, player interactions, card rendering
-- `public/js/websocket-client.js` - WebSocket client wrapper
-- `public/js/timer.js` - Blind level countdown timer
-- `public/js/dealer-controls.js` - Dealer-specific controls
-- `public/js/community-display.js` - Public community cards view
+### Client-Side (React 19 + Tailwind 4, built with Vite)
+- `client/src/main.jsx` - Entry; mounts the page named in the server's boot data
+- `client/src/pages/` - `Login.jsx`, `Game.jsx`, `Community.jsx`
+- `client/src/components/` - Playing cards, board, blind clock, slide-to-confirm, drawers, dialogs
+- `client/src/lib/connection.js` - Self-healing WebSocket (endless backoff, heartbeat, resync on wake)
+- `client/src/lib/useTable.js` - Live table state hook; the UI renders only from server snapshots
+- `client/src/lib/demo.js` - In-browser sample table for `?demo=<scene>`
+- `client/src/styles/app.css` - Tailwind theme; the tokens from `design-system/MASTER.md`
 
-### Views (EJS templates)
-- `views/game.ejs` - Authenticated player view
-- `views/community.ejs` - Public display (no auth, shows community cards on TV)
+### Views (EJS)
+- `views/app.ejs` - One HTML shell for every page. The server embeds boot data
+  (page, user, video token) and links the hashed bundle from the Vite manifest.
+
+### Design system
+- `design-system/MASTER.md` is the source of truth; `design-system/pages/*.md` override it per page.
+- Read both before changing UI. Tokens live in `client/src/styles/app.css`; never hard-code a hex in a component.
 
 ## Key Patterns
 
 ### WebSocket Messages
-Client sends: `auth`, `join-game`, `deal-cards`, `flip-community-card`, `show-my-cards`, `fold-hand`, `select-dealer`, `reorder-players`
+Client sends: `auth`, `ping`, `get-state`, `join-game`, `deal-cards`, `flip-community-card`, `show-my-cards`, `fold-hand`, `select-dealer`, `reorder-players`
 
-Server sends: `game-state`, `authenticated`, `cards-dealt`, `community-revealed`, `player-folded`, `timer-expired`
+Server sends: `game-state`, `community-state`, `pong`, `authenticated`, `cards-dealt`, `community-revealed`, `player-folded`, `timer-expired`
 
 ### Game State Flow
 1. Players join (`waiting` phase, dealerIndex = -1)
@@ -56,6 +65,16 @@ Server sends: `game-state`, `authenticated`, `cards-dealt`, `community-revealed`
 3. Cards dealt (`pre-flop` phase, 2 hole cards each + 5 community face-down)
 4. Dealer flips: `pre-flop` -> `flop` (3 cards) -> `turn` (1) -> `river` (1) -> `complete`
 5. On complete: hands cleared, revealed/folded reset, dealer rotates clockwise
+
+### Staying in sync
+- The server keeps a *set* of sockets per user. Never key one socket per user:
+  a replaced socket's late `close` would evict the live one.
+- Every snapshot carries `version` (rising) and `serverTime`. Clients drop
+  older snapshots and correct the blind clock for device clock skew.
+- The server pings every 25s and terminates dead sockets; it closes all
+  sockets on SIGTERM so clients move to the new instance.
+- The client never applies optimistic state. It reconnects forever, resyncs
+  on visibility/focus/online, and pulls a snapshot every 20s as a safety net.
 
 ### State Persistence
 Game state serialized to SQLite via `GameManager.saveGameState()`. Restored on server restart via `PokerGame.fromJSON()`.
@@ -77,4 +96,5 @@ Three tables in SQLite:
 - `/` - Login page
 - `/game` - Authenticated game view
 - `/community` - Public community cards (no auth, for shared TV display)
+- Add `?demo=<scene>` to any page for sample data (`lobby`, `waiting`, `preflop`, `flop`, `turn`, `river`, `showdown`, `dealer`, `blindsup`)
 - `/api/health` - Health check

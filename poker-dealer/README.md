@@ -18,7 +18,7 @@ A digital card dealer for in-person sessions of Texas Hold'em poker games. Playe
 - **Backend**: Node.js with Express
 - **WebSocket**: ws library for real-time communication
 - **Database**: SQLite (embedded) for lightweight data persistence
-- **Frontend**: Plain HTML, CSS, and JavaScript
+- **Frontend**: React 19 and Tailwind CSS 4, built with Vite (see `design-system/MASTER.md`)
 - **Deployment**: Docker containerization
 
 ## Quick Start
@@ -46,7 +46,12 @@ A digital card dealer for in-person sessions of Texas Hold'em poker games. Playe
    npm run db:init
    ```
 
-4. **Start the server**
+4. **Build the client** (React + Tailwind, output in `public/app`)
+   ```bash
+   npm run build
+   ```
+
+5. **Start the server**
    ```bash
    npm start
    ```
@@ -135,11 +140,16 @@ poker-dealer/
 │   └── game/              # Game logic
 │       ├── deck.js        # Card deck logic
 │       └── poker-game.js  # Texas Hold'em game logic
-├── public/                # Frontend static files
-│   ├── css/              # Stylesheets
-│   ├── js/               # Client-side JavaScript
-│   ├── login.html        # Login page
-│   └── game.html         # Game interface
+├── client/                # React client (Vite root)
+│   └── src/
+│       ├── pages/        # Login, Game, Community
+│       ├── components/   # Cards, board, clock, slides, drawers
+│       ├── lib/          # Connection, table state, sample data
+│       └── styles/       # Tailwind theme (design tokens)
+├── design-system/         # MASTER.md, page overrides, design plan
+├── views/app.ejs          # HTML shell for every page
+├── public/                # Static files; public/app is the built client
+├── test/                  # Sync regression tests (npm test)
 ├── database/             # Database files
 │   └── schema.sql        # Database schema
 ├── scripts/              # Utility scripts
@@ -264,6 +274,22 @@ npm run dev
 ```
 
 This uses Node.js watch mode to automatically restart on file changes.
+Run `npm run build:watch` alongside it to rebuild the client as you edit.
+
+### Sample data
+Every page accepts `?demo=<scene>` and then runs on an in-browser sample table,
+with no database or other players needed:
+
+- `/?demo=1`
+- `/game?demo=lobby` · `waiting` · `preflop` · `flop` · `turn` · `river` · `showdown` · `dealer` · `blindsup`
+- `/community?demo=flop` (same scene names)
+
+### Tests
+```bash
+npm test
+```
+Starts the real server on a scratch copy of the database and checks the
+reconnect and multi-device cases that used to leave a phone out of sync.
 
 ### Testing Multi-Device
 1. Start the server
