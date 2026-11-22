@@ -7,7 +7,7 @@ A digital card dealer for in-person sessions of Texas Hold'em poker games. Playe
 - **Multi-Player Support**: Up to 10 players can join simultaneously
 - **Real-Time Communication**: WebSocket-based instant updates for all players
 - **Automatic Dealer Rotation**: Dealer position rotates clockwise after each hand
-- **Minimal Authentication**: Simple login system with test accounts
+- **Minimal Authentication**: Players log in by picking their name from a list (no passwords)
 - **Mobile-Friendly**: Responsive design works on phones, tablets, and desktops
 - **Community & Hole Cards**: Separate views for shared community cards and private hole cards
 - **Dealer Controls**: Dedicated interface for the dealer to manage the game
@@ -92,7 +92,7 @@ A digital card dealer for in-person sessions of Texas Hold'em poker games. Playe
 
 ## How to Play
 
-1. **Login**: Each player logs in with their own credentials on their device
+1. **Login**: Each player picks their name from the list on their own device
 2. **Join Game**: Click "Join Game" to enter the poker session
 3. **Player Order**: Players are seated in the order they join
 4. **Dealer Selection**: The first dealer is chosen randomly
@@ -163,7 +163,8 @@ poker-dealer/
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - Login with email and password
+- `GET /api/auth/users` - List players and who is currently logged in
+- `POST /api/auth/login` - Login with `userId` and `displayName` (no password)
 - `POST /api/auth/logout` - Logout current session
 - `GET /api/auth/session` - Check current session status
 
@@ -295,7 +296,7 @@ reconnect and multi-device cases that used to leave a phone out of sync.
 1. Start the server
 2. Find your local IP address (e.g., `192.168.1.100`)
 3. On mobile devices, navigate to `http://<your-ip>:3000`
-4. Login with different test accounts on each device
+4. Pick a different player name on each device
 
 ## License
 
