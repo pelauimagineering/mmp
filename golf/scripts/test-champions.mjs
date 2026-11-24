@@ -52,6 +52,18 @@ check('a past round that never got played does not hold the season open', () => 
   assert.equal(isSeasonComplete('golf', s, TODAY), true);
 });
 
+check('a poker season is not over just because every night so far is played', () => {
+  const s = { id: '2026-27', events: [{ month: 'Nov', played: true }, { month: 'Dec', played: true }] };
+  assert.equal(isSeasonComplete('poker', s, '2027-01-02'), false);
+  assert.equal(isSeasonComplete('poker', s, '2027-05-01'), true);    // the calendar moved on
+});
+check('the April finale closes a poker season on the night', () => {
+  const s = { id: '2026-27', events: [{ month: 'Nov', played: true }, { month: 'Apr', played: true }] };
+  assert.equal(isSeasonComplete('poker', s, '2027-04-18'), true);
+  s.events.push({ month: 'Apr', played: false });                    // a second April night still to come
+  assert.equal(isSeasonComplete('poker', s, '2027-04-18'), false);
+});
+
 console.log('buildCupHistory');
 const golfDone = { seasons: [golfSeason('2026', [played('2026-05-03'), played('2026-10-04')], 'Kerwin')] };
 const history = buildCupHistory({ record, golf: golfDone, poker, todayISO: TODAY });

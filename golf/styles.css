@@ -19,6 +19,7 @@ body[data-sport="poker"] {
   --danger: #c0392b;
 }
 body[data-sport="poker"] .golf-only { display: none !important; }
+body[data-sport="golf"] .poker-only { display: none !important; }
 
 /* ---------- shell ---------- */
 * { box-sizing: border-box; }

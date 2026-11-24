@@ -19,6 +19,7 @@ Schema, RPC, and one-time seed for the live golf scoring backend.
    - `migrations/0009_scoring_fixes.sql`
    - `migrations/0010_enter_round_course.sql`
    - `migrations/0011_course_editing.sql`
+   - `migrations/0012_poker.sql`
 5. Set the score-entry passphrase:
    ```sql
    insert into _secret (key, value) values ('golf_passphrase', 'YOUR-PHRASE')
@@ -35,6 +36,27 @@ Schema, RPC, and one-time seed for the live golf scoring backend.
    ```sql
    select recompute_season_standings(id) from seasons where sport = 'golf';
    ```
+
+## Poker
+
+`0012_poker.sql` adds `poker_events` / `poker_results` and the two RPCs
+behind `golf/poker-entry.html`: `enter_poker_event()` (plan or record a
+night) and `cancel_poker_event()` (take a planned night off the schedule).
+They check the same `golf_passphrase` secret as golf score entry.
+
+After applying it, import the history once:
+
+```bash
+node golf-supabase/scripts/seed-poker.mjs --dry-run   # counts only
+node golf-supabase/scripts/seed-poker.mjs
+```
+
+Until both steps are done the site keeps reading `golf/data/poker.json`,
+and nights saved from the phone wait in its queue. Don't re-run the seed
+once nights have been entered from the phone — it writes what the JSON
+says over any night the JSON also lists.
+
+Then confirm Realtime is enabled on `poker_events` and `poker_results`.
 
 ## Rotating the passphrase
 
@@ -75,6 +97,10 @@ To (re)set it:
 insert into _secret (key, value) values ('golf_passphrase', '<phrase>')
 on conflict (key) do update set value = excluded.value;
 ```
+
+**Poker nights stuck on "Sync paused: Could not find the function
+public.enter_poker_event(…)".** Migration `0012_poker.sql` hasn't been
+applied. Run it; the queued nights send themselves on the next sync.
 
 **`Could not find the function public.update_course(…)` when saving a
 course edit.** Migration `0011_course_editing.sql` hasn't been applied.

@@ -1,3 +1,4 @@
 User-agent: *
 Disallow: /score-entry.html
+Disallow: /poker-entry.html
 Disallow: /mockup.html

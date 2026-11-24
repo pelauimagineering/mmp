@@ -7,16 +7,23 @@
 //
 // Bump CACHE_NAME on every deploy that changes any of these files.
 
-const CACHE_NAME = 'mmp-golf-v7';
+const CACHE_NAME = 'mmp-golf-v8';
 
 const SHELL = [
   './score-entry.html',
   './score-entry.css',
+  './poker-entry.html',
+  './poker-entry.css',
   './styles.css',
   './supabase-config.js',
   './lib/queue.js',
   './lib/golf-data.js',
   './lib/golf-calc.js',
+  './lib/poker-calc.js',
+  './lib/champions.js',
+  './lib/poker-shape.js',
+  './lib/poker-data.js',
+  './data/players.json',
   './data/courses.json',
   '../design-system/tokens.css',
   '../design-system/components.css',

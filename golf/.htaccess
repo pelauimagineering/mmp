@@ -18,6 +18,9 @@ AddType application/json .json
   <Files "score-entry.html">
     Header set X-Robots-Tag "noindex, nofollow"
   </Files>
+  <Files "poker-entry.html">
+    Header set X-Robots-Tag "noindex, nofollow"
+  </Files>
 </IfModule>
 
 # Block direct access to source artifacts if they ever leak onto the server
