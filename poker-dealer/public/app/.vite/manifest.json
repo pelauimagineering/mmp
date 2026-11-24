@@ -1,0 +1,43 @@
+{
+  "../node_modules/@fontsource-variable/atkinson-hyperlegible-mono/files/atkinson-hyperlegible-mono-latin-ext-wght-normal.woff2": {
+    "file": "assets/atkinson-hyperlegible-mono-latin-ext-wght-normal-CXgNM06D.woff2",
+    "src": "../node_modules/@fontsource-variable/atkinson-hyperlegible-mono/files/atkinson-hyperlegible-mono-latin-ext-wght-normal.woff2"
+  },
+  "../node_modules/@fontsource-variable/atkinson-hyperlegible-mono/files/atkinson-hyperlegible-mono-latin-wght-normal.woff2": {
+    "file": "assets/atkinson-hyperlegible-mono-latin-wght-normal-CoA7y8X5.woff2",
+    "src": "../node_modules/@fontsource-variable/atkinson-hyperlegible-mono/files/atkinson-hyperlegible-mono-latin-wght-normal.woff2"
+  },
+  "../node_modules/@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2": {
+    "file": "assets/atkinson-hyperlegible-next-latin-ext-wght-normal-C6vrW8VD.woff2",
+    "src": "../node_modules/@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2"
+  },
+  "../node_modules/@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-wght-normal.woff2": {
+    "file": "assets/atkinson-hyperlegible-next-latin-wght-normal-BcXVPD7q.woff2",
+    "src": "../node_modules/@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-wght-normal.woff2"
+  },
+  "../node_modules/@fontsource-variable/besley/files/besley-latin-ext-wght-normal.woff2": {
+    "file": "assets/besley-latin-ext-wght-normal-Dt3OBXk7.woff2",
+    "src": "../node_modules/@fontsource-variable/besley/files/besley-latin-ext-wght-normal.woff2"
+  },
+  "../node_modules/@fontsource-variable/besley/files/besley-latin-wght-normal.woff2": {
+    "file": "assets/besley-latin-wght-normal-IX-hlgPH.woff2",
+    "src": "../node_modules/@fontsource-variable/besley/files/besley-latin-wght-normal.woff2"
+  },
+  "src/main.jsx": {
+    "file": "assets/main-Lzmi1Grr.js",
+    "name": "main",
+    "src": "src/main.jsx",
+    "isEntry": true,
+    "css": [
+      "assets/main-BhvAVAIn.css"
+    ],
+    "assets": [
+      "assets/besley-latin-ext-wght-normal-Dt3OBXk7.woff2",
+      "assets/besley-latin-wght-normal-IX-hlgPH.woff2",
+      "assets/atkinson-hyperlegible-next-latin-ext-wght-normal-C6vrW8VD.woff2",
+      "assets/atkinson-hyperlegible-next-latin-wght-normal-BcXVPD7q.woff2",
+      "assets/atkinson-hyperlegible-mono-latin-ext-wght-normal-CXgNM06D.woff2",
+      "assets/atkinson-hyperlegible-mono-latin-wght-normal-CoA7y8X5.woff2"
+    ]
+  }
+}
