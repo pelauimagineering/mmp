@@ -1,5 +1,11 @@
 # Release notes
 
+## 2026-11-24 · `bugfix/golf-package-module-type`
+
+- `golf/package.json` now says `"type": "module"`, so Node stops printing
+  the "Reparsing as ES module" warning when running the poker seed script
+  and the test scripts. No behaviour change; the site itself is unaffected.
+
 ## 2026-11-24 · `feature/poker-skip-unplayed-game`
 
 - **Short nights**: when a scheduled game isn't played (out of time), tap
