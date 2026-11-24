@@ -1,6 +1,6 @@
 # Release notes
 
-## 2026-11-24 · `feature/poker-plan-and-score-entry`
+## 2026-11-24 · `feature/poker-skip-unplayed-game`
 
 - **Short nights**: when a scheduled game isn't played (out of time), tap
   *We didn't play this game* on that game's screen. It is dropped from the
