@@ -1,5 +1,13 @@
 # Release notes
 
+## 2026-11-24 · `feature/poker-plan-and-score-entry`
+
+- **Short nights**: when a scheduled game isn't played (out of time), tap
+  *We didn't play this game* on that game's screen. It is dropped from the
+  night — no points, no "pick who won" — and the later games move up. A
+  night keeps at least one game; *Add a game* on the review screen puts one
+  back.
+
 ## 2026-11-23 · `feature/poker-plan-and-score-entry`
 
 Poker game nights can now be planned and scored from a phone, the way golf

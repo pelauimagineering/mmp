@@ -215,5 +215,18 @@ check('a played night sends a row for the whole crew, absentees on zero', () => 
   assert.deepEqual(row('tony'), { player_id: 'tony', name: 'Tony', appearance: 0, win: null, tie: null, runner_up: null });
   assert.equal(p.event.games.length, 3);
 });
+check('a short night (a game left out for time) scores only the games played', () => {
+  const p = buildEventPayload({
+    date: '2026-11-21', played: true, attendees: ['dee', 'neave', 'harish'],
+    games: [
+      { winners: ['neave'], runnersUp: ['dee'] },
+      { winners: ['harish'], runnersUp: ['neave'] },
+    ],
+    players: pokerPlayers,
+  });
+  assert.equal(p.event.games.length, 2);
+  const gamePts = p.results.reduce((t, r) => t + (r.win || 0) + (r.tie || 0) + (r.runner_up || 0), 0);
+  assert.equal(gamePts, 30);
+});
 
 console.log(`\n${passed} checks passed.`);

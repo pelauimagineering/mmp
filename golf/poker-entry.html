@@ -89,6 +89,7 @@
     <p class="wiz-help">Tap once for the <strong>winner</strong>, twice for the <strong>runner-up</strong>. Tied? Mark them both.</p>
     <div class="player-grid" id="game-grid"></div>
     <div class="game-readout" id="game-readout"></div>
+    <div class="actions" id="game-actions"></div>
   </section>
 
   <!-- ── Review ──────────────────────────────────────────────────── -->
@@ -518,6 +519,21 @@
       ${esc(describeGame(game, nameOf))}
       ${tied ? `<p class="hint">A tied win shares the ${POINTS.win + POINTS.runnerUp} points — ${fmtPts((POINTS.win + POINTS.runnerUp) / game.winners.length)} each — and has no runner-up.</p>` : ""}
       ${!tied && game.runnersUp.length > 1 ? `<p class="hint">The runners-up share the ${POINTS.runnerUp} points — ${fmtPts(POINTS.runnerUp / game.runnersUp.length)} each.</p>` : ""}`;
+    // Ran out of time? A game that wasn't played is dropped, not scored.
+    $("#game-actions").innerHTML = wizard.games.length > 1
+      ? `<button class="btn" type="button" data-action="skip-game">We didn't play this game</button>` : "";
+  }
+
+  // Drop the game on screen from the night; the ones after it move up.
+  function skipGame() {
+    currentGame();
+    const skipped = wizard.gameIndex + 1;
+    wizard.games.splice(wizard.gameIndex, 1);
+    const left = wizard.games.length;
+    logger.info(`game ${skipped} marked not played, ${left} left`);
+    if (wizard.returnTo === "review" || wizard.gameIndex >= left) go("review");
+    else go("game");
+    showStatus(`Game ${skipped} left out — ${left} game${left === 1 ? "" : "s"} tonight.`, true);
   }
 
   // none → winner → runner-up → none
@@ -701,6 +717,7 @@
     "cycle-role": (btn) => cycleRole(btn.dataset.pid),
     "jump-game": (btn) => { wizard.gameIndex = parseInt(btn.dataset.index, 10) || 0; wizard.returnTo = "review"; go("game"); },
     "add-game": () => { wizard.games.push(blankGame()); wizard.gameIndex = wizard.games.length - 1; wizard.returnTo = "review"; go("game"); },
+    "skip-game": skipGame,
     "remove-game": () => { wizard.games.pop(); saveDraft(); renderReview(); },
     "edit-players": () => { wizard.returnTo = "review"; go("players"); },
     "edit-details": () => go("details"),
