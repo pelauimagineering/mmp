@@ -139,9 +139,9 @@ export function shapeForSpa(playersRows, seasonsRows, coursesRows = [], seasonPl
 }
 
 /** Read the last successful Supabase fetch from localStorage, if any. */
-export function readSoftCache() {
+export function readSoftCache(key = CACHE_KEY) {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     return JSON.parse(raw);
   } catch {
@@ -150,8 +150,8 @@ export function readSoftCache() {
 }
 
 /** Persist a fresh fetch result for the offline / flaky-net soft fallback. */
-export function writeSoftCache(data) {
+export function writeSoftCache(data, key = CACHE_KEY) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ data, at: Date.now() }));
+    localStorage.setItem(key, JSON.stringify({ data, at: Date.now() }));
   } catch { /* quota exceeded — ignore */ }
 }

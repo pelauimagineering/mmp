@@ -24,7 +24,8 @@ mmp/
 │   └── SKILL.md                In-repo design rules
 ├── golf/                       Static SPA + mobile score entry
 │   ├── index.html              Hash-routed leaderboard (`#/poker`, `#/golf`, etc.)
-│   ├── score-entry.html        Mobile golf round entry, downloads updated golf.json
+│   ├── score-entry.html        Mobile golf round entry (plan a round, enter scores)
+│   ├── poker-entry.html        Mobile poker night entry (plan a night, enter results)
 │   ├── styles.css              Golf-specific layout, token-driven
 │   ├── score-entry.css         Score-entry styles, token-driven
 │   ├── data/                   poker.json, golf.json, players.json
@@ -94,10 +95,20 @@ See `poker-dealer/DEPLOYMENT.md` for the Node side specifics.
 
 ### Poker (once a month, Nov–Apr)
 
-```bash
-python3 golf/scripts/build_poker.py    # picks the most recent MMP Poker*.xlsx
-scp golf/data/poker.json user@host:/var/www/mmp/golf/data/
-```
+Open `https://mmp.pelau.com/golf/poker-entry.html` on your phone (or tap
+**Enter results** / **Plan a night** on the poker leaderboard):
+
+- **Plan a game night**: date, start time, host. It shows up on the homepage
+  and the schedule straight away. A planned night can be changed or cancelled.
+- **Enter results**: tap who came, then for each game tap the winner once and
+  the runner-up twice (tied? mark them both). The points work themselves out:
+  2 for showing up, 10 a win, 5 a runner-up, ties split.
+- **Fix a past night**: reopens it on the review screen.
+
+Saves queue on the phone and sync to Supabase (same passphrase as golf) when
+there's signal. `golf/data/poker.json` and `scripts/build_poker.py` are now
+the fallback and the record of the spreadsheet era — the leaderboard reads
+them only when the database can't be reached.
 
 ### Golf (during season, multiple rounds per week)
 

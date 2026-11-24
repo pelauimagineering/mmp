@@ -1,5 +1,50 @@
 # Release notes
 
+## 2026-11-23 · `feature/poker-plan-and-score-entry`
+
+Poker game nights can now be planned and scored from a phone, the way golf
+rounds are. No spreadsheet, no script, no file upload.
+
+- **golf/poker-entry.html** (new): a wizard with three jobs.
+  *Plan a game night* — date, start time, host; a planned night can be
+  changed or cancelled. *Enter results* — tap who came, then for each game
+  tap the winner once and the runner-up twice (tied? mark them both).
+  *Fix a past night* — reopens it on the review screen. Works offline: saves
+  queue on the phone and sync when there's signal, same passphrase as golf.
+- **Scoring** (`golf/lib/poker-calc.js`, new): nobody types a number. Each
+  game gives 10 to the winner and 5 to the runner-up; a tied win shares the
+  15 with no runner-up; a tied runner-up shares the 5; showing up is 2.
+  These rules reproduce every night in the record back to 2022.
+- **Backend** (`golf-supabase/migrations/0012_poker.sql`, new): tables
+  `poker_events` / `poker_results` and the passphrase-gated
+  `enter_poker_event()` and `cancel_poker_event()`. Totals, running totals,
+  ranks and standings are derived on read, not stored.
+  `golf-supabase/scripts/seed-poker.mjs` imports the existing history once.
+- **Leaderboard and home page** read poker from Supabase, then the last good
+  copy, then `data/poker.json`, and update live when a night is saved. The
+  poker tab gains *Enter results* / *Plan a night*; an upcoming night's page
+  links to enter its results or change the plan; a played night's page
+  links to fix it.
+- **Champions**: a poker season no longer counts as finished just because
+  every night so far has been played. It is finished once an April night is
+  in, or the calendar passes April.
+- **golf/lib/queue.js**: the offline queue is now one database per sport
+  (`createQueue`), so golf and poker saves never mix.
+
+**Needs doing once on the live database** (until then the site keeps
+reading `poker.json` exactly as before, and saved nights wait in the queue):
+run `0012_poker.sql` in the Supabase SQL editor, run
+`node golf-supabase/scripts/seed-poker.mjs`, and enable Realtime on the two
+new tables. See `golf-supabase/README.md`.
+
+Two things read slightly differently once the history is imported: nights
+from the 2022–23 and 2023–24 spreadsheets show ranks worked out the standard
+way (level players share a rank) where the sheet had them typed by hand, and
+fixing a spreadsheet-era night means re-entering its games, because the
+sheet kept the points but not who won each game.
+
+Tests: `node golf/scripts/test-poker.mjs`.
+
 ## 2026-11-08 · `claude/determined-brown-b0ihrx`
 
 Upcoming poker game nights can now be prepared ahead of time, like golf

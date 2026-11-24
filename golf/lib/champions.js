@@ -20,7 +20,7 @@ export function nameResolverFrom(players) {
 
 const pad2 = (n) => String(n % 100).padStart(2, '0');
 
-function cupYearFromStart(year) {
+export function cupYearFromStart(year) {
   return { id: `${year}-${pad2(year + 1)}`, label: `${year}–${pad2(year + 1)}` };
 }
 
@@ -36,7 +36,13 @@ export function cupYearOf(sport, season) {
 export function isSeasonComplete(sport, season, todayISO = new Date().toISOString().slice(0, 10)) {
   if (sport === 'poker') {
     const events = season?.events || [];
-    return events.length > 0 && events.every((e) => e.played || e.skipped);
+    if (!events.length || !events.every((e) => e.played || e.skipped)) return false;
+    // Nights are now entered one at a time, so "everything listed has been
+    // played" is true after every night. The season is only over once the
+    // April finale is in, or the calendar has moved past it.
+    const start = parseInt(String(season.id), 10);
+    if (!Number.isFinite(start)) return true;
+    return events.some((e) => e.played && e.month === 'Apr') || todayISO >= `${start + 1}-05-01`;
   }
   const rounds = season?.rounds || [];
   return rounds.some((r) => r.played) &&

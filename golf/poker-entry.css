@@ -1,0 +1,91 @@
+/* MMP Challenge Cup — poker night wizard.
+ *
+ * Loaded after score-entry.css, which supplies the wizard shell (screens,
+ * tiles, review rows, sticky nav, passphrase dialog). This file only adds
+ * the poker accent and the pieces golf has no use for.
+ *
+ * Theme: theme-links with the same clay/rust poker accent the leaderboard
+ * uses for its poker tab (styles.css, body[data-sport="poker"]).
+ */
+
+body[data-sport="poker"] {
+  --primary: #b54a2a;
+  --primary-hover: #983c20;
+  --primary-ink: #ffffff;
+}
+
+input[type="time"] {
+  font-family: var(--font-ui); font-size: var(--text-md);
+  color: var(--ink);
+  background: var(--bg-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+/* ---------- game screen: tap a tile to cycle won → runner-up → clear ---------- */
+.player-tile .tile-role {
+  min-height: 1.4em;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-ui); font-size: var(--text-2xs); font-weight: 700;
+  letter-spacing: var(--tracking-wide); text-transform: uppercase;
+  color: var(--ink-3);
+}
+.player-tile.is-winner {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, var(--bg-raised));
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.player-tile.is-winner .tile-role { background: var(--primary); color: var(--primary-ink); }
+.player-tile.is-runner-up {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, var(--bg-raised));
+  box-shadow: 0 0 0 1px var(--gold);
+}
+.player-tile.is-runner-up .tile-role { background: var(--gold); color: var(--ink); }
+
+.game-readout {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--bg-tonal);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-display); font-size: var(--text-md);
+  color: var(--ink);
+}
+.game-readout .hint { margin: 4px 0 0; color: var(--ink-2); }
+
+/* ---------- review ---------- */
+.review-section-label {
+  font-family: var(--font-ui); font-size: var(--text-2xs); font-weight: 700;
+  letter-spacing: var(--tracking-widest); text-transform: uppercase;
+  color: var(--ink-3);
+  margin: var(--space-4) 0 var(--space-2);
+}
+.review-row.is-static { cursor: default; }
+.review-row.is-missing { border-color: var(--danger); }
+.review-row.is-missing .review-meta { color: var(--danger); }
+.game-num {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--bg-tonal); border: 1px solid var(--rule);
+  display: grid; place-items: center; flex: 0 0 auto;
+  font-family: var(--font-mono); font-weight: 700; font-size: var(--text-sm);
+  color: var(--ink);
+}
+.notice {
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--warning) 50%, var(--rule));
+  background: color-mix(in srgb, var(--warning) 10%, var(--bg-raised));
+  font-family: var(--font-ui); font-size: var(--text-sm); color: var(--ink-2);
+}
+
+/* ---------- home lists ---------- */
+details.past-rounds + details.past-rounds { margin-top: var(--space-3); }
+
+/* ---------- cancel a planned night ---------- */
+.btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--rule)); }
+.btn.danger:hover { border-color: var(--danger); }
+.cancel-row { margin-top: var(--space-5); }

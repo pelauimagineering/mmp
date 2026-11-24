@@ -22,6 +22,8 @@
   import * as GolfData from './lib/golf-data.js';
   import * as GolfCalc from './lib/golf-calc.js';
   import * as Champions from './lib/champions.js';
+  import * as PokerData from './lib/poker-data.js';
+  window.PokerData = PokerData;
   window.GolfData = GolfData;
   window.GolfCalc = GolfCalc;
   window.Champions = Champions;
@@ -46,6 +48,8 @@
     <div class="right-rail">
       <a class="enter-scores golf-only" id="header-enter-scores" href="score-entry.html">Enter scores</a>
       <a class="enter-scores secondary golf-only" id="header-create-round" href="score-entry.html?mode=schedule">Plan a round</a>
+      <a class="enter-scores poker-only" href="poker-entry.html">Enter results</a>
+      <a class="enter-scores secondary poker-only" href="poker-entry.html?mode=schedule">Plan a night</a>
       <a class="all-time-link" id="all-time-link" href="#/poker/all-time">All-time →</a>
     </div>
   </div>
@@ -245,9 +249,21 @@ function crownedChampion(sport, season, leader) {
   };
 }
 
+// Poker data arrives more than once: at load, late from a slow database,
+// and on every Realtime change. Names are canonicalized each time.
+let latePoker = null;   // fresh data that landed while loadAll() was still waiting
+function setPokerData(poker) {
+  if (!poker) return;
+  if (!DATA.loaded) { latePoker = poker; return; }
+  canonicalizePokerNames(poker, DATA.resolveName);
+  DATA.poker = poker;
+  dispatch();
+}
+
 async function loadAll() {
   const [poker, players, golfFromSupabase, champions] = await Promise.all([
-    fetchJson("data/poker.json"),
+    // Supabase → soft cache → data/poker.json (see lib/poker-data.js).
+    window.PokerData.loadPokerLive({ onLate: setPokerData }),
     fetchJson("data/players.json"),
     loadGolfLive(),
     fetchJson("data/champions.json"),
@@ -257,9 +273,9 @@ async function loadAll() {
   const roster = (players && players.players) || [];
   DATA.resolveName = window.Champions.nameResolverFrom(roster);
   DATA.aliasesByName = new Map(roster.filter(p => (p.aliases || []).length).map(p => [p.name, p.aliases]));
-  canonicalizePokerNames(poker, DATA.resolveName);
-  DATA.poker = poker;
   DATA.champions = champions;
+  DATA.poker = latePoker || poker;
+  canonicalizePokerNames(DATA.poker, DATA.resolveName);
   // An RLS-blocked or unseeded Supabase returns a truthy-but-empty
   // {seasons: []} shape, not an error — fall back to the static JSON
   // in that case instead of rendering a blank leaderboard.
@@ -562,7 +578,9 @@ function renderPokerSeasonView(root, season) {
   const champion = standings[0];
 
   const lastEventWinner = (lastEvent.results || []).slice().sort((a,b) => (b.eventTotal || 0) - (a.eventTotal || 0))[0];
-  const seasonComplete = !finalEvent && lastEvent;
+  // Not "nothing left on the schedule": nights are planned one at a time,
+  // so the schedule is usually empty between them. See isSeasonComplete.
+  const seasonComplete = decided || window.Champions.isSeasonComplete("poker", season);
   const crowned = seasonComplete ? crownedChampion("poker", season, champion) : null;
 
   root.innerHTML = `
@@ -585,9 +603,9 @@ function renderPokerSeasonView(root, season) {
           <div class="kpi-foot">${lastEvent.month} ${lastEvent.year} · Host: ${escapeHtml(lastEvent.host || "—")}</div>
         </div>
         ${(() => {
-          const nextUp = finalEvent || nextScheduledPokerEvent()?.event;
+          const nextUp = finalEvent || (seasonComplete ? nextScheduledPokerEvent()?.event : null);
           return `<div class="kpi">
-          <div class="kpi-label">${finalEvent ? "Next Event" : "Next Season"}</div>
+          <div class="kpi-label">${seasonComplete ? "Next Season" : "Next Event"}</div>
           <div class="kpi-value">${nextUp ? (nextUp.date ? formatDateShort(nextUp.date) : `${escapeHtml(nextUp.month)} ${nextUp.year}`) : "TBD"} <span class="units">${nextUp ? (nextUp.time ? formatTime(nextUp.time) : "upcoming") : ""}</span></div>
           <div class="kpi-foot">${nextUp ? `Host: ${escapeHtml(nextUp.host || "TBD")}` : "Host rotation continues"}</div>
         </div>`;
@@ -813,7 +831,7 @@ function renderSeasonStorylines(sport, season, standings) {
   if (sport === "poker") {
     const champion = standings[0];
     const t2 = standings.filter(s => s.rank === 2);
-    const complete = season.events.every(e => e.played || e.skipped) ||
+    const complete = window.Champions.isSeasonComplete("poker", season) ||
       !!window.Champions.championsOf(cupHistory(), "poker", season);
     const crowned = complete ? crownedChampion("poker", season, champion) : null;
     if (crowned) items.push({ label: "Champion", headline: crowned.name, body: crowned.foot });
@@ -888,6 +906,10 @@ function renderPokerEventDetail(root, season, event) {
           <h1>${escapeHtml(event.month)} ${event.year}${event.date ? ` · ${formatDateLong(event.date)}` : ""}</h1>
           <p>Host: <strong>${escapeHtml(event.host || "TBD")}</strong>${event.time ? ` · Cards in the air at <strong>${formatTime(event.time)}</strong>` : ""}.</p>
           <p>Results will appear here once the night is played.</p>
+          <p style="margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <a class="enter-scores" href="poker-entry.html?eventId=${encodeURIComponent(event.id)}">Enter results for this night</a>
+            <a class="enter-scores secondary" href="poker-entry.html?mode=schedule&eventId=${encodeURIComponent(event.id)}">Change the plan</a>
+          </p>
         </div>
       </div>
     `;
@@ -906,6 +928,7 @@ function renderPokerEventDetail(root, season, event) {
       <h1>${escapeHtml(event.month)} ${event.year}</h1>
       <span class="league-tag">${event.played ? "Played" : "Upcoming"}</span>
       <span class="meta">Host: ${escapeHtml(event.host || "—")} · ${playerCount} players · ${fmt(totalPts)} pts awarded</span>
+      <a class="enter-scores secondary" style="margin-left: auto;" href="poker-entry.html?eventId=${encodeURIComponent(event.id)}">Fix this night</a>
     </div>
     <div class="kpis" style="margin-top: 18px;">
       <div class="kpi"><div class="kpi-label">Event Winner</div><div class="kpi-value">${escapeHtml(winner?.name || "—")} <span class="units">${fmt(winner?.eventTotal)} pts</span></div><div class="kpi-foot">YTD after this event: ${fmt(winner?.ytdTotal)}</div></div>
@@ -1251,6 +1274,7 @@ function renderEmptyState(root, sport, season) {
           <div class="upper">${escapeHtml(season.label)} MMP Poker Season</div>
           <h1>${upcoming ? `${escapeHtml(upcoming.month)} ${upcoming.year}${upcoming.date ? ` · ${formatDateLong(upcoming.date)}` : ""}` : "First game night TBD"}</h1>
           <p>${upcoming ? `Hosted by <strong>${escapeHtml(upcoming.host || "TBD")}</strong>${upcoming.time ? ` · Cards in the air at <strong>${formatTime(upcoming.time)}</strong>` : ""}.` : ""} Standings wake up the moment the first night is played.</p>
+          <p style="margin-top: 24px;"><a class="enter-scores" href="poker-entry.html">Enter results</a></p>
         </div>
         <div class="schedule">
           <div class="sched-head">Schedule</div>
@@ -1309,6 +1333,7 @@ function bindStandingsRowClicks(sport) {
 async function init() {
   await loadAll();
   subscribeGolfLive();
+  window.PokerData.subscribePokerLive(setPokerData);
   $("#footer-date").textContent = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   window.addEventListener("hashchange", dispatch);
   if (!location.hash || location.hash === "#" || location.hash === "#/") {
