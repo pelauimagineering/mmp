@@ -59,6 +59,20 @@ sheet kept the points but not who won each game.
 
 Tests: `node golf/scripts/test-poker.mjs`.
 
+## 2026-11-22 · `claude/busy-ride-tqw6cg` (poker deployment guide, Evan's video)
+
+- **poker-dealer/DEPLOYMENT.md** rewritten to match the current app. It now
+  leads with the DigitalOcean App Platform deployment (environment variables
+  in the dashboard, temporary filesystem, post-deploy checks) and keeps a
+  self-hosted Docker path whose commands were tested. Covers the client
+  build, optional Jitsi tokens, `RESET_PHRASE`, and corrected backup,
+  restore and update steps.
+- **Evan gets video**: `poker-dealer/server/jwt-config.js` now maps `evan`
+  to `JWT_EVAN`. Add a `JWT_EVAN` token to the App Platform environment
+  variables; until then he can play, without video.
+- **poker-dealer/README.md**: removed the stale email/password, credentials
+  and test-account wording. Login is pick-your-name.
+
 ## 2026-11-08 · `claude/determined-brown-b0ihrx`
 
 Upcoming poker game nights can now be prepared ahead of time, like golf

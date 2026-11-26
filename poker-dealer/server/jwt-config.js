@@ -16,7 +16,8 @@ const JWT_MAPPING = {
     'wayne': process.env.JWT_WAYNE,
     'dee': process.env.JWT_DEE,
     'lorenzo': process.env.JWT_LORENZO,
-    'jb': process.env.JWT_JB
+    'jb': process.env.JWT_JB,
+    'evan': process.env.JWT_EVAN
 };
 
 const COMMUNITY_JWT = process.env.JWT_COMMUNITY;

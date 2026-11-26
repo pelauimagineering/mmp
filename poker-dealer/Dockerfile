@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --only=production
+# Install everything (the React client needs its build tools)
+RUN npm install --ignore-scripts && npm rebuild
 
 # Copy application files
 COPY server/ ./server/
@@ -17,6 +17,11 @@ COPY public/ ./public/
 COPY views/ ./views/
 COPY database/ ./database/
 COPY scripts/ ./scripts/
+COPY client/ ./client/
+COPY vite.config.mjs ./
+
+# Build the React client into public/app, then drop the build tools
+RUN npm run build && npm prune --omit=dev
 
 # Create database directory with proper permissions
 RUN mkdir -p /app/database && \

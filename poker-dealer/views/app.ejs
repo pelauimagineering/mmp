@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0B2A20">
+    <meta name="color-scheme" content="dark">
+    <title><%= title %></title>
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <% assets.fonts.forEach(function (href) { %><link rel="preload" as="font" type="font/woff2" crossorigin href="<%= href %>">
+    <% }) %><% assets.css.forEach(function (href) { %><link rel="stylesheet" href="<%= href %>">
+    <% }) %>
+    <script type="module" src="<%= assets.js %>"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <noscript>MMP Poker needs JavaScript to deal the cards.</noscript>
+    <script id="mmp-boot" type="application/json"><%- bootJson %></script>
+</body>
+</html>

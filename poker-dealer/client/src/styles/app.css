@@ -1,0 +1,227 @@
+@import '@fontsource-variable/besley/wght.css';
+@import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
+@import '@fontsource-variable/atkinson-hyperlegible-mono/wght.css';
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+ * MMP Poker tokens. Mirrors design-system/MASTER.md: change both together.
+ * ------------------------------------------------------------------------- */
+@theme {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+
+  --color-rail: #0b2a20;
+  --color-felt: #0f3628;
+  --color-table: #15503a;
+  --color-raised: #1d6349;
+  --color-line: #2b6e55;
+  --color-line-strong: #4e9a7c;
+  --color-chalk: #f4f0e4;
+  --color-chalk-dim: #c3d2c7;
+  --color-brass: #e2b755;
+  --color-brass-hover: #edc76e;
+  --color-brass-ink: #1c1503;
+  --color-card: #fbf8ef;
+  --color-card-ink: #17181c;
+  --color-card-red: #c21f32;
+  --color-card-back: #7a1626;
+  --color-danger: #b93a27;
+  --color-danger-hover: #cc4631;
+  --color-danger-text: #ffa08c;
+  --color-warn: #f2c14e;
+  --color-chip-blue: #8fc1e8;
+
+  --font-display: 'Besley Variable', 'Rockwell', Georgia, serif;
+  --font-sans: 'Atkinson Hyperlegible Next Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Atkinson Hyperlegible Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --text-*: initial;
+  --text-caption: 0.875rem;
+  --text-caption--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-lead: 1.125rem;
+  --text-lead--line-height: 1.625rem;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.75rem;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.75rem;
+  --text-display: 1.875rem;
+  --text-display--line-height: 2.125rem;
+
+  --radius-*: initial;
+  --radius-control: 12px;
+  --radius-panel: 16px;
+  --radius-full: 999px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-turn: card-turn 420ms var(--ease-out) both;
+  --animate-notice: notice-in 220ms var(--ease-out) both;
+  --animate-spin: spin 900ms linear infinite;
+
+  @keyframes card-turn {
+    from { transform: rotateY(88deg); opacity: 0.4; }
+    to { transform: rotateY(0deg); opacity: 1; }
+  }
+  @keyframes notice-in {
+    from { transform: translateY(-8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    background: var(--color-felt);
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    /* Sticky header and bottom dock must not hide whatever keyboard focus lands on. */
+    scroll-padding-top: 8rem;
+    scroll-padding-bottom: 6rem;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--color-felt);
+    color: var(--color-chalk);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  input, textarea {
+    caret-color: var(--color-brass);
+  }
+
+  * {
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+
+  button, a, summary, [role='slider'] {
+    touch-action: manipulation;
+  }
+
+  button:not(:disabled), summary, [role='button'] {
+    cursor: pointer;
+  }
+
+  /* One focus treatment everywhere: a brass ring that clears the control. */
+  :focus-visible {
+    outline: 2px solid var(--color-brass);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-brass);
+    color: var(--color-brass-ink);
+  }
+
+  dialog::backdrop {
+    background: rgb(4 18 13 / 0.72);
+  }
+
+  @media (pointer: fine) {
+    html { overscroll-behavior: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Playing card. Size comes from --card-w on any ancestor. */
+  .playing-card {
+    --w: var(--card-w, 64px);
+    position: relative;
+    flex: none;
+    width: var(--w);
+    aspect-ratio: 5 / 7;
+    border-radius: calc(var(--w) * 0.09);
+    box-shadow: 0 1px 1px rgb(0 0 0 / 0.25), 0 calc(var(--w) * 0.04) calc(var(--w) * 0.1) rgb(0 0 0 / 0.28);
+    backface-visibility: hidden;
+  }
+
+  .playing-card--face {
+    background: var(--color-card);
+    color: var(--color-card-ink);
+  }
+
+  .playing-card--red {
+    color: var(--color-card-red);
+  }
+
+  .playing-card__rank {
+    position: absolute;
+    top: calc(var(--w) * 0.05);
+    left: calc(var(--w) * 0.1);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: calc(var(--w) * 0.46);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: lining-nums;
+  }
+
+  .playing-card__suit {
+    position: absolute;
+    right: calc(var(--w) * 0.08);
+    bottom: calc(var(--w) * 0.08);
+    width: calc(var(--w) * 0.5);
+    height: calc(var(--w) * 0.5);
+  }
+
+  .playing-card--back {
+    background-color: var(--color-card-back);
+    /* Diamond lattice drawn as one SVG tile, scaled with the card. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M0 0L10 10M10 0L0 10' stroke='%23fbf8ef' stroke-opacity='.2' stroke-width='.5'/%3E%3C/svg%3E");
+    background-size: calc(var(--w) * 0.16) calc(var(--w) * 0.16);
+    background-position: center;
+    border: calc(var(--w) * 0.055) solid var(--color-card);
+  }
+
+  .playing-card--slot {
+    box-shadow: none;
+    border: 2px dashed var(--color-line-strong);
+    opacity: 0.55;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+@utility px-safe {
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
+}
