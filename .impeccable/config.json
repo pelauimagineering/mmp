@@ -1,0 +1,41 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "fraunces",
+        "createdAt": "2026-11-26T05:49:26.845Z",
+        "reason": "pre-existing design system (design-system/tokens.css) predating this session; Fraunces is the site's established display face"
+      },
+      {
+        "rule": "italic-serif-display",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-26T05:49:26.865Z",
+        "reason": "pre-existing hero styling from the site's design system, predates this session; out of scope for issue #29 layout fix"
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-26T05:49:26.884Z",
+        "reason": "pre-existing brand background token (--bg) from design-system/tokens.css, predates this session"
+      },
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-26T05:49:26.902Z",
+        "reason": "pre-existing felt-green/gold brand gradients from design-system tokens, predates this session"
+      }
+    ]
+  }
+}
