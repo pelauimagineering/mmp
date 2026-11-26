@@ -105,13 +105,20 @@ The site uses hash routing (`#/poker/2025-26`, `#/golf/2026`, etc.), so no serve
 
 ### Poker (once a month, Nov–Apr)
 
-```bash
-python3 scripts/build_poker.py
-# uploads only data/poker.json
-scp data/poker.json user@host:/var/www/mmp/data/
-```
+Open `poker-entry.html` on your phone (or tap
+**Enter results** / **Plan a night** on the poker leaderboard):
 
-The script picks the most recently modified `MMP Poker*.xlsx` in the project root.
+- **Plan a game night**: date, start time, host. It shows up on the homepage
+  and the schedule straight away. A planned night can be changed or cancelled.
+- **Enter results**: tap who came, then for each game tap the winner once and
+  the runner-up twice (tied? mark them both). The points work themselves out:
+  2 for showing up, 10 a win, 5 a runner-up, ties split.
+- **Fix a past night**: reopens it on the review screen.
+
+Saves queue on the phone and sync to Supabase (same passphrase as golf) when
+there's signal. `golf/data/poker.json` and `scripts/build_poker.py` are now
+the fallback and the record of the spreadsheet era — the leaderboard reads
+them only when the database can't be reached.
 
 ### Golf (during the season, multiple rounds per week)
 

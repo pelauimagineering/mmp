@@ -76,7 +76,9 @@ Two sports, two distinct cadences, so two ergonomically different flows. Both en
 
 ### Poker (once a month, Nov–Apr)
 
-The source of truth is the Numbers/Excel scoresheet you already maintain. After an event, drop the latest xlsx in the project root and run:
+**Since Nov 2026 poker nights are planned and scored from the phone**, like golf rounds: `poker-entry.html` is a wizard with the same shape as golf's — *plan a game night* (date, start time, host), *enter results* (tap who came, then the winner and runner-up of each game), *fix a past night*. Nobody types a number; `lib/poker-calc.js` turns the games into the spreadsheet's Appearance / Win / Tie / Runner-up columns (2 / 10 / 5, ties split), and totals, running totals and ranks are derived on read. Saves go through the same offline queue to Supabase (`enter_poker_event()`, migration `0012_poker.sql`, same passphrase as golf). `data/poker.json` is now the fallback when the database is unreachable.
+
+The spreadsheet flow below is how the 2022–26 history was built, and still works for rebuilding that fallback file. After an event, drop the latest xlsx in the project root and run:
 
 ```bash
 python3 scripts/build_poker.py

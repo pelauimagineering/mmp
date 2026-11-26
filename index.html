@@ -19,6 +19,8 @@
   // module can use it. The bottom script waits on `golf-data-ready`
   // before reading window.GolfData.
   import * as GolfData from '/golf/lib/golf-data.js';
+  import * as PokerData from '/golf/lib/poker-data.js';
+  window.PokerData = PokerData;
   window.GolfData = GolfData;
   window.dispatchEvent(new Event('golf-data-ready'));
 </script>
@@ -306,7 +308,7 @@
   //   1. live Supabase fetch via the shared adapter (window.GolfData)
   //   2. localStorage soft-cache from a previous successful fetch
   //   3. /golf/data/golf.json as a last-resort static fallback
-  // Poker stays on the static JSON — only golf is on Supabase.
+  // Poker follows the same order through window.PokerData.loadPokerLive.
   const waitForGolfData = () => new Promise((resolve) => {
     if (window.GolfData) return resolve();
     window.addEventListener('golf-data-ready', () => resolve(), { once: true });
@@ -331,7 +333,7 @@
   };
 
   const [poker, golf, record, roster] = await Promise.all([
-    tryFetch('/golf/data/poker.json'),
+    waitForGolfData().then(() => window.PokerData.loadPokerLive()),
     loadGolfLive(),
     tryFetch('/golf/data/champions.json'),
     tryFetch('/golf/data/players.json'),
