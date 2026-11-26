@@ -166,8 +166,10 @@ app.get('/community', (req, res) => {
 // Create HTTP server
 const server = http.createServer(app);
 
-// Initialize WebSocket server
-const wss = initWebSocketServer(server);
+// The WebSocket server (and with it the game manager, which loads the saved
+// game) is created in startServer(), after any --reset has cleared the
+// database. Created earlier, it would load the old game and write it back.
+let wss = null;
 
 // Cleanup expired sessions periodically (every hour)
 setInterval(() => {
@@ -203,6 +205,8 @@ if (resetFlag) {
 
 // Start server function
 function startServer() {
+    wss = initWebSocketServer(server);
+
     server.listen(PORT, () => {
         console.log(`\n===========================================`);
         console.log(`Poker Dealer Server Started`);
@@ -226,7 +230,8 @@ function shutdown(signal) {
     shuttingDown = true;
     console.log(`${signal} received: closing sockets and HTTP server`);
 
-    for (const client of wss.clients) {
+    const clients = wss ? wss.clients : [];
+    for (const client of clients) {
         try { client.close(1001, 'Server restarting'); } catch (error) { /* already gone */ }
     }
 
@@ -238,7 +243,7 @@ function shutdown(signal) {
     server.close(finish);
     // Don't hang on a socket that never completes its close handshake.
     setTimeout(() => {
-        for (const client of wss.clients) client.terminate();
+        for (const client of clients) client.terminate();
         finish();
     }, 2000).unref();
 }

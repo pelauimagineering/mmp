@@ -32,6 +32,16 @@ On startup the server logs `WARNING: Missing JWT env vars: ...` and lists every 
 
 **Adding a player** takes two code changes and one token: add them to the list in `scripts/init-db.js`, add a matching entry in `server/jwt-config.js`, and set their `JWT_<USERNAME>`. Without the last two the player can still play, without video.
 
+### Video tokens
+
+The tokens come from the 8x8 JaaS console (<https://jaas.8x8.vc>), under the app whose ID appears in `client/src/components/VideoRoom.jsx`. A new token should match the existing ones:
+
+- Room `MMPPoker`
+- The player's display name as the user name, with moderator rights
+- Signed with RS256 by a JaaS API key belonging to that app. Each existing token uses its own API key
+
+**All tokens issued in November 2025 expire on 2027-01-01.** Video stops working for everyone on that date until they are replaced. Give a new token a later expiry, and replace the others before then.
+
 ## DigitalOcean App Platform (production)
 
 The live app runs on DigitalOcean App Platform. Its build and run settings are kept in the DigitalOcean dashboard, not in this repository; `.do/dev-config.yaml` at the repository root only records the app ID.

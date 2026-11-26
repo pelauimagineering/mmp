@@ -1,5 +1,58 @@
 # Release Notes - Poker Dealer
 
+## 2026-11-24 - bugfix/reset-flag-stale-game
+
+### Fix: `--reset` did not clear a game in progress
+
+- Starting the server with `--reset` (`npm run start:reset`) cleared the database, but the server had already loaded the old game into memory, and wrote it back on the next change. Players, cards and the dealer from the previous session came back
+- The game is now loaded only after the reset has finished
+- This was also why 3 of the 6 sync tests failed on a machine whose local database held an unfinished hand. All 6 pass now
+- The in-app "reset game" button was not affected
+
+## 2026-11-24 - bugfix/init-db-database-path
+
+### Fix: `init-db.js` ignored `DATABASE_PATH`
+
+- `scripts/init-db.js` always wrote to `database/poker-dealer.db`, while the server opens whatever `DATABASE_PATH` names. With a custom path the server started on an empty file and every request failed with "no such table: users"
+- The script now uses `DATABASE_PATH` (from the environment or `.env`) with the same default as the server, and creates the folder if it is missing
+- No change when `DATABASE_PATH` is unset, or in Docker, where it already matches the default
+
+## 2026-11-23 - bugfix/phone-video-height
+
+### Fix: players could not join video from a phone
+
+- The video drawer on the game page was only about 200px tall on a phone, so the 8x8 pre-join screen pushed its "Join meeting" button out of view and nobody could join
+- The video area is now at least 420px tall (the old client used 400px), which shows the name field, "Join meeting" and the mic/camera buttons
+- Wide screens are unchanged
+
+## 2026-11-22 - feature/react-client-and-deploy-docs
+
+### New client, sync fixes, deployment guide, Evan's video
+
+The same app as in the standalone `pelauimagineering/poker-dealer` repository; the two copies are kept in sync.
+
+#### React + Tailwind client on a new design system
+- Login, game and community pages are now one React bundle built with Vite (`npm run build`, output in `public/app`), served through `views/app.ejs`
+- The old `public/css`, `public/js`, `login.html`, `game.ejs` and `community.ejs` are removed
+- Sample-data mode: add `?demo=<scene>` to any page
+- Design critique, polish and web interface guideline fixes
+
+#### Staying in sync
+- The server tracks a set of sockets per player, numbers every snapshot, pings every 25 seconds and closes sockets on shutdown
+- The client reconnects indefinitely and resyncs when the device wakes
+- Regression tests: `npm test`
+
+#### Video is optional
+- A missing Jitsi token no longer returns a 500; the table works and the video drawer explains why video is unavailable
+- **Evan**: `server/jwt-config.js` now maps `evan` to `JWT_EVAN`. Add a `JWT_EVAN` secret on DigitalOcean to give him video
+
+#### Documentation
+- `DEPLOYMENT.md` rewritten for the current app: App Platform first, self-hosted Docker second, with a section on the video tokens. The existing tokens all expire on 2027-01-01
+- `README.md`: removed the stale email/password and test-account wording
+
+#### Differences from the standalone copy
+- This monorepo copy keeps the `postinstall` design-system sync (`scripts/sync-design-system.js`) and tracks `package-lock.json`
+
 ## 2026-02-01 - feature/fix-seven-issues
 
 ### Bug Fixes and Enhancements

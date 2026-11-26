@@ -1,0 +1,1096 @@
+Poker Dealer - Initial Release
+================================
+
+Latest Changes (2026-11-24):
+----------------------------
+**Fix: starting the server with a reset now really clears the table**
+
+- Server owners: deal a hand, stop the server, start it with `npm run start:reset`. Log in: the table should be empty, with no players, cards or dealer left over
+- Nothing changes for players on DigitalOcean, where every deploy already starts clean
+
+**Fix: database setup now follows DATABASE_PATH**
+
+- Nothing changes for players. After deploying, log in and check the player list appears as usual
+- Server owners: run `DATABASE_PATH=/some/other/file.db npm run db:init`, then start the server with the same setting; the player list should load
+
+Latest Changes (2026-11-23):
+----------------------------
+**Fix: joining video from a phone**
+
+- On a phone, open "Video table" on your seat: you should see your name, a "Join meeting" button and the mic/camera buttons. Tap "Join meeting" and confirm others can see and hear you
+- Check it on an iPhone and an Android phone
+
+Latest Changes (2026-11-22):
+----------------------------
+**New look and more reliable syncing; Evan's video**
+
+- Every page has a new design (login, your seat, the shared board). Check each on a phone and on the TV
+- Lock your phone mid-hand, then unlock it: your cards and the board should catch up within a few seconds without a refresh
+- Open the same seat on two devices: both should stay live
+- Players without a video token can still play; the video drawer says video is unavailable
+- Evan: once his token is added on DigitalOcean, the video drawer should work for him
+- After this is deployed everyone has to log in again, and any game in progress is cleared
+
+Previous Changes (2026-04-19):
+------------------------------
+**Add player: Evan Matthews**
+
+- New player "Evan Matthews" (username: evan) added to the seed user list
+- Existing users and sessions unaffected (INSERT OR IGNORE)
+
+Previous Changes (2026-03-20):
+------------------------------
+**Issue #51: Big Blind anchor — prevent BB skip in bloodbath scenarios**
+
+- Big Blind now advances exactly one active seat clockwise per hand, regardless of how many players go broke
+- Blind placement anchored to previous BB position instead of dealer index
+- Small Blind and Dealer derived from BB position (not the other way around)
+- Dead button rule: dealer seat may land on a broke player with 3+ active
+- Heads-up: BB alternates correctly, dealer/SB = the other active player
+- Manual dealer selection resets BB tracking for fresh first-hand derivation
+- BB position locked at deal time so mid-hand broke changes don't affect current hand
+- lastBigBlindIndex persists across server restarts via deck_state JSON
+- Player removal and reorder correctly adjust BB tracking index
+
+Previous Changes (2026-03-19):
+------------------------------
+**Issue #49: Pause Timer**
+
+- Dealer can pause, resume, and reset the blind level timer
+- Pause/resume/reset buttons appear in the timer section (dealer only)
+- Paused timer shows blinking amber countdown to indicate paused state
+- Dealing cards or flipping community cards auto-resumes a paused timer
+- Reset restarts timer from full 7:00 duration and clears blindsWillIncrease
+- Timer pause state persists across server restarts (stored in database)
+- Non-dealer players and community display see paused visual state but no controls
+
+Previous Changes (2026-03-01):
+------------------------------
+**Fix for 4 GitHub Issues (Issues #44, #45, #46, #47)**
+
+- **Issue #44: Pause timer after expiration**
+  - Timer now pauses (shows 7:00) when it expires, instead of continuing to run
+  - Timer restarts automatically when the next hand is dealt
+
+- **Issue #45: Blinds max at 64/128**
+  - Blinds stop incrementing once they reach 64/128
+  - Timer does not restart when blinds are at max level
+  - resetGame() still returns blinds to 1/2
+
+- **Issue #46: Community page link on login**
+  - Added "Community Display" link below the login form
+  - Links to /community for viewing community cards on a shared screen
+
+- **Issue #47: Slide button knob padding fix**
+  - Slide knob now maintains 5px left padding at rest position
+  - Both show-cards and fold sliders snap back to 5px (not 0px) on release
+
+Previous Changes (2026-02-20):
+------------------------------
+**Fix for 3 GitHub Issues (Issues #40, #41, #42)**
+
+- **Issue #42: Slide button knob padding inconsistency**
+  - Replaced `left: 0` + `margin: 5px` with explicit `top: 5px; left: 5px` positioning
+  - Fixes inconsistent left padding on both deal and fold slide buttons
+  - Equal 5px gap on all sides of the knob now renders predictably across browsers
+
+- **Issue #41: Longer overlay animation durations**
+  - Default overlay display time doubled from 2s to 4s
+  - Timer/blind-increase overlays display for 6s (3x original)
+  - JS sets animationDuration per category; CSS default updated as fallback
+
+- **Issue #40: Broke players should not be assigned blinds**
+  - Added `getNextActivePlayerIndex()` helper that scans clockwise skipping broke players
+  - SB and BB now only assigned to non-broke players
+  - Broke players CAN still be dealer but are skipped for blind positions
+  - Heads-up logic preserved: with exactly 2 active players, dealer is SB
+  - Returns -1 if fewer than 2 active players (no blinds assigned)
+
+Previous Changes (2026-02-18):
+------------------------------
+**Fix for 4 GitHub Issues (Issues #34, #35, #36, #37)**
+
+- **Issue #34: Broke button emoji fix**
+  - Changed "mark as broke" toggle emoji from 💸 (flying money) to 🚫 (no entry)
+  - 💰 (money bag) still used for "mark as active" — clearer visual distinction
+
+- **Issue #35: Dealer controls vanish on page refresh**
+  - Fixed race condition where dealer controls disappeared after full page refresh
+  - Removed setTimeout(500ms) initialization; controls now set up synchronously with WebSocket handlers
+  - Dealer controls reliably appear on refresh, reconnect, and first load
+
+- **Issue #36: Slide buttons hidden for broke players**
+  - Slide-to-show and slide-to-fold controls no longer appear for broke players
+  - Added check: player must have hole cards (not just cardsDealt flag) for controls to show
+
+- **Issue #37: Large overlay animations replace subtle toasts**
+  - Replaced small green success bar with full-screen centered overlay notifications
+  - Each event category has a distinct emoji icon, color tint, and animation
+  - Categories: deal (green/🎴), reveal (blue/♠), fold (red/✋), join (green/✅), dealer (gold/⭐), timer (orange/⏰), broke (yellow/💰), shuffle (blue/🔄), reset (red/🔄)
+  - 2-second scale-in + fade-out CSS animation, pointer-events: none (no tap blocking)
+
+Previous Changes (2026-02-01):
+------------------------------
+**Fix for 7 GitHub Issues (Issues #18, #27, #28, #29, #30, #31, #32)**
+
+- **Issue #18: Fixed "reveal/show cards" requiring refresh**
+  - Reset reveal state flag when new cards are dealt
+  - Slide-to-show control now works consistently across multiple hands without refresh
+
+- **Issue #27: Show timer on /community display**
+  - Blind level timer now visible on public community display
+  - Current blinds display shows on community page
+  - Timer state syncs with main game view
+
+- **Issue #28: Improved slide-to-action controls**
+  - Removed text label from slider button (cleaner look)
+  - Made slider track longer (min-width 280px)
+  - Increased activation threshold from 90% to 95% (requires fuller slide)
+
+- **Issue #29: Added Shuffle Deck button for dealer**
+  - New "Shuffle Deck" button in dealer controls
+  - Only available when cards not dealt
+  - Allows dealer to cut/shuffle deck before dealing
+
+- **Issue #30: Fixed player reorder freezing**
+  - Added cleanup of stale drag state
+  - Added error handling in drag/drop handlers
+  - Added debounce to prevent rapid-fire server updates
+  - Player reordering now works reliably
+
+- **Issue #31: Added "Broke" player state**
+  - Dealer can mark players as broke (no chips) using 💸/💰 toggle
+  - Broke players show with strikethrough name, red "BROKE" badge
+  - Broke players are skipped when dealing cards
+  - Broke players can still be dealer
+  - Broke status persists until toggled back or game reset
+
+- **Issue #32: Anyone can become dealer**
+  - Dealer can now be changed anytime cards are not dealt
+  - Click any player name to select them as dealer between hands
+  - "Random Dealer" button also available between hands
+  - Handles situations where current dealer leaves
+
+Latest Changes (2025-01-07):
+----------------------------
+- Renamed "Join Game" button to "Next >" on the Select User login screen
+- Tapping footer text "Made with 💕 in the 6ix" now refreshes the page
+
+What's New:
+-----------
+- Complete Texas Hold'em digital dealer application
+- Support for up to 10 simultaneous players
+- Real-time WebSocket communication for instant updates
+- Mobile-responsive design for phones and tablets
+- Automatic dealer rotation after each hand
+- Public community cards display for shared screens (no authentication required)
+
+Latest Changes (2025-12-31):
+----------------------------
+- **Fold Button with Safety Switch (Issue #19)**
+  - Slide-to-fold control appears below hole cards after cards are dealt
+  - Red gradient slide track prevents accidental folds (must slide 90%)
+  - Folded players show "FOLDED" badge (gray) next to their name
+  - Player item becomes semi-transparent with strikethrough name
+  - Hole cards show "You have folded" message after folding
+  - Fold state persists across refreshes and resets when hand completes
+  - All players see who has folded in real-time
+
+- **Manual Dealer Selection (Issue #17)**
+  - Click directly on a player's name to select them as dealer
+  - Player items show dashed green border when selectable
+  - Hover effect highlights the player with solid border
+  - "Random Dealer" button still available for random selection
+  - Both options only available before a dealer is selected
+  - Once dealer is selected, players are no longer clickable
+
+Previous Changes (2025-12-30):
+------------------------------
+- **Blind Level Tracking (Issue #21)**
+  - Blind amount display shows "Blinds: X/Y" in the timer section
+  - Blinds start at 1/2 (small blind = 1, big blind = 2) by default
+  - Golden color styling for blinds display for visibility
+  - Blinds automatically double when the 7-minute timer expires
+  - Timer resets to 7:00 when blinds increase (progression: 1/2 → 2/4 → 4/8 → etc.)
+  - SB (Small Blind) badge appears next to player in blue color
+  - BB (Big Blind) badge appears next to player in orange color
+  - D (Dealer) badge remains in green color
+  - Badges update automatically when dealer rotates
+  - Heads-up support: In 2-player games, dealer posts small blind (standard heads-up rules)
+  - With 3+ players: SB is left of dealer, BB is left of SB
+  - Blinds reset to 1/2 on game reset
+
+Previous Changes (2025-12-29):
+------------------------------
+- **7-Minute Blind Level Timer**
+  - Tournament-style countdown timer that starts when cards are first dealt
+  - Displays "Blind Level" label with MM:SS countdown visible to all players
+  - Timer turns yellow and pulses when under 1 minute remaining
+  - Timer turns red with faster pulse when under 30 seconds
+  - At 0:00, flashing alert appears: "Blinds will increase next hand!"
+  - Timer persists across page refreshes (stored in database)
+  - Timer resets when game is reset
+
+Latest Changes (2025-12-05):
+----------------------------
+- **Fixed Logout Button Display Name**
+  - Logout button now correctly displays the user's display name
+  - Fixed bug where button showed "Logout ..." instead of "Logout [DisplayName]"
+  - Updated game.js to use correct property name (display_name) from server response
+
+- **Community Display Optimizations for Revealed Hands**
+  - Phase indicator now automatically hides when revealed hands are displayed, freeing up screen space
+  - Revealed hands layout improved: player names now appear centered above cards instead of beside them
+  - Revealed hands arranged horizontally side-by-side with automatic wrapping to support 5+ simultaneous reveals
+  - Each player's cards and name form a compact vertical unit for better space utilization
+  - Responsive layout adjusts gracefully to accommodate multiple revealed hands on various screen sizes
+
+- **Community Display Shows Revealed Hands**
+  - When players reveal their hole cards using "Show My Cards", those cards now appear on the public community display (/community page)
+  - Revealed hands section appears below community cards with title "Revealed Hands"
+  - Each revealed hand shows player name and their two hole cards in a compact layout
+  - Cards are sized smaller (50px width) to fit multiple revealed hands on one screen
+  - Multiple players can reveal simultaneously - all appear in the revealed hands section
+  - Responsive design scales cards down further on mobile devices (40px on tablets, 35px on phones)
+  - Section automatically hides when no hands are revealed
+  - Revealed hands persist through all game phases until hand completes
+  - Real-time updates via WebSocket ensure community display stays synchronized
+  - Compact styling with reduced padding optimized specifically for community display
+
+Previous Changes (2025-12-04):
+------------------------------
+- **Show My Cards Feature (Slide-to-Action)**
+  - Players can deliberately reveal their hole cards to all other players
+  - Slide-to-action control prevents accidental reveals (must slide 70% across)
+  - Beautiful gradient purple slide track with "👉" hand icon button
+  - Text instruction: "Slide to Show My Cards →"
+  - Only appears after cards are dealt and before player has revealed
+  - Revealed cards display in community cards section with player name
+  - Multiple players can reveal cards simultaneously
+  - Revealed cards persist until hand completes
+  - Smooth slide animation works on desktop (mouse) and mobile (touch)
+  - Server validates and broadcasts revealed cards to all clients
+
+- **Peek at Hole Cards Feature**
+  - Hole cards are now hidden by default, showing only card backs
+  - Players can tap/click and hold anywhere in the hole cards area to temporarily reveal their cards
+  - Cards automatically hide again when the user releases their finger/mouse
+  - Subtle visual feedback when peeking (green glow effect and slight scale)
+  - Works on both desktop (mouse events) and mobile (touch events)
+  - Helpful hint text: "👆 Tap + hold to peek at your cards"
+  - Prevents accidental card reveals to other players
+  - Smooth transitions when revealing and hiding cards
+
+- **Dealer Can Reorder Players**
+  - After the dealer is randomly selected, the dealer can now drag and drop players to reorder the player list
+  - Drag handle (☰) appears on each player item when reordering is available
+  - Only the dealer can reorder players (other players see a static list)
+  - Reordering is only available after dealer selection and before cards are dealt
+  - Once cards are dealt, the player order becomes locked in place
+  - Player order is preserved across all game phases and hands
+  - Visual feedback during drag operations (opacity changes, border highlights)
+  - Real-time updates broadcast to all connected clients when order changes
+  - Server validates reorder requests to ensure only dealer can perform this action
+
+Previous Changes (2025-12-01):
+----------------------------
+- **Configurable Reset Challenge Phrase**
+  - Game reset challenge phrase is now loaded from RESET_PHRASE environment variable
+  - Maintains backward compatibility with default value "milliken mills posse" if environment variable is not set
+  - Allows production deployments to use custom reset phrase via Digital Ocean App Platform environment variables
+  - Updated server/routes/game.js to read from process.env.RESET_PHRASE
+  - Local development uses .env file for configuration
+
+Previous Changes (2025-11-30):
+------------------------------
+- **NEW: User-Specific JWT Tokens for Video Conferencing**
+  - Replaced hardcoded JWT token with user-specific tokens loaded from environment variables
+  - Each user (Gary, Neave, Harish, Chris, Tony, Seymour, Kerwin, Wayne, Dee, Lorenzo, JB) has their own JWT token
+  - Community display page uses a shared JWT_COMMUNITY token
+  - Implemented server-side rendering with EJS templates to inject JWT tokens securely
+  - JWT tokens are no longer exposed in client-side HTML source code
+  - Environment variables configured via Digital Ocean App Platform dashboard for production
+  - Added dotenv support for local development environment variable loading
+  - Server validates JWT configuration on startup and warns if any tokens are missing
+  - Files created: views/game.ejs, views/community.ejs, server/jwt-config.js
+  - Dependencies added: ejs@^3.1.9, dotenv@^16.3.1
+
+Previous Changes (2025-11-29):
+------------------------------
+- **Footer Added to All Pages**
+  - Added footer "Made with 💕 in the 6ix" to login, game, and community pages
+  - Footer is centered and styled with subtle opacity for a clean look
+  - Responsive design ensures footer displays correctly on all devices
+
+- **Protected Game Reset Endpoint**
+  - Added "Reset Game" button in the game page header
+  - Reset requires entering the challenge phrase: "milliken mills posse" (case-insensitive)
+  - Confirmation dialog prevents accidental resets
+  - Resets game state, clears all player positions, and logs out all users
+  - All connected clients are notified via WebSocket and redirected to login
+  - API endpoint: POST /api/game/reset with challengePhrase in request body
+
+- **NEW: Simplified Authentication Flow**
+  - Removed username/password requirement for login
+  - Users now select from a dropdown list of available players
+  - Display name field allows users to view and update their display name before joining
+  - Already logged-in users are indicated with a ⚠️ symbol in the dropdown
+  - Warning message displays when selecting an already logged-in user (but login is still allowed)
+  - No passwords needed - the app is designed for casual, fun play with no critical resources
+  - Multiple sessions allowed for the same user across different devices
+
+Previous Changes (2025-11-27):
+------------------------------
+- **Video Toggle Control**
+  - Added "Show Video" checkbox in the header to show/hide the Jitsi video conference section
+  - Video section is hidden by default when the page loads for better performance
+  - Toggle the checkbox to show/hide the video conference area
+  - Useful for conserving bandwidth when video is not needed
+- Card suit symbols now display in appropriate colors (hearts/diamonds in red, clubs/spades in black)
+- Applies to both player view and public community display
+- Added `--reset` command line flag to reset game state and log out all users
+  - Usage: `npm run start:reset` or `node server/index.js --reset`
+  - Clears all active game data (players, cards, dealer position)
+  - Logs out all users by clearing all sessions
+  - Useful for starting fresh game sessions or testing
+- **Player Removal on Logout**
+  - When a user logs out, they are automatically removed from the active player list
+  - Prevents logged-out users from being accidentally selected as dealer
+  - Game state updates in real-time for all remaining players
+- **Manual Dealer Selection**
+  - Added "Choose Dealer" button in the Players section
+  - Button is only enabled when:
+    * At least one player has joined the game
+    * No dealer has been selected yet
+    * No cards have been dealt
+  - Clicking the button randomly selects the first dealer from all logged-in players
+  - Once a dealer is selected, the button becomes disabled
+  - Button remains disabled until the server is restarted with `--reset` flag
+  - Automatic dealer rotation for subsequent hands continues to work as before
+
+Previous Bug Fixes (2025-11-26):
+---------------------------------
+- Fixed cookie path issue preventing session cookies from being sent with all requests
+- Added explicit `path: '/'` to all cookie operations to ensure site-wide availability
+- Fixed httpOnly cookie access issue by returning token in /api/auth/session response
+- Removed client-side getSessionToken() function that couldn't access httpOnly cookies
+- WebSocket authentication now uses token from API response instead of trying to read cookie
+- Fixed login infinite loop by removing automatic checkSession() redirect
+- Added `credentials: 'same-origin'` to all fetch API calls for cookie support
+- Changed cookie sameSite from 'strict' to 'lax' to allow cookies on navigation redirects
+
+Key Features to Test:
+--------------------
+
+1. Authentication & Login
+   - Select a user from the dropdown list (Gary, Neave, Harish, Chris, Tony, Seymour, Kerwin, Wayne, Dee, Lorenzo)
+   - View and optionally update the display name before joining
+   - Verify already logged-in users are indicated with ⚠️ symbol in dropdown
+   - Verify warning message appears when selecting an already logged-in user
+   - Verify users can still login even when already logged in elsewhere (multiple sessions allowed)
+   - Logout functionality
+   - Session persistence across page refreshes
+   - Test that display name updates are saved and persist
+
+2. Game Setup
+   - Join game before cards are dealt
+   - Verify you cannot join once cards have been dealt
+   - Check that players appear in the order they joined
+   - Click "Choose Dealer" button to randomly select first dealer
+   - Verify "Choose Dealer" button is disabled when no players present
+   - Verify "Choose Dealer" button is disabled after dealer is selected
+   - Verify "Choose Dealer" button is disabled after cards are dealt
+
+3. Dealer Controls (Dealer Only)
+   - "Deal Cards" button distributes 2 hole cards to each player
+   - "Deal Cards" button also deals 5 community cards (face down)
+   - "Flip" button reveals cards in correct sequence:
+     * First click: Reveals Flop (3 cards)
+     * Second click: Reveals Turn (1 card)
+     * Third click: Reveals River (1 card)
+     * Fourth click: Completes hand and rotates dealer
+   - Verify only the current dealer can see dealer controls
+   - Verify only the current dealer can use dealer actions
+
+4. Card Display
+   - Community cards visible to all players
+   - Hole cards visible only to the player who owns them
+   - Card backs shown for unrevealed community cards
+   - Proper card suit symbols (♠ ♥ ♦ ♣)
+
+5. Multi-Device Testing
+   - Test with 2-10 devices simultaneously
+   - Verify real-time updates across all devices
+   - Check WebSocket reconnection if connection drops
+   - Test on different browsers (Chrome, Safari, Firefox)
+   - Test on mobile devices (iOS and Android)
+
+6. Game Flow
+   - Complete a full hand from deal to river
+   - Verify dealer rotates to next player after hand completion
+   - Play multiple consecutive hands
+   - Confirm dealer button moves clockwise around the table
+
+7. Player List
+   - All connected players shown
+   - Current dealer indicated with "DEALER" badge
+   - Player order matches join order
+   - Players are removed from list when they log out
+   - Game state updates immediately when a player leaves
+
+8. Video Conference Toggle
+   - Video section is hidden by default when page loads
+   - "Show Video" checkbox in header is visible
+   - Clicking checkbox reveals the Jitsi video conference section
+   - Unchecking checkbox hides the video section
+   - Toggle works smoothly without page reload
+
+9. Responsive Design
+   - Login page displays correctly on mobile
+   - Game interface adapts to different screen sizes
+   - Cards scale appropriately on smaller screens
+   - All buttons accessible on touch devices
+
+10. Connection Status
+    - Connection indicator in bottom right
+    - Shows "Connected" in green when WebSocket active
+    - Shows "Disconnected" in red when connection lost
+
+11. Error Handling
+    - Cannot join game after cards dealt (shows error message)
+    - Cannot deal cards if not the dealer
+    - Cannot flip cards if not the dealer
+    - Appropriate error messages for invalid actions
+
+Known Limitations:
+-----------------
+- Betting is handled outside the app (in-person)
+- No hand evaluation or winner determination
+- No chip tracking or pot management
+- Single game instance (all players join the same game)
+- Test accounts use default password (change in production)
+
+Test Scenarios:
+--------------
+
+Scenario 1: Two-Player Quick Game
+1. On device 1, select "Gary" from dropdown, optionally update display name, click "Join Game"
+2. On device 2, select "Neave" from dropdown, optionally update display name, click "Join Game"
+3. Both players should now be in the game
+4. Click "Choose Dealer" button to randomly select first dealer
+5. Dealer clicks "Deal Cards"
+6. Verify each player sees their own hole cards
+7. Dealer clicks "Flip" four times (Flop, Turn, River, Complete)
+8. Verify dealer has rotated to other player
+9. Deal another hand
+
+Scenario 2: Full Table (10 Players)
+1. Login with all 10 available users (Gary, Neave, Harish, Chris, Tony, Seymour, Kerwin, Wayne, Dee, Lorenzo) on different devices
+2. All join game in sequence
+3. Verify player order matches join order
+4. Deal cards and complete a full hand
+5. Verify dealer rotation through all players
+
+Scenario 3: Mid-Game Join Attempt
+1. Have 3 players join
+2. Dealer deals cards
+3. Attempt to join with 4th player
+4. Verify join is rejected with appropriate message
+
+Scenario 4: Connection Resilience
+1. Start a game with multiple players
+2. Disconnect one player's internet
+3. Reconnect the player
+4. Verify game state syncs correctly
+
+Scenario 5: Mobile Gameplay
+1. Login on iOS Safari
+2. Login on Android Chrome
+3. Complete a full game using only mobile devices
+4. Verify all controls are accessible via touch
+
+Scenario 7: Player Logout During Setup
+1. Login as Gary, Neave, and Harish on three different devices
+2. All three join the game
+3. Neave logs out before dealer is selected
+4. Verify Neave is removed from player list on all devices
+5. On a 4th device, verify Neave now appears as available to login in the dropdown
+6. Click "Choose Dealer" - verify only Gary or Harish can be selected
+7. Complete the game with remaining players
+
+Scenario 10: Multiple Login Warning
+1. Login as Gary on device 1 and join the game
+2. On device 2, open the login page
+3. Verify Gary appears in the dropdown with a ⚠️ warning symbol
+4. Select Gary from the dropdown
+5. Verify a warning message appears: "⚠️ This user is already logged in on another device. Logging in will create a second session."
+6. Click "Join Game" and verify login succeeds (multiple sessions allowed)
+7. Verify both devices are now logged in as Gary
+8. Logout Gary on device 1
+9. Refresh the login page on a device 3
+10. Verify Gary still shows ⚠️ symbol (device 2 still logged in)
+
+Scenario 11: Display Name Updates
+1. Login as Gary on device 1
+2. Before submitting, change the display name from "Gary" to "Gary the Great"
+3. Click "Join Game"
+4. On device 2, login as Neave
+5. Verify Gary's display name shows as "Gary the Great" in the player list
+6. Gary logs out and logs back in
+7. Verify the display name field shows "Gary the Great" (persisted)
+8. Change it back to "Gary" and join
+9. Verify the updated name appears to all players
+
+Scenario 12: Game Reset with Challenge Phrase
+1. Login with 3-4 players and start a game
+2. Deal cards and progress through a few rounds
+3. One player clicks the "Reset Game" button in the header
+4. Verify a prompt appears asking for the challenge phrase
+5. Enter an incorrect phrase (e.g., "wrong phrase")
+6. Verify an error message appears: "Invalid challenge phrase"
+7. Click "Reset Game" button again
+8. Enter the correct phrase: "milliken mills posse" (test case-insensitivity)
+9. Verify a confirmation dialog appears
+10. Click "Cancel" - verify nothing happens
+11. Click "Reset Game" again, enter correct phrase, click "OK"
+12. Verify success message appears
+13. Verify all connected clients are redirected to login page
+14. Login again and verify game state is reset (no players, no cards, no dealer)
+
+Scenario 13: Game Reset via API
+1. Use curl or Postman to test the API endpoint directly
+2. Send POST request to /api/game/reset without challengePhrase
+3. Verify 400 error: "Challenge phrase is required"
+4. Send POST with incorrect phrase
+5. Verify 403 error: "Invalid challenge phrase"
+6. Send POST with correct phrase: {"challengePhrase": "Milliken Mills Posse"}
+7. Verify 200 success response
+8. Verify game state has been reset in database
+
+Scenario 14: Dealer Player Reordering
+1. Login with 4-5 players (Gary, Neave, Harish, Chris, Tony)
+2. All players join the game in that order
+3. Verify player list shows players in join order on all devices
+4. Click "Choose Dealer" button to randomly select a dealer (e.g., Harish)
+5. On Harish's device (dealer), verify drag handles (☰) appear next to each player name
+6. On other devices (non-dealers), verify no drag handles appear
+7. On Harish's device, drag Gary's name to a different position in the list
+8. Verify visual feedback during drag (opacity change, border highlight)
+9. Drop Gary in the new position
+10. Verify all connected clients see the updated player order immediately
+11. On Harish's device, drag multiple players to create desired seating order
+12. Verify order updates are reflected on all devices in real-time
+13. Dealer clicks "Deal Cards"
+14. Verify drag handles disappear (reordering is now locked)
+15. Try to drag a player - verify dragging no longer works
+16. Complete the hand and rotate to next dealer
+17. On new dealer's device, verify drag handles do NOT reappear (order stays locked)
+18. Verify player order remains consistent throughout multiple hands
+
+Scenario 15: Non-Dealer Cannot Reorder
+1. Login with 3 players (Gary, Neave, Harish)
+2. All join the game
+3. Click "Choose Dealer" - Gary is selected as dealer
+4. On Gary's device, verify drag handles appear
+5. On Neave's device, verify no drag handles appear
+6. Attempt to drag a player on Neave's device (should not work)
+7. Verify Neave cannot reorder players even if they try to manipulate the UI
+
+Scenario 16: Peek at Hole Cards - Desktop
+1. Login with 2-3 players and join the game
+2. Select dealer and deal cards
+3. Verify hole cards section shows card backs (hidden cards)
+4. Verify hint text appears: "👆 Tap or hold to peek at your cards"
+5. Click and hold (mousedown) anywhere in the hole cards area
+6. Verify cards flip to show face values and suits
+7. Verify subtle green glow effect appears around the cards area
+8. Verify cards scale up slightly (1.02x)
+9. Release mouse button (mouseup)
+10. Verify cards immediately flip back to card backs
+11. Verify glow effect disappears
+12. Move mouse over cards area, then move away (mouseleave) while holding
+13. Verify cards hide when mouse leaves the area
+14. Repeat peek multiple times to ensure it works consistently
+
+Scenario 17: Peek at Hole Cards - Mobile/Touch
+1. Login on mobile device (iOS or Android)
+2. Join game, select dealer, and deal cards
+3. Verify hole cards show as card backs
+4. Verify hint text is visible and readable on mobile
+5. Tap and hold (touchstart) on the hole cards area
+6. Verify cards reveal with smooth transition
+7. Verify visual feedback (glow, scale) appears
+8. Lift finger (touchend)
+9. Verify cards immediately hide
+10. Touch and drag finger away from cards area while holding
+11. Verify cards hide when touch moves outside area (touchcancel)
+12. Test with different orientations (portrait and landscape)
+13. Verify no text selection occurs during peek interaction
+
+Scenario 18: Peek at Hole Cards - Privacy
+1. Login with 3 players on separate devices
+2. Deal cards to all players
+3. On Player 1's device, peek at cards
+4. On Player 2's and Player 3's devices, verify their cards remain hidden
+5. Verify each player can only see their own cards when peeking
+6. Verify cards are hidden by default on all devices
+7. Have multiple players peek simultaneously
+8. Verify each device only shows its own player's cards
+
+Scenario 19: Peek at Hole Cards - Game Phases
+1. Login and join game with multiple players
+2. Deal cards and verify peek works in pre-flop phase
+3. Reveal flop and verify peek still works
+4. Reveal turn and verify peek still works
+5. Reveal river and verify peek still works
+6. Complete hand and deal new cards
+7. Verify peek works for new hand
+8. Verify cards reset properly between hands
+
+Scenario 20: Show My Cards - Slide-to-Action (Desktop)
+1. Login with 3-4 players and join game
+2. Select dealer and deal cards
+3. Verify slide-to-show control appears below hole cards
+4. Verify slide track has gradient purple background
+5. Verify text reads "Slide to Show →"
+6. Verify white circular button with "👉" icon on left
+7. Click and drag button partway across track
+8. Release before reaching 70% - verify button slides back to start
+9. Verify cards are NOT revealed
+10. Click and drag button past 70% of track width
+11. Verify cards are revealed and slide control disappears
+12. Verify player's cards appear in community cards section with player name
+13. Verify success message appears
+14. Verify slide control does not reappear for that player
+15. Verify revealed cards remain visible through all game phases
+
+Scenario 21: Show My Cards - Slide-to-Action (Mobile)
+1. Login on mobile device and join game
+2. Deal cards and verify slide control appears
+3. Touch and drag button slowly across track
+4. Verify smooth sliding animation
+5. Lift finger before 70% threshold
+6. Verify button returns to start
+7. Touch and drag past 90% threshold
+8. Verify cards are revealed with visual confirmation
+9. Test in portrait and landscape orientations
+10. Verify no accidental scrolling while sliding
+11. Verify touch events don't interfere with other controls
+
+Scenario 22: Show My Cards - Multiple Players
+1. Login with 4 players (Gary, Neave, Harish, Chris) on separate devices
+2. All join game and deal cards
+3. On Gary's device, slide to reveal cards
+4. On Neave's device, verify Gary's cards appear in community section
+5. On Harish's device, also slide to reveal cards
+6. On all devices, verify both Gary's and Harish's cards are visible
+7. Verify each player's name appears above their revealed cards
+8. On Chris's device, choose not to reveal
+9. Verify Chris's slide control still available
+10. Complete hand and verify all revealed cards disappear
+11. Deal new hand and verify all slide controls reappear
+
+Scenario 23: Show My Cards - Edge Cases
+1. Login and join game, but don't deal cards yet
+2. Verify slide control does NOT appear before cards are dealt
+3. Deal cards and verify slide control appears
+4. Player 1 reveals their cards
+5. Verify Player 1's slide control disappears and doesn't reappear
+6. Try refreshing Player 1's browser
+7. Verify revealed state persists (cards still shown, no slide control)
+8. Complete hand and start new hand
+9. Verify Player 1's slide control reappears for new hand
+10. Test revealing cards during different phases (pre-flop, flop, turn, river)
+11. Verify revealed cards persist through phase transitions
+
+Scenario 8: Manual Dealer Selection
+1. Start server with `--reset` flag to ensure clean state
+2. Login with 3-4 players
+3. All players join game
+4. Verify "Choose Dealer" button is enabled
+5. Click "Choose Dealer" button
+6. Verify a random player is selected as dealer
+7. Verify "Choose Dealer" button becomes disabled
+8. Complete hand and verify automatic dealer rotation still works
+9. Verify "Choose Dealer" button remains disabled for subsequent hands
+
+Scenario 9: Video Toggle Control
+1. Login and navigate to the game page
+2. Verify video conference section is hidden by default
+3. Locate "Show Video" checkbox in the header
+4. Click checkbox to enable video
+5. Verify Jitsi video conference section appears
+6. Verify video loads correctly
+7. Uncheck the "Show Video" checkbox
+8. Verify video section is hidden again
+9. Test toggle multiple times to ensure it works reliably
+
+Scenario 6: Public Community Display
+1. On a shared screen/TV, navigate to `/community`
+2. Verify no authentication is required
+3. On player devices, login and join game
+4. Dealer deals cards
+5. Verify community cards appear immediately on public display
+6. Dealer flips through Flop, Turn, River
+7. Verify public display updates in real-time
+8. Check that public display does NOT show hole cards
+9. Test display on different screen sizes (phone, tablet, TV)
+
+Scenario 24: Community Display - Revealed Hands
+1. On a shared screen/TV, navigate to `/community` page
+2. On 4 separate player devices, login as Gary, Neave, Harish, and Chris
+3. All players join game, select dealer, and deal cards
+4. On community display, verify only community cards are shown (no revealed hands section)
+5. On Gary's device, use slide-to-action to reveal cards
+6. On community display, verify "Revealed Hands" section appears below community cards
+7. Verify Gary's name and two hole cards appear in compact format
+8. Verify cards are small enough to fit in single row (50px width)
+9. On Harish's device, also reveal cards
+10. On community display, verify both Gary's and Harish's revealed hands appear
+11. Verify both hands fit comfortably in the display without scrolling
+12. Verify each hand shows player name clearly
+13. Dealer flips through game phases (Flop, Turn, River)
+14. Verify revealed hands persist and remain visible throughout all phases
+15. Complete the hand
+16. Verify revealed hands section disappears when hand completes
+17. Deal new hand and verify section remains hidden until players reveal again
+
+Scenario 25: Community Display - Responsive Revealed Hands
+1. On tablet device, navigate to `/community` page
+2. Setup game with 3 players and have 2 players reveal their cards
+3. Verify revealed hands display correctly with 40px card width
+4. Verify player names and cards are clearly readable
+5. On phone device, navigate to `/community` page
+6. Verify revealed hands scale down to 35px card width
+7. Verify cards remain readable and properly formatted
+8. Rotate phone to landscape orientation
+9. Verify revealed hands adjust and display correctly
+10. Test with 4-5 players all revealing cards
+11. Verify all revealed hands fit within viewport without horizontal scroll
+12. Check that card size automatically adjusts for number of revealed hands
+
+Important Notes:
+---------------
+- Always test with multiple devices/browsers simultaneously
+- Check browser console for JavaScript errors
+- Monitor WebSocket connection in network tab
+- Test both portrait and landscape orientations on mobile
+- Verify session persistence after page refresh
+
+Scenario 26: Blind Level Timer
+1. Login with 2-3 players and join game
+2. Select dealer and verify timer shows "7:00" in idle state (slightly dimmed)
+3. Dealer clicks "Deal Cards"
+4. Verify timer starts counting down from 7:00
+5. Verify timer label shows "Blind Level"
+6. Verify timer is visible to all players (check on multiple devices)
+7. Wait for timer to reach 1:00
+8. Verify timer turns yellow and starts pulsing
+9. Wait for timer to reach 0:30
+10. Verify timer turns red with faster pulse
+11. Wait for timer to reach 0:00
+12. Verify flashing alert appears: "Blinds will increase next hand!"
+13. Verify success message notification appears
+14. Dealer deals next hand
+15. Verify alert disappears but timer continues from where it was
+16. Refresh browser page
+17. Verify timer continues from correct time (not reset)
+18. Click "Reset Game" with challenge phrase
+19. Verify timer resets to 7:00 in idle state
+
+Scenario 27: Timer on Community Display
+1. Navigate to /community page on shared screen
+2. On player devices, login and join game
+3. Verify timer is visible on community display
+4. Dealer deals cards
+5. Verify timer starts counting on community display
+6. Verify timer state syncs between player view and community display
+7. Wait for timer to expire
+8. Verify alert appears on community display
+
+Scenario 28: Blind Level Display
+1. Login with 2-3 players and join game
+2. Verify timer section shows "Blinds: 1/2" below the countdown
+3. Verify blinds display has golden color styling
+4. Select dealer and deal cards
+5. Verify blinds still show "1/2" after dealing
+6. Refresh browser page
+7. Verify blinds display persists with correct value
+8. Click "Reset Game" with challenge phrase
+9. Verify blinds reset to "1/2"
+
+Scenario 29: Blind Position Badges (3+ Players)
+1. Login with 3-4 players (Gary, Neave, Harish, Chris) on separate devices
+2. All players join game
+3. Click "Choose Dealer" to select dealer (e.g., Gary is dealer)
+4. Verify on all devices:
+   - Gary has green "D" (Dealer) badge
+   - Neave has blue "SB" (Small Blind) badge
+   - Harish has orange "BB" (Big Blind) badge
+   - Chris has no blind badge (just waiting to act)
+5. Deal cards and complete the hand
+6. Verify dealer rotates to Neave
+7. Verify badges update:
+   - Neave has "D" badge
+   - Harish has "SB" badge
+   - Chris has "BB" badge
+   - Gary has no badge
+8. Complete another hand and verify badges continue rotating correctly
+
+Scenario 30: Blind Position Badges (Heads-Up / 2 Players)
+1. Login with 2 players (Gary and Neave) on separate devices
+2. Both players join game
+3. Click "Choose Dealer" to select dealer (e.g., Gary is dealer)
+4. Verify badges follow heads-up rules:
+   - Gary has "D" badge AND "SB" badge (dealer posts small blind in heads-up)
+   - Neave has "BB" badge
+5. Deal cards and complete the hand
+6. Verify dealer rotates to Neave
+7. Verify badges update:
+   - Neave has "D" and "SB" badges
+   - Gary has "BB" badge
+8. Complete multiple hands to verify heads-up rotation works correctly
+
+Scenario 31: Blind Increase on Timer Expiration
+1. Login with 2-3 players and join game
+2. Verify blinds display shows "1/2"
+3. Select dealer and deal cards
+4. Wait for timer to count down to 0:00
+5. Verify alert appears: "Blinds will increase next hand!"
+6. Verify blinds still show "1/2" (not yet increased)
+7. Dealer deals next hand
+8. Verify blinds update to "2/4" (doubled)
+9. Verify timer resets to 7:00 and starts counting down
+10. Wait for timer to expire again
+11. Deal another hand
+12. Verify blinds update to "4/8" (doubled again)
+13. Continue pattern to verify progression: 1/2 → 2/4 → 4/8 → 8/16 → etc.
+
+Scenario 32: Blind State Persistence
+1. Login with 2-3 players and join game
+2. Deal cards and let timer expire
+3. Deal again to increase blinds to 2/4
+4. Let timer expire and deal again to increase to 4/8
+5. Refresh browser on all devices
+6. Verify blinds display shows "4/8" (persisted value)
+7. Verify timer continues from correct state
+8. Click "Reset Game" with challenge phrase
+9. Verify blinds reset to "1/2"
+10. Verify timer resets to 7:00 in idle state
+
+Scenario 33: Community Display - Blinds and Badges
+1. Navigate to /community page on shared screen
+2. On player devices, login and join game with 3 players
+3. Select dealer
+4. Verify community display shows current blinds in timer section
+5. Verify SB and BB badges visible on community display player list
+6. Deal cards and let timer expire
+7. Deal again and verify blinds increase to 2/4 on community display
+8. Verify badges update correctly on community display when dealer rotates
+
+Scenario 34: Manual Dealer Selection - Click to Select
+1. Start server with `npm run start:reset` for clean state
+2. Login with 3-4 players (Gary, Neave, Harish, Chris) on separate devices
+3. All players join the game
+4. Verify player items have dashed green borders (indicating they are selectable)
+5. Hover over a player's name - verify border becomes solid and item shifts slightly
+6. Click on Neave's name to select them as dealer
+7. Verify Neave is now marked as dealer with "D" badge
+8. Verify SB and BB badges appear on appropriate players
+9. Verify player items no longer have dashed borders (not clickable)
+10. Verify "Random Dealer" button is now disabled
+11. Complete a hand and verify dealer rotation works normally
+
+Scenario 35: Manual Dealer Selection - Random Button Still Works
+1. Start server with `npm run start:reset` for clean state
+2. Login with 3 players on separate devices
+3. All players join the game
+4. Instead of clicking a player, click "Random Dealer" button
+5. Verify a random player is selected as dealer
+6. Verify SB and BB badges appear correctly
+7. Verify player items are no longer clickable
+
+Scenario 36: Manual Dealer Selection - Multiple Devices
+1. Login with 3 players on 3 different devices
+2. All players join the game
+3. On Device 1, verify all players have dashed borders
+4. On Device 2, click to select a specific player as dealer
+5. On all devices, verify the dealer selection is reflected immediately
+6. Verify all devices show the same dealer, SB, and BB assignments
+
+Scenario 37: Fold Button - Slide to Fold
+1. Start server with `npm run start:reset` for clean state
+2. Login with 3-4 players on separate devices
+3. All players join the game and select dealer
+4. Dealer deals cards
+5. Verify red "Slide to Fold" track appears below hole cards
+6. On one player's device, slide the button partway and release
+7. Verify button slides back to start (not folded)
+8. Slide the button past 90% of track width
+9. Verify fold is confirmed with success message
+10. Verify hole cards section shows "You have folded" message
+11. Verify slide-to-fold control disappears after folding
+12. Verify slide-to-show control also disappears (can't show folded cards)
+
+Scenario 38: Fold Button - Player List Updates
+1. Login with 3 players (Gary, Neave, Harish) on separate devices
+2. All join game, select dealer, deal cards
+3. On Gary's device, slide to fold
+4. On all devices, verify:
+   - Gary's player item shows "FOLDED" badge (gray)
+   - Gary's player item is semi-transparent with dashed border
+   - Gary's name has strikethrough styling
+5. On Neave's device, also fold
+6. Verify both Gary and Neave show folded state on all devices
+7. Harish should still see their cards and fold option
+
+Scenario 39: Fold Button - Multi-Device Sync
+1. Login with 4 players on 4 different devices
+2. All join game, deal cards
+3. On Device 1, player folds
+4. On Devices 2, 3, 4, verify fold notification appears
+5. Verify all devices show correct folded state
+6. Complete the hand (flip through all phases)
+7. Deal new hand
+8. Verify fold states are reset - no players show as folded
+9. Verify fold controls reappear for all players
+
+Scenario 40: Fold Button - Persistence
+1. Login with 2-3 players, deal cards
+2. One player folds
+3. Refresh the folded player's browser
+4. Verify fold state persists after refresh
+5. Verify hole cards still show "You have folded"
+6. Verify slide controls don't reappear
+7. Complete hand and deal again
+8. Verify fold state is reset after new deal
+
+Scenario 41: Fold Button - Mobile Touch
+1. Login on mobile device (iOS or Android)
+2. Join game with other players, deal cards
+3. Verify red slide track is visible on mobile
+4. Touch and drag button slowly across track
+5. Lift finger before 90% - verify button returns
+6. Touch and drag past 90%
+7. Verify fold is confirmed
+8. Test in portrait and landscape orientations
+
+Scenario 42: Reveal Cards Without Refresh (Issue #18)
+1. Login with 2-3 players, deal cards
+2. On one player's device, use slide-to-show to reveal cards
+3. Complete hand (flip through all phases)
+4. Dealer deals new hand
+5. On same player's device, verify slide-to-show control appears
+6. Use slide-to-show - verify it works WITHOUT needing to refresh
+7. Repeat for multiple hands to confirm fix
+
+Scenario 43: Timer on Community Display (Issue #27)
+1. Navigate to /community page on shared screen/TV
+2. On player devices, login and join game
+3. Verify timer section is visible on community display
+4. Select dealer and deal cards
+5. Verify timer starts counting down on community display
+6. Verify blinds display (e.g., "1/2") shows on community display
+7. Wait for timer warning states (yellow at 1:00, red at 0:30)
+8. Verify warnings appear on community display
+9. Timer expires - verify alert shows on community display
+
+Scenario 44: Improved Slide Controls (Issue #28)
+1. Login and join game, deal cards
+2. Verify slide buttons have no text/emoji (cleaner appearance)
+3. Verify slide track appears longer than before
+4. Slide button to 90% and release - verify action NOT triggered
+5. Slide button to 95%+ - verify action triggers
+6. Test on both show-cards and fold slide controls
+
+Scenario 45: Shuffle Deck Button (Issue #29)
+1. Login and join game with 2+ players
+2. Select dealer (you should be dealer for this test)
+3. Verify "Shuffle Deck" button appears in dealer controls
+4. Click "Shuffle Deck" - verify success message
+5. Click "Shuffle Deck" multiple times - each should work
+6. Deal cards
+7. Verify "Shuffle Deck" button becomes disabled
+8. Complete hand (all phases)
+9. Verify "Shuffle Deck" button re-enables
+10. Non-dealer: verify shuffle button is not visible
+
+Scenario 46: Player Reorder Stability (Issue #30)
+1. Login with 4-5 players
+2. Select dealer
+3. As dealer, rapidly drag and drop players multiple times
+4. Verify no freezing occurs
+5. Verify order updates correctly after each reorder
+6. Verify other players see updates in real-time
+7. Close browser tab mid-drag - reopen and verify no issues
+
+Scenario 47: Broke Player State (Issue #31)
+1. Login with 4 players, select dealer
+2. As dealer, verify 💸 button appears next to each player
+3. Click 💸 on one player - verify they show "BROKE" badge
+4. Verify their name has strikethrough and red tint
+5. Deal cards - verify broke player does NOT receive cards
+6. Verify broke player doesn't see hole cards
+7. Click 💰 on broke player to make them active again
+8. Deal new hand - verify they receive cards
+9. Test: Mark multiple players as broke, deal to remaining active
+10. Test: Broke player can still be dealer (mark current dealer as broke)
+
+Scenario 48: Broke Player - Minimum Players Check
+1. Login with exactly 3 players
+2. Mark 2 players as broke (leaving only 1 active)
+3. Try to deal cards - should fail (need 2 active players)
+4. Mark one broke player as active
+5. Deal cards - should now work with 2 active players
+
+Scenario 49: Anyone Can Become Dealer (Issue #32)
+1. Login with 3-4 players
+2. Select Gary as dealer
+3. Deal cards and complete hand
+4. Verify dealer rotates to next player
+5. Before dealing new hand, click on different player's name
+6. Verify that player becomes new dealer
+7. Verify "Random Dealer" button is enabled between hands
+8. Click "Random Dealer" - verify new random dealer selected
+9. Test: During active hand (cards dealt), try clicking player name
+10. Verify dealer cannot be changed while cards are dealt
+
+Scenario 50: Pause Timer (Issue #49)
+1. Login with 2-3 players and join game
+2. Select dealer and deal cards - verify timer starts
+3. As dealer, verify pause (⏸), and reset (↻) buttons appear in timer section
+4. As non-dealer, verify NO timer control buttons are visible
+5. Click ⏸ pause - verify timer freezes with blinking amber display
+6. Verify pause button hides and resume (▶) button appears
+7. Click ▶ resume - verify timer continues from where it paused
+8. Pause again, then deal new hand - verify timer auto-resumes
+9. Pause again, then flip community card - verify timer auto-resumes
+10. Click ↻ reset - verify timer restarts from 7:00
+11. Verify reset clears "Blinds will increase" alert if present
+12. Pause timer, then restart server
+13. Verify paused state persists after restart
+14. On /community page, verify paused visual state (blinking amber, no controls)
+
+Scenario 51: Big Blind Bloodbath (Issue #51)
+1. Login with 5 players (A-E) and join game
+2. Select player A as dealer
+3. Verify B=SB, C=BB
+4. Deal cards
+5. Mark B and C as broke during the hand
+6. Complete hand
+7. Verify D=BB (not E — BB advanced exactly one seat from C)
+8. Verify dealer and SB derived correctly from new BB
+9. Complete another hand
+10. Verify E=BB (advances one more seat)
+11. Test with only 2 active players remaining (heads-up)
+12. Verify BB alternates correctly between the two remaining active players
+13. Manually select a new dealer mid-game
+14. Verify BB resets to first-hand derivation from dealer
+15. Restart server and verify BB position persists
+
+For Issues:
+----------
+- Check browser console for errors
+- Verify WebSocket connection status
+- Review server logs if running locally
+- Ensure all players are on the same network (if testing locally)

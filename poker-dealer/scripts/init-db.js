@@ -1,9 +1,11 @@
+require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, '..', 'database', 'poker-dealer.db');
+// Same rule as server/db.js, so this script always prepares the file the server opens
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, '..', 'database', 'poker-dealer.db');
 const SCHEMA_PATH = path.join(__dirname, '..', 'database', 'schema.sql');
 
 console.log('Initializing database...');

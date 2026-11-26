@@ -245,7 +245,7 @@ export default function Game() {
           </Disclosure>
 
           <Disclosure id="video" title="Video table" summary="For anyone joining remotely" keepMounted>
-            <VideoRoom jwtToken={boot.jwtToken} demo={Boolean(boot.demo)} className="aspect-video w-full" />
+            <VideoRoom jwtToken={boot.jwtToken} demo={Boolean(boot.demo)} className="aspect-video min-h-[420px] w-full" />
           </Disclosure>
           <div className="border-t border-line" />
         </aside>
