@@ -1,5 +1,12 @@
 # Release notes
 
+## 2026-11-26 · `fix/crowded-header-29`
+
+- On phones, the main page's header no longer runs off the right edge of
+  the screen. The MMP mark keeps its own row and the five links sit on a
+  row below it, all visible and tappable, with no side-scrolling. Fixes
+  issue #29; nothing changes on wider screens.
+
 ## 2026-11-24 · `bugfix/golf-package-module-type`
 
 - `golf/package.json` now says `"type": "module"`, so Node stops printing
